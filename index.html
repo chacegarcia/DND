@@ -497,9 +497,11 @@ document.getElementById('rollBtn').onclick = async () => {
   await runAction(v);
 };
 document.getElementById('actionInput').addEventListener('keydown', async (e) => {
-  if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+  if(e.key === 'Enter' && !e.shiftKey){
     e.preventDefault();
-    const v = actionInput.value; actionInput.value = ''; await runAction(v);
+    const v = actionInput.value;
+    actionInput.value = '';
+    await runAction(v);
   }
 });
 document.getElementById('newRunBtn').onclick = () => { beginOnboarding(); saveGame(); };
