@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Cellar Below — Continuity Build</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121a31;
+      --panel2:#0f1730;
+      --text:#e8eefc;
+      --muted:#9db0d8;
+      --accent:#7cc5ff;
+      --good:#82e6a5;
+      --warn:#ffd470;
+      --bad:#ff8a8a;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#08101d,#101731 50%,#0c1120);color:var(--text);font-family:var(--sans)}
+    .wrap{max-width:1360px;margin:0 auto;padding:18px}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:16px}
+    .panel{background:rgba(18,26,49,.96);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+    h1{font-size:24px;margin:0 0 8px}
+    h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+    .sub{color:var(--muted);font-size:13px;line-height:1.45}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+    .stat{background:var(--panel2);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+    .stat .k{font-size:12px;color:var(--muted)}
+    .stat .v{font-size:20px;font-weight:700;margin-top:4px}
+    .inv{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:6px 10px;border-radius:999px;background:#162240;border:1px solid rgba(255,255,255,.08);font-size:12px}
+    .chip.good{background:rgba(130,230,165,.12);border-color:rgba(130,230,165,.3);color:var(--good)}
+    .chip.warn{background:rgba(255,212,112,.12);border-color:rgba(255,212,112,.28);color:var(--warn)}
+    .chip.bad{background:rgba(255,138,138,.12);border-color:rgba(255,138,138,.28);color:var(--bad)}
+    .map{font-family:var(--mono);white-space:pre;line-height:1.15;font-size:14px;background:#09101f;border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,.06);overflow:auto}
+    .log{height:58vh;overflow:auto;background:#09101f;border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,.06)}
+    .entry{padding:10px 12px;margin-bottom:10px;border-radius:12px;background:#101a34;border:1px solid rgba(255,255,255,.05)}
+    .entry.roll{background:#13223f}
+    .entry.sys{background:#111728}
+    .entry.bad{background:rgba(140,34,34,.18);border-color:rgba(255,138,138,.2)}
+    .entry.good{background:rgba(34,90,58,.22);border-color:rgba(130,230,165,.2)}
+    .entry .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .controls{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:12px}
+    input[type=text]{width:100%;padding:14px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0c1430;color:var(--text);font-size:15px}
+    button, select{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#18264a;color:var(--text);cursor:pointer;font-weight:600}
+    button:hover, select:hover{filter:brightness(1.08)}
+    .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .small{padding:8px 10px;font-size:12px}
+    .footer{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin-top:12px}
+    .rule{font-size:12px;color:var(--muted);line-height:1.5}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}.log{height:42vh}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="grid">
+    <div class="panel">
+      <h1>The Cellar Below</h1>
+      <div class="sub">Single-file HTML dungeon run with the same style you were playing: ASCII map, rolled actions, continuity, inventory, checkpoints, and local save persistence.</div>
+
+      <div class="stats">
+        <div class="stat"><div class="k">Health</div><div class="v" id="health">7/10</div></div>
+        <div class="stat"><div class="k">Current Room</div><div class="v" id="roomName" style="font-size:16px;line-height:1.2">—</div></div>
+        <div class="stat"><div class="k">Last Roll</div><div class="v" id="lastRoll">—</div></div>
+        <div class="stat"><div class="k">Mode</div><div class="v" id="modeText" style="font-size:16px;line-height:1.2">Normal</div></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <h2>Inventory</h2>
+        <div class="inv" id="inventory"></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <h2>Rules</h2>
+        <div class="rule">
+          Every meaningful action rolls <strong>0–20</strong>.<br>
+          <strong>0 = instant death</strong>.<br>
+          “Insane requests” are rolled normally, then get <strong>-3</strong>, minimum result <strong>1</strong>.
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <h2>ASCII Map</h2>
+        <div class="map" id="map"></div>
+      </div>
+
+      <div class="footer">
+        <div class="btnrow">
+          <button class="small" id="saveBtn">Save</button>
+          <button class="small" id="loadBtn">Load</button>
+          <button class="small" id="exportBtn">Export Save</button>
+          <button class="small" id="checkpointBtn">Checkpoint</button>
+        </div>
+        <select id="checkpointSelect" class="small">
+          <option value="cellar_start">Checkpoint: Cellar Start</option>
+          <option value="lower_hall">Checkpoint: Lower Hall</option>
+          <option value="side_room">Checkpoint: Side Room</option>
+          <option value="circular_chamber">Checkpoint: Circular Chamber</option>
+          <option value="below_room" selected>Checkpoint: Below the Cellar</option>
+          <option value="shaft_ledge">Checkpoint: Shaft Ledge</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Narrative Log</h2>
+      <div id="log" class="log"></div>
+      <div class="controls">
+        <input id="command" type="text" placeholder="Type an action, like: inspect the niche object / move to the pedestal / ask narrator about the knock / try to fly" />
+        <button id="goBtn">Roll Action</button>
+      </div>
+      <div class="btnrow" id="quickActions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAVE_KEY = 'cellar_dungeon_continuity_v1';
+
+const checkpoints = {
+  cellar_start: () => ({
+    room:'cellar_start', health:10, inventory:['worn map'], log:[], lastRoll:null, alive:true,
+    flags:{ doorOpen:false, lowerHallSeen:false, maskOn:false, keyLeverInserted:false, sidePanelOpen:false, stoneDoorOpen:false, spindleRaised:false, maskAttached:false, pitOpened:false, swordTruth:false, lantern:false },
+    checkpoints:[]
+  }),
+  lower_hall: () => ({
+    room:'lower_hall', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
+    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, chainSolved:false, maskOn:false, keyLeverInserted:false, sidePanelOpen:false, stoneDoorOpen:false, spindleRaised:false, maskAttached:false, pitOpened:false, swordTruth:false, lantern:false },
+    checkpoints:[]
+  }),
+  side_room: () => ({
+    room:'side_room', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
+    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:false, stoneDoorOpen:false, spindleRaised:false, maskAttached:false, pitOpened:false, swordTruth:false, lantern:false },
+    checkpoints:[]
+  }),
+  circular_chamber: () => ({
+    room:'circular_chamber', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
+    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:true, stoneDoorOpen:true, spindleRaised:true, maskAttached:true, pitOpened:false, swordTruth:false, lantern:false },
+    checkpoints:[]
+  }),
+  below_room: () => ({
+    room:'below_room', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
+    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:true, stoneDoorOpen:true, spindleRaised:true, maskAttached:true, pitOpened:false, swordTruth:false, lantern:false, nicheObjTaken:false, pedestalSeen:false },
+    checkpoints:[]
+  }),
+  shaft_ledge: () => ({
+    room:'shaft_ledge', health:3, inventory:['worn map','leather pouch','rusted key','old cloth strip','bronze clasp-lantern','Sword of Undefiled Truth'], log:[], lastRoll:null, alive:true,
+    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:true, stoneDoorOpen:true, spindleRaised:true, maskAttached:true, pitOpened:true, swordTruth:true, lantern:true },
+    checkpoints:[]
+  })
+};
+
+let state = checkpoints.below_room();
+
+function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+function rand021(){ return Math.floor(Math.random()*21); }
+function containsAny(text, arr){ text = text.toLowerCase(); return arr.some(k => text.includes(k)); }
+function uniquePush(arr, item){ if(!arr.includes(item)) arr.push(item); }
+function removeItem(arr, item){ const i = arr.indexOf(item); if(i>=0) arr.splice(i,1); }
+
+const insaneKeywords = ['fly','immortal','god','divine omnipotence','become a dragon','become invincible','teleport the moon','absolute fortune','infinite health'];
+
+function roomTitle(id){
+  return ({
+    cellar_start:'The Cellar Start',
+    lower_hall:'Lower Hall',
+    side_room:'Sealed Side Room',
+    circular_chamber:'Circular Chamber',
+    below_room:'Below the Cellar',
+    shaft_ledge:'Collapse Shaft Ledge',
+    dead:'Dead'
+  })[id] || id;
+}
+
+function getMap(){
+  const mask = state.flags.maskAttached ? '|' : (state.flags.maskOn ? '@' : 'G');
+  if(state.room==='cellar_start') return [
+'###########',
+'#.........#',
+'#....@....D',
+'#.........#',
+'###########'
+].join('\n');
+  if(state.room==='lower_hall') return [
+'  ###########   #################',
+'  #.........#   #.......C.......#',
+'  #.........O...O...............#',
+'  #.........#   #...............#',
+'  ###########   #...A...X....D..#',
+'                #####.###########',
+'                    #.#',
+'         ############@###########',
+'         #......T............?..#',
+'         #......................#',
+'         #..W.W..............!..#',
+'         #..W.W................D#',
+'         ######.#################',
+'              #.#',
+'          #####.#####',
+'          #....S....#',
+'          #.........#',
+'          ###########'
+].join('\n');
+  if(state.room==='side_room') return [
+'              ######.#################.#',
+'              #.#               #.@#',
+'          #####.#####           #P#',
+'          #....S....#           #H#',
+'          #.........#           #B#',
+'          ###########           #>#'
+].join('\n');
+  if(state.room==='circular_chamber') return [
+'                                   ##',
+'                                   #L#',
+'                              ######/######',
+`                              #...~(${mask})~.@]#`,
+'                              #..........#',
+'                              #....~)I.~.#',
+'                              ############'
+].join('\n');
+  if(state.room==='below_room') return [
+'                             #################',
+'                             #@..............#',
+'                             #.N.N.o.N.......#',
+'                             #.............XX#',
+'                             #.............~~#',
+'                             #..........P....#',
+'                             #################'
+].join('\n');
+  if(state.room==='shaft_ledge') return [
+'                             #################',
+'                             #...............#',
+'                             #.N.N.o.N.......#',
+'                             #...........*.XX#',
+'                             #...........~~~#',
+'                             #..........P....#',
+'                             #################',
+'                                         ~',
+'                                      h== = ',
+'                                      h  ~',
+'                                   A @=T',
+'                                      ~'
+].join('\n');
+  if(state.room==='dead') return 'YOU ARE DEAD';
+  return 'Unknown room';
+}
+
+function quickActionsForRoom(){
+  const q = [];
+  if(state.room==='below_room'){
+    q.push('inspect the niche object','inspect the broken floor','move to the pedestal','ask narrator about the knocking','go back through the stone door');
+  } else if(state.room==='shaft_ledge'){
+    q.push('inspect the narrow alcove','climb down carefully','climb back up','inspect the bronze clasp-lantern','ask narrator how far the drop is');
+  } else if(state.room==='circular_chamber'){
+    q.push('go through the stone door','inspect the central spindle','remove the mask','take the key-lever');
+  } else if(state.room==='side_room'){
+    q.push('pull the hanging chain','inspect the pedestal','inspect the coffer','enter the hidden passage');
+  } else if(state.room==='lower_hall'){
+    q.push('go to the water','inspect the east door','go to the stairs','return to the side room');
+  } else if(state.room==='cellar_start'){
+    q.push('inspect the door','open the door','look around');
+  } else if(state.room==='dead') {
+    q.push('load checkpoint');
+  }
+  return q;
+}
+
+function addLog(text, type='sys', meta=''){
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = `entry ${type}`;
+  div.innerHTML = `${meta ? `<div class="meta">${meta}</div>`:''}<div>${text.replace(/\n/g,'<br>')}</div>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function rollAction(action){
+  const insane = containsAny(action, insaneKeywords);
+  let base = rand021();
+  let final = insane ? Math.max(1, base - 3) : base;
+  state.lastRoll = {base, final, insane};
+  updateUI();
+  addLog(`Action: <strong>${escapeHtml(action)}</strong>`, 'roll', `${insane ? 'Insane request' : 'Standard action'} · roll ${base}${insane ? `, modifier -3 → ${final}` : ` → ${final}`}`);
+  if(final===0){
+    die('A true 0 lands. The dungeon rejects your run outright.');
+    return {base, final, insane};
+  }
+  return {base, final, insane};
+}
+
+function die(reason){
+  state.alive = false;
+  state.room = 'dead';
+  addLog(`${reason}\n\nYou die. Final until you load or jump to a checkpoint.`, 'bad', 'Death');
+  updateUI();
+  saveGame();
+}
+
+function escapeHtml(str){
+  return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function narratorAnswer(q){
+  if(state.room==='below_room'){
+    if(q.includes('knock')) return 'The knock is slow, deliberate, and deeper than this room. It does not sound like a loose stone. It sounds paced.';
+    if(q.includes('floor')) return 'The broken right side is unstable enough to kill you on a bad roll. Treat it like a real hazard, not decoration.';
+    if(q.includes('weapon')) return 'There is no obvious weapon in this room, but the niche object and far pedestal are your best candidates for finding one.';
+    return 'From here you have niches on the left, a dangerous collapse on the right, and a pedestal at the far end. The room wants cautious movement.';
+  }
+  if(state.room==='shaft_ledge'){
+    if(q.includes('drop')) return 'The floor below is closer than it first looked, but it is still enough to maim you on a poor descent.';
+    if(q.includes('lantern')) return 'The bronze clasp-lantern is intact enough to carry, but not currently lit.';
+    return 'You are on a narrow ledge with rough handholds nearby, an alcove behind you, and a deeper floor below.';
+  }
+  return 'You can ask about what is visible, audible, dangerous, or mechanically suspicious in the current space.';
+}
+
+function processAction(raw){
+  const action = raw.trim();
+  if(!action) return;
+  if(!state.alive && action.toLowerCase()!=='load checkpoint') {
+    addLog('You are dead. Load a checkpoint or restore a save.', 'bad');
+    return;
+  }
+
+  const lower = action.toLowerCase();
+
+  if(lower === 'load checkpoint') {
+    loadCheckpoint(document.getElementById('checkpointSelect').value);
+    return;
+  }
+
+  if(lower.startsWith('ask narrator')){
+    const r = rollAction(action);
+    if(!state.alive) return;
+    let answer = narratorAnswer(lower);
+    if(r.final <= 4) answer += ' The room gives you less than you hoped, and the answer comes with unease rather than certainty.';
+    else if(r.final >= 15) answer += ' Your timing is good; you get a cleaner read than usual.';
+    addLog(answer, r.final >= 15 ? 'good' : 'sys', `Narrator answer · result ${r.final}`);
+    saveGame(); updateUI(); return;
+  }
+
+  // movement between major rooms
+  if(containsAny(lower,['go back through the stone door','back through the stone door','return to circular chamber']) && state.room==='below_room'){
+    const r = rollAction(action); if(!state.alive) return;
+    if(r.final <= 4){ addLog('You rush the retreat poorly, clip stone, and hesitate at the threshold. You remain in the same room, rattled but alive.', 'bad'); }
+    else { state.room = 'circular_chamber'; addLog('You backtrack through the old stone doorway into the circular chamber.', 'sys'); }
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['go through the stone door','enter the next room','enter the room']) && state.room==='circular_chamber'){
+    const r = rollAction(action); if(!state.alive) return;
+    if(r.final <= 4){ addLog('You misjudge the active grooves and back off before committing. The doorway remains open, but you stay put.', 'bad'); }
+    else { state.room = 'below_room'; addLog('You enter the older room below the cellar: niches left, collapse right, pedestal ahead.', r.final>=15?'good':'sys'); }
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['enter the hidden passage']) && state.room==='side_room'){
+    const r = rollAction(action); if(!state.alive) return;
+    if(r.final <= 4){ addLog('The passage feels too tight and hostile on this approach. You stop short before committing.', 'bad'); }
+    else { state.room = 'circular_chamber'; addLog('You duck into the hidden passage and emerge at the circular chamber landing.', 'sys'); }
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['return to the side room']) && state.room==='lower_hall'){
+    const r = rollAction(action); if(!state.alive) return;
+    if(r.final <=4){ addLog('You start back but noise in the hall makes you pause. You stay in the lower hall.', 'bad'); }
+    else { state.room = 'side_room'; addLog('You move into the sealed side room again.', 'sys'); }
+    saveGame(); updateUI(); return;
+  }
+
+  // room-specific actions
+  if(state.room==='below_room') return handleBelowRoom(action, lower);
+  if(state.room==='shaft_ledge') return handleShaftLedge(action, lower);
+  if(state.room==='circular_chamber') return handleCircular(action, lower);
+  if(state.room==='side_room') return handleSideRoom(action, lower);
+  if(state.room==='lower_hall') return handleLowerHall(action, lower);
+  if(state.room==='cellar_start') return handleCellarStart(action, lower);
+
+  const r = rollAction(action); if(!state.alive) return;
+  addLog('The dungeon acknowledges the action, but this build does not have a specialized handler for it yet. The freeform system is ready for more branches if you want to expand the file.', 'sys', `Fallback · ${r.final}`);
+  saveGame(); updateUI();
+}
+
+function handleBelowRoom(action, lower){
+  const r = rollAction(action); if(!state.alive) return;
+
+  if(containsAny(lower,['inspect the niche object','inspect object','inspect niche'])){
+    if(r.final===0) return die('The floor collapses under your inspection path and you vanish into the dark.');
+    if(r.final<=4){
+      state.flags.pitOpened = true;
+      state.room = 'shaft_ledge';
+      state.health = Math.max(1, state.health - 3);
+      addLog('You edge too close to the broken side. The floor gives way. You crash down into a collapse shaft and wake on a narrow ledge, alive but badly hurt.', 'bad', `Result ${r.final}`);
+      saveGame(); updateUI(); return;
+    }
+    if(r.final<=9){
+      addLog('You inspect from too far to be sure. The niche object looks dark, dense, and likely metallic, but the broken floor keeps you from getting a clean read.', 'sys', `Result ${r.final}`);
+    } else if(r.final<=14){
+      addLog('You get a decent look: the niche object appears to be a dark ceremonial or practical item, perhaps metal-bound wood or a sealed case. It could be worth taking.', 'sys', `Result ${r.final}`);
+    } else {
+      addLog('You read the room well. The niche object looks recoverable, and there is a safer route along the left side if you commit to it cautiously.', 'good', `Result ${r.final}`);
+    }
+      saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['inspect the broken floor','inspect floor','check the broken floor'])){
+    if(r.final<=4){ addLog('You test the edge too boldly and send dust and stone down into the shaft. The collapse is worse than it looks.', 'bad'); }
+    else if(r.final<=14){ addLog('The right side is genuinely unstable. You could survive moving near it on a good roll, but a bad one could send you down.', 'sys'); }
+    else { addLog('You spot the safe and unsafe lines clearly. Left wall is your friend. The right collapse is a death lane unless you respect it.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['move to the pedestal','go to the pedestal','inspect the pedestal','inspect pedestal'])){
+    if(r.final<=4){ addLog('You start toward the pedestal and instinct stops you when the floor shifts under a loose step. You retreat before catastrophe.', 'bad'); }
+    else if(r.final<=9){ state.flags.pedestalSeen = true; addLog('You reach the pedestal, but not cleanly. It is low, old, and more ceremonial than structural. You are now close enough to inspect it further.', 'sys'); }
+    else { state.flags.pedestalSeen = true; addLog('You approach the far pedestal safely. Its top is worn smooth by age, and something about it suggests purpose rather than decoration.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['take the niche object','grab the niche object','get the niche object'])){
+    if(state.flags.nicheObjTaken){ addLog('You already took it.', 'sys'); return; }
+    if(r.final<=4){ state.flags.pitOpened=true; state.room='shaft_ledge'; state.health=Math.max(1,state.health-3); addLog('You commit to the grab and the broken edge punishes you. The floor breaks and drops you into the shaft.', 'bad'); saveGame(); updateUI(); return; }
+    if(r.final<=9){ addLog('You get close, but pull back before trusting your footing. The object remains in the niche.', 'sys'); }
+    else {
+      state.flags.nicheObjTaken = true;
+      uniquePush(state.inventory,'dark niche relic');
+      addLog('You recover the object: a compact dark relic or sealed case from the niche. It may open later or matter in another chamber.', 'good');
+    }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['weapon','give the player a weapon','encounter where i could get one'])){
+    if(r.final<=4){ addLog('You don’t find a weapon, just the unpleasant certainty that you need one.', 'bad'); }
+    else if(r.final<=9){ addLog('No weapon lands in your hand, but the room suggests two leads: the niche object and the far pedestal.', 'sys'); }
+    else if(r.final<=14){ addLog('You catch a viable weapon path: the collapse shaft below likely hides something lodged in stone or left behind by whoever fell before you.', 'good'); }
+    else { addLog('The room practically points at your route to a weapon. If you survive the shaft, something down there can become one.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['fly'])){
+    if(r.final<=4) addLog('You cannot fly. The room proves it immediately by stealing your balance.', 'bad');
+    else addLog('You cannot fly, but the attempt teaches you how your weight shifts near the collapse.', 'sys');
+    saveGame(); updateUI(); return;
+  }
+
+  addLog('The room accepts the action, but this branch is not yet authored. Add more handlers in the file to deepen continuity.', 'sys', `Result ${r.final}`);
+  saveGame(); updateUI();
+}
+
+function handleShaftLedge(action, lower){
+  const r = rollAction(action); if(!state.alive) return;
+
+  if(containsAny(lower,['inspect the narrow alcove','inspect alcove','explore alcove'])){
+    if(r.final<=4){ addLog('You overcommit to the alcove and nearly lose the ledge. You get little beyond dust and old linen.', 'bad'); }
+    else {
+      uniquePush(state.inventory,'bronze clasp-lantern');
+      uniquePush(state.inventory,'old cloth strip');
+      state.flags.lantern = true;
+      addLog('The alcove yields useful salvage: a bronze clasp-lantern and an old cloth strip. No ambush, no undead surge, just survival gear.', r.final>=15 ? 'good' : 'sys');
+    }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['climb down carefully','descend carefully','climb down'])){
+    if(r.final<=4){ die('Your descent fails. Grip goes, body follows, and the shaft floor ends you.'); return; }
+    if(r.final<=9){ state.health=Math.max(1,state.health-1); state.room='below_room'; addLog('You make the floor below, but not gracefully. The impact hurts and costs you a little more health.', 'bad'); }
+    else { state.room='below_room'; addLog('You descend to the lower room floor under control and re-enter the chamber from below the collapse line.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['climb back up','go back up'])){
+    if(r.final<=4){ addLog('The climb back up is too ambitious from this posture. You stay where you are.', 'bad'); }
+    else if(r.final<=10){ addLog('You improve your position, but not enough to regain the upper room lip.', 'sys'); }
+    else { state.room='below_room'; addLog('You haul yourself back to the room edge above the collapse.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['inspect the bronze clasp-lantern','inspect lantern'])){
+    if(!state.inventory.includes('bronze clasp-lantern')){ addLog('You do not have the lantern yet.', 'bad'); saveGame(); updateUI(); return; }
+    if(r.final<=4){ addLog('Your inspection is clumsy. It stays shut and dusty.', 'bad'); }
+    else if(r.final<=14){ addLog('The bronze clasp-lantern is empty but intact. It could hold fuel or serve as a signal reflector.', 'sys'); }
+    else { addLog('You find a tiny service latch and confirm the lantern can be opened, cleaned, and reused later.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['sword of undefiled truth','pray','turn the object into the sword'])){
+    if(r.final<=4){ addLog('The prayer gives you no miracle. You are left with your body, the stone, and the need to survive honestly.', 'bad'); }
+    else if(r.final<=14){ addLog('Something about the metal below answers, but not fully. It feels like a weapon path, not a free miracle.', 'sys'); }
+    else {
+      uniquePush(state.inventory,'Sword of Undefiled Truth');
+      state.flags.swordTruth = true;
+      addLog('The object in the crack clarifies into the Sword of Undefiled Truth — stark, pale-edged, and hostile to corruption.', 'good');
+    }
+    saveGame(); updateUI(); return;
+  }
+
+  if(containsAny(lower,['fly'])){
+    if(r.final<=4){ addLog('You do not fly. The shaft wall teaches that brutally.', 'bad'); }
+    else if(r.final<=12){ addLog('Still no flight. What you achieve instead is a more controlled transfer of weight and position.', 'sys'); }
+    else { addLog('You do not fly, but determination turns into a real diagonal traverse across the shaft. Your body learns what your fantasy could not.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+
+  addLog('The ledge takes the action, but this branch is not yet authored in detail.', 'sys', `Result ${r.final}`);
+  saveGame(); updateUI();
+}
+
+function handleCircular(action, lower){
+  const r = rollAction(action); if(!state.alive) return;
+  if(containsAny(lower,['inspect the central spindle','inspect spindle'])){
+    if(r.final<=4) addLog('You hesitate at the active mechanism and learn little except that it is under tension.', 'bad');
+    else addLog('The spindle is meant to receive the mask. Chamber logic here is ceremonial, not accidental.', r.final>=15?'good':'sys');
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['remove the mask'])){
+    if(!state.flags.maskOn && !state.flags.maskAttached){ addLog('The mask is not on your face.', 'bad'); saveGame(); updateUI(); return; }
+    if(state.flags.maskAttached){ addLog('The mask is already attached to the spindle, not on you.', 'sys'); saveGame(); updateUI(); return; }
+    if(r.final<=4){ addLog('The mask resists and you stop before forcing a worse outcome.', 'bad'); }
+    else { state.flags.maskOn=false; uniquePush(state.inventory,'gold mask'); addLog('You remove the gold mask and keep it.', 'sys'); }
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['take the key-lever','remove the key-lever'])){
+    if(!state.flags.keyLeverInserted){ addLog('The key-lever is not in the wall bracket.', 'bad'); saveGame(); updateUI(); return; }
+    if(r.final<=4){ addLog('You feel the chamber resisting the removal and back off.', 'bad'); }
+    else { state.flags.keyLeverInserted=false; uniquePush(state.inventory,'iron key-lever'); addLog('You remove the iron key-lever from the bracket.', 'sys'); }
+    saveGame(); updateUI(); return;
+  }
+  addLog('The circular chamber acknowledges the action, but this path is not authored yet.', 'sys', `Result ${r.final}`);
+  saveGame(); updateUI();
+}
+
+function handleSideRoom(action, lower){
+  const r = rollAction(action); if(!state.alive) return;
+  if(containsAny(lower,['pull the hanging chain','pull chain'])){
+    if(r.final<=4) addLog('The chain jolts but gives you no reliable opening. You need better leverage or balance.', 'bad');
+    else if(r.final<=14) { state.flags.sidePanelOpen = true; addLog('The chain partially opens the hidden panel and reveals the inscription logic of balance.', 'sys'); }
+    else { state.flags.sidePanelOpen = true; state.flags.chainSolved = true; addLog('The chain and room mechanism reveal the hidden passage cleanly. Balance opens the way.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['inspect the pedestal','inspect pedestal'])){
+    if(r.final<=4) addLog('You bump the pedestal badly and almost trigger a worse mechanical response.', 'bad');
+    else addLog('The pedestal holds a lever-like iron tool and hints at the inscription: not by hand alone. Balance opens the way.', r.final>=15?'good':'sys');
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['inspect the coffer','open the coffer'])){
+    if(r.final<=4) addLog('The coffer does not give cleanly. You leave it shut rather than break it blindly.', 'bad');
+    else if(r.final<=14) addLog('Inside the coffer is age, dust, and little else of immediate use.', 'sys');
+    else { uniquePush(state.inventory,'coffer token'); addLog('You recover a small coffer token from inside — maybe a marker, maybe a key surrogate.', 'good'); }
+    saveGame(); updateUI(); return;
+  }
+  addLog('The side room can take more authored actions if you want to expand the file later.', 'sys', `Result ${r.final}`);
+  saveGame(); updateUI();
+}
+
+function handleLowerHall(action, lower){
+  const r = rollAction(action); if(!state.alive) return;
+  if(containsAny(lower,['go to the water','drink the water','inspect the water'])){
+    if(r.final<=4) addLog('The water remains a bad idea. It costs you more than it gives.', 'bad');
+    else if(r.final<=14) addLog('The flooded section reveals a path and old danger, but not comfort.', 'sys');
+    else addLog('The wine-soaked miracle memory returns. The waterline still hides meaning and prior violence.', 'good');
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['inspect the east door','inspect door'])){
+    if(r.final<=4) addLog('You read only cold iron and uncertainty.', 'bad');
+    else addLog('The east door is important, old, and worth opening with the rusted key when the moment is right.', r.final>=15?'good':'sys');
+    saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['go to the stairs','head to the stairs'])){
+    if(r.final<=4) addLog('You choose not to descend yet. The hall is still full of unfinished business.', 'bad');
+    else addLog('You move toward the stairs and feel the dungeon deepening around you.', 'sys');
+    saveGame(); updateUI(); return;
+  }
+  addLog('The lower hall takes the action, but this branch is not yet authored.', 'sys', `Result ${r.final}`);
+  saveGame(); updateUI();
+}
+
+function handleCellarStart(action, lower){
+  const r = rollAction(action); if(!state.alive) return;
+  if(containsAny(lower,['inspect the door','inspect door'])){
+    addLog('The heavy plank door is damp, warped, and recently used. It smells faintly burnt beneath the mildew.', r.final>=15?'good':'sys'); saveGame(); updateUI(); return;
+  }
+  if(containsAny(lower,['open the door','go through the door'])){
+    if(r.final<=4) addLog('The swollen wood resists and your confidence falters. You remain in the first room.', 'bad');
+    else { state.room='lower_hall'; addLog('You pass through into the colder adjoining chamber and the continuity picks up deeper below.', 'sys'); }
+    saveGame(); updateUI(); return;
+  }
+  addLog('The cellar start accepts the action, but only the first beats are authored here.', 'sys', `Result ${r.final}`);
+  saveGame(); updateUI();
+}
+
+function updateUI(){
+  document.getElementById('health').textContent = `${state.health}/10`;
+  document.getElementById('roomName').textContent = roomTitle(state.room);
+  document.getElementById('lastRoll').textContent = state.lastRoll ? `${state.lastRoll.final}` : '—';
+  document.getElementById('modeText').textContent = state.lastRoll?.insane ? 'Insane -3' : 'Normal';
+  document.getElementById('map').textContent = getMap();
+  const inv = document.getElementById('inventory');
+  inv.innerHTML = '';
+  if(!state.inventory.length){
+    const c = document.createElement('div'); c.className='chip'; c.textContent='nothing'; inv.appendChild(c);
+  } else {
+    state.inventory.forEach(item => { const c = document.createElement('div'); c.className='chip'; c.textContent = item; inv.appendChild(c); });
+  }
+  const qa = document.getElementById('quickActions');
+  qa.innerHTML='';
+  quickActionsForRoom().forEach(txt => {
+    const b = document.createElement('button'); b.className='small'; b.textContent = txt; b.onclick = () => processAction(txt); qa.appendChild(b);
+  });
+}
+
+function saveGame(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+function loadGame(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(!raw) return false;
+  try { state = JSON.parse(raw); return true; } catch(e){ return false; }
+}
+function exportSave(){
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'cellar_dungeon_save.json'; a.click();
+}
+function makeCheckpoint(){
+  state.checkpoints = state.checkpoints || [];
+  state.checkpoints.push(clone(state));
+  if(state.checkpoints.length > 8) state.checkpoints.shift();
+  addLog('Checkpoint created in memory and save data.', 'good');
+  saveGame();
+}
+function loadCheckpoint(name){
+  state = checkpoints[name]();
+  document.getElementById('log').innerHTML='';
+  addIntro();
+  saveGame();
+  updateUI();
+}
+
+function addIntro(){
+  addLog('This build starts from a continuity checkpoint and keeps your run alive in the browser. Type actions freely, use the quick buttons, or add more branches in the JavaScript if you want the world to grow.', 'sys', 'Loaded');
+  if(state.room==='below_room') addLog('You stand in the older room below the cellar. Left wall niches. Broken floor to the right. Low pedestal ahead. A slow knock sounds from deeper beyond.', 'sys');
+  if(state.room==='shaft_ledge') addLog('You are alive on a narrow collapse-shaft ledge. Rough handholds nearby. A narrow alcove. The floor below somewhere in the dark.', 'sys');
+}
+
+// UI hooks
+const cmd = document.getElementById('command');
+document.getElementById('goBtn').onclick = () => { processAction(cmd.value); cmd.value=''; cmd.focus(); };
+cmd.addEventListener('keydown', e => { if(e.key==='Enter'){ document.getElementById('goBtn').click(); } });
+document.getElementById('saveBtn').onclick = () => { saveGame(); addLog('Game saved to local browser storage.', 'good'); };
+document.getElementById('loadBtn').onclick = () => {
+  const ok = loadGame();
+  document.getElementById('log').innerHTML='';
+  if(ok){ addLog('Save restored from local browser storage.', 'good'); updateUI(); }
+  else { addLog('No local save found. Loading default checkpoint instead.', 'bad'); state = checkpoints.below_room(); addIntro(); updateUI(); }
+};
+document.getElementById('exportBtn').onclick = exportSave;
+document.getElementById('checkpointBtn').onclick = makeCheckpoint;
+document.getElementById('checkpointSelect').onchange = e => loadCheckpoint(e.target.value);
+
+// boot
+if(!loadGame()) { addIntro(); saveGame(); }
+else { addLog('Save restored from local browser storage.', 'good', 'Loaded'); }
+updateUI();
+</script>
+</body>
+</html>
