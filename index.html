@@ -50,6 +50,9 @@
   .chip{padding:6px 9px; border-radius:999px; background:#0a1226; border:1px solid var(--border); font-size:12px}
   .ok{color:var(--ok)} .danger{color:var(--danger)} .accent2{color:var(--accent2)}
   .hidden{display:none !important}
+  .thinking{opacity:.75; font-style:italic}
+  button:disabled{opacity:.55; cursor:not-allowed; filter:none}
+  .warning{margin-top:10px; padding:10px 12px; border-radius:10px; background:#311a1d; border:1px solid #864454; color:#ffd7dc; font-size:12px}
   .footer{margin-top:10px; color:var(--muted); font-size:12px}
   @media (max-width:1100px){ .grid{grid-template-columns:1fr} .log{height:40vh} }
 </style>
@@ -92,7 +95,10 @@
         <div class="pill">Room <strong id="roomText">onboarding</strong></div>
         <div class="pill">Alive <strong id="aliveText">yes</strong></div>
         <div class="pill">Last roll <strong id="lastRollText">—</strong></div>
+        <div class="pill">Engine <strong id="engineText">local</strong></div>
+        <div class="pill">Status <strong id="thinkingText">idle</strong></div>
       </div>
+      <div id="fileWarning" class="warning hidden">You are opening this as <span class="mono">file://</span>. Browser AI calls are flaky there. Host it on GitHub Pages or open it through a local web server for smoother turns.</div>
 
       <label style="margin-top:12px">Inventory</label>
       <div id="inventoryBox" class="inventory"></div>
@@ -128,7 +134,7 @@
     <div class="panel">
       <h2>ASCII Map</h2>
       <div id="mapBox" class="map"></div>
-      <div class="footer">The AI is told to keep map and continuity coherent. The local fallback engine only covers a few opening beats and simple movement when AI is unavailable.</div>
+      <div class="footer">Lean AI mode keeps requests smaller for faster turns. The local fallback engine only covers a few opening beats and simple movement when AI is unavailable.</div>
     </div>
   </div>
 </div>
@@ -226,6 +232,8 @@ function updateUI(){
   document.getElementById('roomText').textContent = state.room;
   document.getElementById('aliveText').textContent = state.alive ? 'yes' : 'no';
   document.getElementById('lastRollText').textContent = state.lastRoll == null ? '—' : state.lastRoll;
+  if(document.getElementById('engineText').textContent === '') document.getElementById('engineText').textContent = 'local';
+  if(document.getElementById('thinkingText').textContent === '') document.getElementById('thinkingText').textContent = 'idle';
   renderInventory();
   renderPremise();
   renderLog();
@@ -291,17 +299,25 @@ function completeOnboarding(name){
 }
 
 function serializeStateForAI(){
+  const compactLog = state.log.slice(-6).map(e => ({
+    title: e.title,
+    kind: e.kind,
+    text: String(e.text || '').slice(0, 280)
+  }));
   return {
     playerName: state.playerName,
     room: state.room,
     health: state.health,
     alive: state.alive,
-    inventory: state.inventory,
+    inventory: state.inventory.slice(0, 12),
     flags: state.flags,
-    map: state.map,
-    premise: state.premise,
+    premise: state.premise ? {
+      title: state.premise.title,
+      goal: state.premise.goal
+    } : null,
     lastRoll: state.lastRoll,
-    recentLog: state.log.slice(-10)
+    map: String(state.map || '').slice(0, 1800),
+    recentLog: compactLog
   };
 }
 
@@ -331,11 +347,33 @@ function extractTextFromAiResponse(data){
 }
 
 function buildAiBody(action){
-  const systemPrompt = `You are the narrator and rules engine for a harsh ASCII dungeon crawler.\n\nReturn STRICT JSON only. No markdown. No commentary outside JSON.\n\nRules:\n- Interpret the player's intent naturally. Natural phrasing and synonyms should map to likely intent.\n- Every meaningful action gets one roll from 0 to 20.\n- 0 means instant death.\n- Unrealistic or insane requests are still rolled randomly, then apply -3, with a minimum final result of 1.\n- Keep outcomes grounded, vivid, and continuous with current room, inventory, recent log, and flags.\n- Do not invent impossible inventory unless earned.\n- Health range is 0 to 10.\n- Keep the map coherent ASCII text.\n\nReturn JSON with this shape exactly:\n{\n  \"roll\": { \"base\": 0, \"final\": 0, \"insane\": false },\n  \"room\": \"cellar_start\",\n  \"health\": 10,\n  \"inventory\": [\"worn map\"],\n  \"flags\": {},\n  \"alive\": true,\n  \"map\": \"ASCII MAP\",\n  \"narration\": \"story result\",\n  \"meta\": \"brief plain-English rule note\"\n}`;
+  const systemPrompt = `You are the narrator and rules engine for a harsh ASCII dungeon crawler.
+Return STRICT JSON only.
+Interpret player intent naturally.
+Keep continuity tight.
+Keep narration vivid but concise.
+Every meaningful action gets one random roll from 0 to 20.
+0 means instant death.
+Insane or reality-breaking requests are still rolled, then apply -3, minimum final result 1.
+Health is 0 to 10.
+Do not give impossible inventory unless earned.
+
+Return exactly:
+{
+  "roll": { "base": 0, "final": 0, "insane": false },
+  "room": "cellar_start",
+  "health": 10,
+  "inventory": ["worn map"],
+  "flags": {},
+  "alive": true,
+  "map": "ASCII MAP",
+  "narration": "short but vivid outcome",
+  "meta": "brief rule note",
+  "suggestions": ["look", "move", "inspect door"]
+}`;
   const payload = {
     action,
-    state: serializeStateForAI(),
-    knownRooms: ['cellar_start','lower_hall','side_room','circular_chamber','below_room','shaft_ledge','dead']
+    state: serializeStateForAI()
   };
 
   const endpoint = (AI_CONFIG.endpoint || '').trim();
@@ -349,7 +387,8 @@ function buildAiBody(action){
           { role: 'system', content: systemPrompt },
           { role: 'user', content: JSON.stringify(payload) }
         ],
-        temperature: 0.9
+        temperature: 0.7,
+        max_completion_tokens: 700
       }
     };
   }
@@ -357,15 +396,33 @@ function buildAiBody(action){
     body: {
       model: AI_CONFIG.model,
       instructions: systemPrompt,
-      input: [{ role: 'user', content: [{ type: 'input_text', text: JSON.stringify(payload) }] }]
+      input: JSON.stringify(payload),
+      max_output_tokens: 700
     }
   };
+}
+
+function setThinking(on, mode='local'){
+  const btn = document.getElementById('rollBtn');
+  const askBtn = document.getElementById('askAiBtn');
+  const input = document.getElementById('actionInput');
+  const text = document.getElementById('thinkingText');
+  const engine = document.getElementById('engineText');
+  btn.disabled = !!on;
+  askBtn.disabled = !!on;
+  input.disabled = !!on;
+  text.textContent = on ? 'thinking…' : 'idle';
+  engine.textContent = mode;
+  if(on) document.getElementById('log').classList.add('thinking');
+  else document.getElementById('log').classList.remove('thinking');
 }
 
 async function callAiTurn(action){
   syncAiConfigFromInputs();
   if(!AI_CONFIG.apiKey) throw new Error('Paste an API key before using AI mode.');
   if(!AI_CONFIG.endpoint) throw new Error('Enter a valid API endpoint.');
+  AI_CONFIG.endpoint = AI_CONFIG.endpoint.trim();
+  if(/^https:\/\/api\.openai\.com\/?$/i.test(AI_CONFIG.endpoint)) AI_CONFIG.endpoint = 'https://api.openai.com/v1/responses';
   const { body } = buildAiBody(action);
   let res;
   try {
@@ -382,7 +439,7 @@ async function callAiTurn(action){
   }
   if(!res.ok){
     const txt = await res.text();
-    throw new Error(`AI request failed: ${res.status} ${txt}`);
+    throw new Error(`AI request failed: ${res.status}. Check endpoint, model, and request format. ${txt.slice(0, 500)}`);
   }
   const data = await res.json();
   const text = extractTextFromAiResponse(data);
@@ -413,6 +470,7 @@ function applyAiResult(result){
   }
   addLog(result?.narration || 'The world shifts, but the meaning of it fails to resolve.', 'narration', 'Narration');
   if(result?.meta) addLog(result.meta, 'sys', 'Rule Note');
+  if(Array.isArray(result?.suggestions) && result.suggestions.length){ addLog('Try next: ' + result.suggestions.slice(0,3).join(' · '), 'sys', 'Suggestions'); }
   if(state.room === 'dead') state.map = makeBaseMap('dead');
   updateUI(); saveGame();
 }
@@ -420,6 +478,7 @@ function applyAiResult(result){
 function normalize(s){ return String(s || '').toLowerCase().trim(); }
 function includesAny(s, arr){ return arr.some(x => s.includes(x)); }
 function localFallbackTurn(action){
+  document.getElementById('engineText').textContent = 'local';
   const raw = normalize(action);
   let base = rint(0,20), final = base, insane = false;
   const impossible = includesAny(raw, ['fly','become god','turn into a dragon','teleport','absolute fortune']);
@@ -468,11 +527,13 @@ async function runAction(action){
   }
   if(state.room === 'onboarding'){
     completeOnboarding(action.trim() || 'Stranger');
+    actionInput.focus();
     return;
   }
   syncAiConfigFromInputs();
   saveAiSettings();
   if(AI_CONFIG.useAi){
+    setThinking(true, 'ai');
     try {
       const result = await callAiTurn(action.trim());
       applyAiResult(result);
@@ -480,9 +541,18 @@ async function runAction(action){
     } catch(err){
       addLog(err.message || String(err), 'err', 'AI Error');
       addLog('Falling back to the local rules engine for this turn.', 'sys', 'Fallback');
+    } finally {
+      setThinking(false, AI_CONFIG.useAi ? 'ai' : 'local');
+      actionInput.focus();
     }
   }
-  localFallbackTurn(action.trim());
+  setThinking(true, 'local');
+  try {
+    localFallbackTurn(action.trim());
+  } finally {
+    setThinking(false, 'local');
+    actionInput.focus();
+  }
 }
 
 function askAiAboutCurrentRoom(){
@@ -536,6 +606,9 @@ document.getElementById('toggleKeyBtn').onclick = () => {
 document.getElementById('useAiToggle').addEventListener('change', () => { syncAiConfigFromInputs(); saveAiSettings(); });
 
 // boot
+if(location.protocol === 'file:'){
+  document.getElementById('fileWarning').classList.remove('hidden');
+}
 loadAiSettings();
 syncAiInputsFromConfig();
 if(!loadGame()) beginOnboarding();
