@@ -1,842 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Cellar Below — Continuity Build</title>
-  <style>
-    :root{
-      --bg:#0b1020;
-      --panel:#121a31;
-      --panel2:#0f1730;
-      --text:#e8eefc;
-      --muted:#9db0d8;
-      --accent:#7cc5ff;
-      --good:#82e6a5;
-      --warn:#ffd470;
-      --bad:#ff8a8a;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,#08101d,#101731 50%,#0c1120);color:var(--text);font-family:var(--sans)}
-    .wrap{max-width:1360px;margin:0 auto;padding:18px}
-    .grid{display:grid;grid-template-columns:360px 1fr;gap:16px}
-    .panel{background:rgba(18,26,49,.96);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.28)}
-    h1{font-size:24px;margin:0 0 8px}
-    h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:600;letter-spacing:.02em}
-    .sub{color:var(--muted);font-size:13px;line-height:1.45}
-    .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-    .stat{background:var(--panel2);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
-    .stat .k{font-size:12px;color:var(--muted)}
-    .stat .v{font-size:20px;font-weight:700;margin-top:4px}
-    .inv{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{padding:6px 10px;border-radius:999px;background:#162240;border:1px solid rgba(255,255,255,.08);font-size:12px}
-    .chip.good{background:rgba(130,230,165,.12);border-color:rgba(130,230,165,.3);color:var(--good)}
-    .chip.warn{background:rgba(255,212,112,.12);border-color:rgba(255,212,112,.28);color:var(--warn)}
-    .chip.bad{background:rgba(255,138,138,.12);border-color:rgba(255,138,138,.28);color:var(--bad)}
-    .map{font-family:var(--mono);white-space:pre;line-height:1.15;font-size:14px;background:#09101f;border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,.06);overflow:auto}
-    .log{height:58vh;overflow:auto;background:#09101f;border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,.06)}
-    .entry{padding:10px 12px;margin-bottom:10px;border-radius:12px;background:#101a34;border:1px solid rgba(255,255,255,.05)}
-    .entry.roll{background:#13223f}
-    .entry.sys{background:#111728}
-    .entry.bad{background:rgba(140,34,34,.18);border-color:rgba(255,138,138,.2)}
-    .entry.good{background:rgba(34,90,58,.22);border-color:rgba(130,230,165,.2)}
-    .entry .meta{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .controls{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:12px}
-    input[type=text]{width:100%;padding:14px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0c1430;color:var(--text);font-size:15px}
-    button, select{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#18264a;color:var(--text);cursor:pointer;font-weight:600}
-    button:hover, select:hover{filter:brightness(1.08)}
-    .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-    .small{padding:8px 10px;font-size:12px}
-    .footer{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin-top:12px}
-    .rule{font-size:12px;color:var(--muted);line-height:1.5}
-    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media (max-width: 980px){.grid{grid-template-columns:1fr}.log{height:42vh}}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aillumi's Dungeon — Browser LLM Edition</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a31; --panel2:#0f1730; --text:#e8eefc; --muted:#a5b1d8;
+    --accent:#7cc7ff; --accent2:#ffd166; --danger:#ff6b6b; --ok:#7ef0a0; --border:#26345f;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:linear-gradient(180deg,#08101d,#0d1530); color:var(--text); font-family:var(--sans)}
+  .wrap{max-width:1400px; margin:0 auto; padding:16px}
+  h1{margin:0 0 8px; font-size:28px}
+  .sub{color:var(--muted); font-size:14px}
+  .grid{display:grid; grid-template-columns:360px 1fr 340px; gap:16px; margin-top:16px}
+  .panel{background:rgba(18,26,49,.95); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.22)}
+  .panel h2{margin:0 0 10px; font-size:16px; color:var(--accent)}
+  label{display:block; font-size:12px; color:var(--muted); margin:8px 0 4px}
+  input[type=text], input[type=password], textarea, select{
+    width:100%; background:#0a1226; color:var(--text); border:1px solid var(--border);
+    border-radius:10px; padding:10px 12px; font:14px var(--sans);
+  }
+  textarea{min-height:84px; resize:vertical}
+  button{
+    background:#1a2b53; color:var(--text); border:1px solid #34508c; border-radius:10px; padding:10px 12px;
+    cursor:pointer; font-weight:600;
+  }
+  button:hover{filter:brightness(1.08)}
+  button.primary{background:#1e4b7a; border-color:#4f8fd5}
+  button.warn{background:#5a2430; border-color:#9b4858}
+  button.ghost{background:#0e1730}
+  .row{display:flex; gap:8px; flex-wrap:wrap}
+  .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#0a1226; border:1px solid var(--border); font-size:12px; color:var(--muted)}
+  .mono{font-family:var(--mono)}
+  .map{white-space:pre; font:13px/1.25 var(--mono); background:#091122; border:1px solid var(--border); padding:12px; border-radius:12px; min-height:260px; overflow:auto}
+  .log{height:66vh; overflow:auto; display:flex; flex-direction:column; gap:10px}
+  .entry{background:#0a1226; border:1px solid var(--border); border-radius:12px; padding:10px 12px}
+  .entry .k{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px}
+  .entry.roll{border-color:#47679f}
+  .entry.err{border-color:#864454}
+  .entry.sys{border-color:#34508c}
+  .status{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .small{font-size:12px; color:var(--muted)}
+  .actions{display:grid; gap:8px}
+  .inventory{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{padding:6px 9px; border-radius:999px; background:#0a1226; border:1px solid var(--border); font-size:12px}
+  .ok{color:var(--ok)} .danger{color:var(--danger)} .accent2{color:var(--accent2)}
+  .hidden{display:none !important}
+  .footer{margin-top:10px; color:var(--muted); font-size:12px}
+  @media (max-width:1100px){ .grid{grid-template-columns:1fr} .log{height:40vh} }
+</style>
 </head>
 <body>
 <div class="wrap">
+  <h1>Aillumi's Dungeon</h1>
+  <div class="sub">Interactive AI dungeon crawl. Users paste their own API key, endpoint, and model. AI-first turns, continuity, onboarding, save/load, and a local fallback if AI fails.</div>
+
   <div class="grid">
     <div class="panel">
-      <h1 id="gameTitle">The Cellar Below</h1>
-      <div class="sub">Single-file HTML dungeon run with the same style you were playing: ASCII map, rolled actions, continuity, inventory, checkpoints, and optional AI narration. This build now starts with onboarding questions and generates a fresh premise every time you open it unless you manually load a save.</div>
-      <div style="margin-top:12px">
-        <h2>Current Premise</h2>
-        <div class="sub" id="premiseText">A fresh premise will be generated after onboarding.</div>
+      <h2>AI / LLM Integration</h2>
+      <label>API key</label>
+      <div class="row">
+        <input id="apiKeyInput" type="password" placeholder="Paste your API key" />
+        <button id="toggleKeyBtn" class="ghost" type="button">Show</button>
+      </div>
+      <label>Endpoint</label>
+      <input id="apiEndpointInput" type="text" value="https://api.openai.com/v1/responses" />
+      <label>Model</label>
+      <input id="modelInput" type="text" value="gpt-5" />
+      <label>API style</label>
+      <select id="apiStyleSelect">
+        <option value="auto">Auto detect</option>
+        <option value="responses">OpenAI Responses</option>
+        <option value="chat">Chat Completions compatible</option>
+      </select>
+      <div class="row" style="margin-top:10px">
+        <button id="saveAiBtn" class="primary" type="button">Save AI Settings</button>
+        <button id="clearAiBtn" class="ghost" type="button">Clear AI Settings</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="pill"><input id="useAiToggle" type="checkbox" checked /> Use AI narrator</label>
+      </div>
+      <div class="footer">Host this over <span class="mono">https://</span> or <span class="mono">http://localhost</span>, not <span class="mono">file://</span>. Some providers may still block browser-origin requests with CORS.</div>
+
+      <h2 style="margin-top:16px">Run Control</h2>
+      <div class="status">
+        <div class="pill">Health <strong id="healthText">10/10</strong></div>
+        <div class="pill">Room <strong id="roomText">onboarding</strong></div>
+        <div class="pill">Alive <strong id="aliveText">yes</strong></div>
+        <div class="pill">Last roll <strong id="lastRollText">—</strong></div>
       </div>
 
-      <div class="stats">
-        <div class="stat"><div class="k">Health</div><div class="v" id="health">7/10</div></div>
-        <div class="stat"><div class="k">Current Room</div><div class="v" id="roomName" style="font-size:16px;line-height:1.2">—</div></div>
-        <div class="stat"><div class="k">Last Roll</div><div class="v" id="lastRoll">—</div></div>
-        <div class="stat"><div class="k">Mode</div><div class="v" id="modeText" style="font-size:16px;line-height:1.2">Normal</div></div>
-      </div>
+      <label style="margin-top:12px">Inventory</label>
+      <div id="inventoryBox" class="inventory"></div>
 
-      <div style="margin-top:14px">
-        <h2>Inventory</h2>
-        <div class="inv" id="inventory"></div>
-      </div>
+      <label style="margin-top:12px">Current premise</label>
+      <div id="premiseBox" class="entry sys"></div>
 
-      <div style="margin-top:14px">
-        <h2>Rules</h2>
-        <div class="rule">
-          Every meaningful action rolls <strong>0–20</strong>.<br>
-          <strong>0 = instant death</strong>.<br>
-          “Insane requests” are rolled normally, then get <strong>-3</strong>, minimum result <strong>1</strong>.
-        </div>
+      <div class="row" style="margin-top:12px">
+        <button id="newRunBtn" class="primary" type="button">New Run</button>
+        <button id="saveBtn" type="button">Save</button>
+        <button id="loadBtn" type="button">Load</button>
+        <button id="exportBtn" type="button">Export Save</button>
       </div>
-
-      <div style="margin-top:14px">
-        <h2>AI / LLM Integration</h2>
-        <div class="rule">
-          Optional browser-side AI narrator. Paste your own API key below and, if needed, change the endpoint and model to match any OpenAI-compatible LLM service.
-          This is convenient for local testing, but it exposes your key in the HTML/browser, so a backend proxy is safer for anything real.
-        </div>
-        <div style="display:grid;gap:10px;margin-top:10px">
-          <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center">
-            <input id="apiKeyInput" type="password" placeholder="Paste your API key here" autocomplete="off" spellcheck="false" />
-            <button class="small" id="toggleApiKeyBtn" type="button">Show</button>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <input id="apiEndpointInput" type="text" placeholder="API endpoint" spellcheck="false" />
-            <input id="apiModelInput" type="text" placeholder="Model name" spellcheck="false" />
-          </div>
-        </div>
-        <div class="sub" style="margin-top:8px">Works best with OpenAI-compatible endpoints such as <code>/v1/responses</code> or <code>/v1/chat/completions</code>.</div>
-        <div class="btnrow" style="margin-top:10px">
-          <label class="chip" style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input id="useAiToggle" type="checkbox" style="accent-color:#7cc5ff" />
-            Use AI narrator
-          </label>
-          <button class="small" id="saveAiSettingsBtn">Save AI Settings</button>
-          <button class="small" id="clearAiSettingsBtn">Clear AI Settings</button>
-          <button class="small" id="testAiBtn">Test AI</button>
-        </div>
-        <div class="sub" id="aiStatus" style="margin-top:8px">AI mode off. Local rules engine active.</div>
-      </div>
-
-      <div style="margin-top:14px">
-        <h2>ASCII Map</h2>
-        <div class="map" id="map"></div>
-      </div>
-
-      <div class="footer">
-        <div class="btnrow">
-          <button class="small" id="newRunBtn">New Run</button>
-          <button class="small" id="saveBtn">Save</button>
-          <button class="small" id="loadBtn">Load</button>
-          <button class="small" id="exportBtn">Export Save</button>
-          <button class="small" id="checkpointBtn">Checkpoint</button>
-        </div>
-        <select id="checkpointSelect" class="small">
-          <option value="cellar_start" selected>Checkpoint: Cellar Start</option>
-          <option value="lower_hall">Checkpoint: Lower Hall</option>
-          <option value="side_room">Checkpoint: Side Room</option>
-          <option value="circular_chamber">Checkpoint: Circular Chamber</option>
-          <option value="below_room">Checkpoint: Below the Cellar</option>
-          <option value="shaft_ledge">Checkpoint: Shaft Ledge</option>
-        </select>
+      <textarea id="importBox" placeholder="Paste exported save JSON here to import"></textarea>
+      <div class="row">
+        <button id="importBtn" type="button">Import Save</button>
+        <button id="askAiBtn" type="button">Ask AI About Current Room</button>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Narrative Log</h2>
+      <h2>Story</h2>
       <div id="log" class="log"></div>
-      <div class="controls">
-        <input id="command" type="text" placeholder="During onboarding, answer the question. After that, type an action like: inspect the niche object / move to the pedestal / ask narrator about the knock / try to fly" />
-        <div style="display:flex;gap:10px">
-          <button id="goBtn">Roll Action</button>
-          <button id="aiGoBtn">AI Turn</button>
+      <div class="actions" style="margin-top:12px">
+        <textarea id="actionInput" placeholder="Type what you do. Example: I sprint toward the eastern door and listen before opening it."></textarea>
+        <div class="row">
+          <button id="rollBtn" class="primary" type="button">Roll Action</button>
+          <button id="clearLogBtn" class="ghost" type="button">Clear Log View</button>
         </div>
       </div>
-      <div class="btnrow" id="quickActions"></div>
+    </div>
+
+    <div class="panel">
+      <h2>ASCII Map</h2>
+      <div id="mapBox" class="map"></div>
+      <div class="footer">The AI is told to keep map and continuity coherent. The local fallback engine only covers a few opening beats and simple movement when AI is unavailable.</div>
     </div>
   </div>
 </div>
 
 <script>
-const SAVE_KEY = 'cellar_dungeon_continuity_v2_manual_load';
-const AI_SETTINGS_KEY = 'cellar_dungeon_ai_settings';
+const SAVE_KEY = 'aillumi_dungeon_browser_llm_save_v2';
+const AI_KEY = 'aillumi_dungeon_browser_llm_ai_v2';
 
-const OPENAI_CONFIG = {
-  enabled: false,
+const AI_CONFIG = {
   apiKey: '',
-  model: 'gpt-5.4',
-  endpoint: 'https://api.openai.com/v1/responses'
+  endpoint: 'https://api.openai.com/v1/responses',
+  model: 'gpt-5',
+  apiStyle: 'auto',
+  useAi: true
 };
 
-const checkpoints = {
-  cellar_start: () => ({
-    room:'cellar_start', health:10, inventory:['worn map'], log:[], lastRoll:null, alive:true,
-    flags:{ doorOpen:false, lowerHallSeen:false, maskOn:false, keyLeverInserted:false, sidePanelOpen:false, stoneDoorOpen:false, spindleRaised:false, maskAttached:false, pitOpened:false, swordTruth:false, lantern:false },
-    checkpoints:[]
-  }),
-  lower_hall: () => ({
-    room:'lower_hall', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
-    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, chainSolved:false, maskOn:false, keyLeverInserted:false, sidePanelOpen:false, stoneDoorOpen:false, spindleRaised:false, maskAttached:false, pitOpened:false, swordTruth:false, lantern:false },
-    checkpoints:[]
-  }),
-  side_room: () => ({
-    room:'side_room', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
-    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:false, stoneDoorOpen:false, spindleRaised:false, maskAttached:false, pitOpened:false, swordTruth:false, lantern:false },
-    checkpoints:[]
-  }),
-  circular_chamber: () => ({
-    room:'circular_chamber', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
-    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:true, stoneDoorOpen:true, spindleRaised:true, maskAttached:true, pitOpened:false, swordTruth:false, lantern:false },
-    checkpoints:[]
-  }),
-  below_room: () => ({
-    room:'below_room', health:7, inventory:['worn map','leather pouch','rusted key'], log:[], lastRoll:null, alive:true,
-    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:true, stoneDoorOpen:true, spindleRaised:true, maskAttached:true, pitOpened:false, swordTruth:false, lantern:false, nicheObjTaken:false, pedestalSeen:false },
-    checkpoints:[]
-  }),
-  shaft_ledge: () => ({
-    room:'shaft_ledge', health:3, inventory:['worn map','leather pouch','rusted key','old cloth strip','bronze clasp-lantern','Sword of Undefiled Truth'], log:[], lastRoll:null, alive:true,
-    flags:{ doorOpen:true, lowerHallSeen:true, corpseDead:true, sidePanelOpen:true, chainSolved:true, maskOn:false, keyLeverInserted:true, stoneDoorOpen:true, spindleRaised:true, maskAttached:true, pitOpened:true, swordTruth:true, lantern:true },
-    checkpoints:[]
-  })
-};
+let state = null;
 
-let state = checkpoints.cellar_start();
+function rint(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+function choice(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
-const onboardingQuestions = [
-  { key:'name', prompt:'What\'s your name?' },
-  { key:'tone', prompt:'What kind of run do you want: grim, weird, holy, feral, or chaotic?' },
-  { key:'brutality', prompt:'How brutal should this be: forgiving, standard, or cruel?' },
-  { key:'goal', prompt:'What are you hoping to find down here: truth, treasure, escape, power, or something else?' }
-];
-
-function randomChoice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-
-function normalizeAnswer(v){
-  return (v || '').trim();
-}
-
-function generatePremise(player){
-  const vibe = (player.tone || '').toLowerCase();
-  const goal = (player.goal || '').toLowerCase();
-  const brutality = (player.brutality || '').toLowerCase();
-
-  const titlePool = [
-    'The Cellar Below',
-    'The Flooded Chapel Below',
-    'The Bone Lock Vault',
-    'The Hushed Well',
-    'The Ash Cellar',
-    'The Iron Saint Crypt'
-  ];
-  if(vibe.includes('holy')) titlePool.push('The Reliquary of Last Light');
-  if(vibe.includes('weird')) titlePool.push('The Orchard Under Stone');
-  if(vibe.includes('chaotic') || vibe.includes('feral')) titlePool.push('The Mouth Under the House');
-
+function generatePremise(name='Stranger'){
+  const titles = ['The Ash Cellar','The Flooded Chapel Below','The Bone Lock Vault','The Hushed Well','The Iron Saint Crypt','The Orchard Under Stone'];
   const openings = [
-    'You descend beneath a place that should have been ordinary and find masonry older than the world above.',
-    'A warped cellar door yields to your hand and opens into a cold that feels remembered rather than felt.',
-    'You come to on damp stone with the sense that this dungeon already knows your name.',
-    'Somewhere above, a house still exists. Somewhere below, its buried truth waits for you.'
+    `${name}, you wake on cold stone with wet dust in your mouth and a cellar door breathing in the dark ahead.`,
+    `${name}, you descend a stair you do not remember entering and find a door swollen shut with damp.`,
+    `${name}, you push through warped planks into a place older than the house above and hear dripping somewhere ahead.`,
+    `${name}, you come to beside a cracked lantern, a half-burned map, and a door marked by fresh scrape lines.`
   ];
-  if(goal.includes('truth')) openings.push('You came here because some part of you would rather be wounded by truth than comforted by lies.');
-  if(goal.includes('treasure')) openings.push('You came here hunting something valuable, and the dungeon seems ready to decide what you are willing to pay.');
-  if(goal.includes('escape')) openings.push('You did not come here for glory. You came here because something above left you with nowhere else to go.');
-
-  const threats = ['old mechanisms', 'watchful dark', 'waterlogged dead', 'sealed rites', 'things that drag instead of walk'];
-  const rooms = ['cellar_start', 'cellar_start', 'cellar_start', 'lower_hall'];
-  const invOptions = [
-    ['worn map'],
-    ['rusted key'],
-    ['worn map', 'old cloth strip'],
-    ['leather pouch'],
-    ['worn map', 'rusted key']
-  ];
-
-  const premise = {
-    title: randomChoice(titlePool),
-    opening: randomChoice(openings),
-    threat: randomChoice(threats),
-    goalText: player.goal || 'survival',
-    brutality: player.brutality || 'standard',
-    startRoom: randomChoice(rooms),
-    startingInventory: randomChoice(invOptions).slice(),
+  const goals = ['Survive long enough to reach the lower sanctum.','Recover the thing the dungeon fears losing.','Find the truth-mask or die trying.','Reach the deeper chamber and come back with proof.'];
+  const items = [ ['worn map'], ['rusted key'], ['old cloth strip'], ['bronze clasp-lantern'], ['worn map','old cloth strip'] ];
+  return {
+    title: choice(titles),
+    opening: choice(openings),
+    goal: choice(goals),
+    startingInventory: [...choice(items)]
   };
-
-  if(brutality.includes('forgiving')) premise.startingInventory.push('bronze clasp-lantern');
-  if(goal.includes('power')) premise.startingInventory.push('rusted key');
-  if(goal.includes('truth')) premise.startingInventory.push('worn map');
-
-  premise.startingInventory = [...new Set(premise.startingInventory)];
-  return premise;
 }
 
-function resetToPremise(premise, player){
-  state = checkpoints[premise.startRoom]();
-  state.player = { ...player };
-  state.premise = { ...premise };
-  state.inventory = [...premise.startingInventory];
-  state.log = [];
-  state.lastRoll = null;
-  state.alive = true;
-  state.onboarding = { active:false, index:onboardingQuestions.length };
-  addLog(`Welcome, ${escapeHtml(player.name || 'wanderer')}.\n\n${premise.opening}\n\nYou are entering <strong>${escapeHtml(premise.title)}</strong>. The dungeon mood is <strong>${escapeHtml(player.tone || 'uncertain')}</strong>. You are hoping to find <strong>${escapeHtml(player.goal || 'survival')}</strong>.`, 'sys', 'Premise');
-  addLog(`Threat in the air: ${escapeHtml(premise.threat)}. Brutality: ${escapeHtml(premise.brutality)}.`, 'sys', 'Setup');
-  addRoomIntro();
-  updateUI();
+function makeBaseMap(room){
+  const maps = {
+    onboarding:`╔════════════════════════════╗\n║     AILLUMI'S DUNGEON      ║\n╚════════════════════════════╝\n\n@ = you\nD = door\n# = wall\n. = floor\n? = unknown\n\n###########\n#....@....#\n#.........D\n###########`,
+    cellar_start:`###########\n#....@....#\n#.........D\n###########`,
+    lower_hall:`  ###########   #################\n  #.........#   #.......C.......#\n  #.........O...@...............#\n  #.........#   #...............#\n  ###########   #...A...X....D..#\n                #####.###########\n                    #.#\n         ############.###########\n         #......T............?..#\n         #......................#\n         #..W.W..............E..#\n         #..W.W................D#\n         ######.#################`,
+    side_room:`         ######.#################.###\n              #.#               #@#\n          #####.#####           #P#\n          #....S....#           #H#\n          #.........#           #B#\n          ###########           ###`,
+    circular_chamber:`                                   ##\n                                   #@#\n                              ######.######\n                              #....(G)...D#\n                              #..........#\n                              #.......)B.#\n                              ############`,
+    below_room:`#################\n#@..............#\n#.N.N.o.N.......#\n#.............XX#\n#.............~~#\n#..........P....#\n#################`,
+    dead:`~~~~~~~~ YOU ARE DEAD ~~~~~~~~`
+  };
+  return maps[room] || maps.cellar_start;
 }
 
-function beginOnboarding(){
-  state = checkpoints.cellar_start();
-  state.player = {};
-  state.premise = null;
-  state.onboarding = { active:true, index:0 };
-  state.log = [];
-  state.lastRoll = null;
-  state.alive = true;
-  delete state.aiMapOverride;
+function freshState(){
+  return {
+    playerName: '',
+    onboardingStep: 0,
+    premise: null,
+    room: 'onboarding',
+    health: 10,
+    alive: true,
+    inventory: [],
+    flags: {},
+    map: makeBaseMap('onboarding'),
+    log: [],
+    lastRoll: null
+  };
+}
+
+function addLog(text, kind='narration', title='Narration'){
+  state.log.push({ text, kind, title, ts: Date.now() });
+  renderLog();
+}
+
+function renderLog(){
   const log = document.getElementById('log');
-  if(log) log.innerHTML = '';
-  addLog('Fresh run initialized. No old continuity has been auto-loaded. Answer a few questions and the dungeon will shape itself around you.', 'good', 'Fresh Start');
-  askNextOnboardingQuestion();
-  updateUI();
-}
-
-function askNextOnboardingQuestion(){
-  if(!state.onboarding?.active) return;
-  const q = onboardingQuestions[state.onboarding.index];
-  if(!q) return;
-  addLog(q.prompt, 'sys', 'Onboarding');
-}
-
-function submitOnboardingAnswer(raw){
-  const answer = normalizeAnswer(raw);
-  const q = onboardingQuestions[state.onboarding.index];
-  if(!q) return;
-  state.player[q.key] = answer || '(unsaid)';
-  addLog(answer || '(silence)', 'roll', `Answer · ${q.key}`);
-  state.onboarding.index += 1;
-  if(state.onboarding.index < onboardingQuestions.length){
-    askNextOnboardingQuestion();
-  } else {
-    const premise = generatePremise(state.player);
-    resetToPremise(premise, state.player);
-  }
-}
-
-function addRoomIntro(){
-  if(state.room==='cellar_start') addLog('You stand in the first chamber: damp stone, stale air, and a single heavy eastern door.', 'sys');
-  if(state.room==='below_room') addLog('You stand in the older room below the cellar. Left wall niches. Broken floor to the right. Low pedestal ahead. A slow knock sounds from deeper beyond.', 'sys');
-  if(state.room==='shaft_ledge') addLog('You are alive on a narrow collapse-shaft ledge. Rough handholds nearby. A narrow alcove. The floor below somewhere in the dark.', 'sys');
-  if(state.room==='lower_hall') addLog('The lower hall opens around you: water, old warnings, and too much room for something to move in the dark.', 'sys');
-}
-
-
-function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
-function rand021(){ return Math.floor(Math.random()*21); }
-function containsAny(text, arr){ text = text.toLowerCase(); return arr.some(k => text.includes(k)); }
-function uniquePush(arr, item){ if(!arr.includes(item)) arr.push(item); }
-function removeItem(arr, item){ const i = arr.indexOf(item); if(i>=0) arr.splice(i,1); }
-
-const insaneKeywords = ['fly','immortal','god','divine omnipotence','become a dragon','become invincible','teleport the moon','absolute fortune','infinite health'];
-
-function roomTitle(id){
-  return ({
-    cellar_start:'The Cellar Start',
-    lower_hall:'Lower Hall',
-    side_room:'Sealed Side Room',
-    circular_chamber:'Circular Chamber',
-    below_room:'Below the Cellar',
-    shaft_ledge:'Collapse Shaft Ledge',
-    dead:'Dead',
-    onboarding:'Character Setup'
-  })[id] || id;
-}
-
-function getMap(){
-  if(state.aiMapOverride) return state.aiMapOverride;
-  const mask = state.flags.maskAttached ? '|' : (state.flags.maskOn ? '@' : 'G');
-  if(state.room==='cellar_start') return [
-'###########',
-'#.........#',
-'#....@....D',
-'#.........#',
-'###########'
-].join('\n');
-  if(state.room==='lower_hall') return [
-'  ###########   #################',
-'  #.........#   #.......C.......#',
-'  #.........O...O...............#',
-'  #.........#   #...............#',
-'  ###########   #...A...X....D..#',
-'                #####.###########',
-'                    #.#',
-'         ############@###########',
-'         #......T............?..#',
-'         #......................#',
-'         #..W.W..............!..#',
-'         #..W.W................D#',
-'         ######.#################',
-'              #.#',
-'          #####.#####',
-'          #....S....#',
-'          #.........#',
-'          ###########'
-].join('\n');
-  if(state.room==='side_room') return [
-'              ######.#################.#',
-'              #.#               #.@#',
-'          #####.#####           #P#',
-'          #....S....#           #H#',
-'          #.........#           #B#',
-'          ###########           #>#'
-].join('\n');
-  if(state.room==='circular_chamber') return [
-'                                   ##',
-'                                   #L#',
-'                              ######/######',
-`                              #...~(${mask})~.@]#`,
-'                              #..........#',
-'                              #....~)I.~.#',
-'                              ############'
-].join('\n');
-  if(state.room==='below_room') return [
-'                             #################',
-'                             #@..............#',
-'                             #.N.N.o.N.......#',
-'                             #.............XX#',
-'                             #.............~~#',
-'                             #..........P....#',
-'                             #################'
-].join('\n');
-  if(state.room==='shaft_ledge') return [
-'                             #################',
-'                             #...............#',
-'                             #.N.N.o.N.......#',
-'                             #...........*.XX#',
-'                             #...........~~~#',
-'                             #..........P....#',
-'                             #################',
-'                                         ~',
-'                                      h== = ',
-'                                      h  ~',
-'                                   A @=T',
-'                                      ~'
-].join('\n');
-  if(state.onboarding?.active) return [
-'###############################',
-'#  A NEW DESCENT BEGINS...    #',
-'#                             #',
-'#  Answer the questions.      #',
-'#  Then the dungeon decides   #',
-'#  how it wants to know you.  #',
-'###############################'
-].join('\n');
-  if(state.room==='dead') return 'YOU ARE DEAD';
-  return 'Unknown room';
-}
-
-function quickActionsForRoom(){
-  const q = [];
-  if(state.onboarding?.active) return q;
-  if(state.room==='below_room'){
-    q.push('inspect the niche object','inspect the broken floor','move to the pedestal','ask narrator about the knocking','go back through the stone door');
-  } else if(state.room==='shaft_ledge'){
-    q.push('inspect the narrow alcove','climb down carefully','climb back up','inspect the bronze clasp-lantern','ask narrator how far the drop is');
-  } else if(state.room==='circular_chamber'){
-    q.push('go through the stone door','inspect the central spindle','remove the mask','take the key-lever');
-  } else if(state.room==='side_room'){
-    q.push('pull the hanging chain','inspect the pedestal','inspect the coffer','enter the hidden passage');
-  } else if(state.room==='lower_hall'){
-    q.push('go to the water','inspect the east door','go to the stairs','return to the side room');
-  } else if(state.room==='cellar_start'){
-    q.push('inspect the door','open the door','look around');
-  } else if(state.room==='dead') {
-    q.push('load checkpoint');
-  }
-  return q;
-}
-
-function addLog(text, type='sys', meta=''){
-  state.log = state.log || [];
-  state.log.push({text, type, meta, ts: Date.now()});
-  if(state.log.length > 200) state.log.shift();
-  const log = document.getElementById('log');
-  const div = document.createElement('div');
-  div.className = `entry ${type}`;
-  div.innerHTML = `${meta ? `<div class="meta">${meta}</div>`:''}<div>${text.replace(/\n/g,'<br>')}</div>`;
-  log.appendChild(div);
+  log.innerHTML = state.log.map(e => `<div class="entry ${escapeHtml(e.kind)}"><div class="k">${escapeHtml(e.title)}</div><div>${escapeHtml(e.text).replace(/\n/g,'<br>')}</div></div>`).join('');
   log.scrollTop = log.scrollHeight;
 }
 
-function rollAction(action){
-  const insane = containsAny(action, insaneKeywords);
-  let base = rand021();
-  let final = insane ? Math.max(1, base - 3) : base;
-  state.lastRoll = {base, final, insane};
-  updateUI();
-  addLog(`Action: <strong>${escapeHtml(action)}</strong>`, 'roll', `${insane ? 'Insane request' : 'Standard action'} · roll ${base}${insane ? `, modifier -3 → ${final}` : ` → ${final}`}`);
-  if(final===0){
-    die('A true 0 lands. The dungeon rejects your run outright.');
-    return {base, final, insane};
-  }
-  return {base, final, insane};
+function renderInventory(){
+  const box = document.getElementById('inventoryBox');
+  if(!state.inventory.length){ box.innerHTML = '<div class="small">nothing useful yet</div>'; return; }
+  box.innerHTML = state.inventory.map(i => `<div class="chip">${escapeHtml(i)}</div>`).join('');
 }
 
-function die(reason){
-  state.alive = false;
-  state.room = 'dead';
-  addLog(`${reason}\n\nYou die. Final until you load or jump to a checkpoint.`, 'bad', 'Death');
-  updateUI();
-  saveGame();
+function renderPremise(){
+  const p = state.premise;
+  document.getElementById('premiseBox').innerHTML = p ? `<strong>${escapeHtml(p.title)}</strong><br>${escapeHtml(p.goal)}` : '<span class="small">Onboarding in progress.</span>';
 }
 
-function escapeHtml(str){
-  return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function updateUI(){
+  document.getElementById('mapBox').textContent = state.map || makeBaseMap(state.room);
+  document.getElementById('healthText').textContent = `${state.health}/10`;
+  document.getElementById('roomText').textContent = state.room;
+  document.getElementById('aliveText').textContent = state.alive ? 'yes' : 'no';
+  document.getElementById('lastRollText').textContent = state.lastRoll == null ? '—' : state.lastRoll;
+  renderInventory();
+  renderPremise();
+  renderLog();
 }
 
-function narratorAnswer(q){
-  if(state.room==='below_room'){
-    if(q.includes('knock')) return 'The knock is slow, deliberate, and deeper than this room. It does not sound like a loose stone. It sounds paced.';
-    if(q.includes('floor')) return 'The broken right side is unstable enough to kill you on a bad roll. Treat it like a real hazard, not decoration.';
-    if(q.includes('weapon')) return 'There is no obvious weapon in this room, but the niche object and far pedestal are your best candidates for finding one.';
-    return 'From here you have niches on the left, a dangerous collapse on the right, and a pedestal at the far end. The room wants cautious movement.';
-  }
-  if(state.room==='shaft_ledge'){
-    if(q.includes('drop')) return 'The floor below is closer than it first looked, but it is still enough to maim you on a poor descent.';
-    if(q.includes('lantern')) return 'The bronze clasp-lantern is intact enough to carry, but not currently lit.';
-    return 'You are on a narrow ledge with rough handholds nearby, an alcove behind you, and a deeper floor below.';
-  }
-  return 'You can ask about what is visible, audible, dangerous, or mechanically suspicious in the current space.';
-}
-
-function processAction(raw){
-  delete state.aiMapOverride;
-  const action = raw.trim();
-  if(!action) return;
-  if(state.onboarding?.active){
-    submitOnboardingAnswer(action);
-    saveGame();
+function saveGame(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+function loadGame(){
+  const raw = localStorage.getItem(SAVE_KEY);
+  if(!raw) return false;
+  try {
+    state = JSON.parse(raw);
+    if(!state || typeof state !== 'object') throw new Error('bad save');
     updateUI();
-    return;
+    addLog('Loaded previous run.', 'sys', 'System');
+    return true;
+  } catch {
+    return false;
   }
-  if(!state.alive && action.toLowerCase()!=='load checkpoint') {
-    addLog('You are dead. Load a checkpoint or restore a save.', 'bad');
-    return;
-  }
-
-  const lower = action.toLowerCase();
-
-  if(lower === 'load checkpoint') {
-    loadCheckpoint(document.getElementById('checkpointSelect').value);
-    return;
-  }
-
-  if(lower.startsWith('ask narrator')){
-    const r = rollAction(action);
-    if(!state.alive) return;
-    let answer = narratorAnswer(lower);
-    if(r.final <= 4) answer += ' The room gives you less than you hoped, and the answer comes with unease rather than certainty.';
-    else if(r.final >= 15) answer += ' Your timing is good; you get a cleaner read than usual.';
-    addLog(answer, r.final >= 15 ? 'good' : 'sys', `Narrator answer · result ${r.final}`);
-    saveGame(); updateUI(); return;
-  }
-
-  // movement between major rooms
-  if(containsAny(lower,['go back through the stone door','back through the stone door','return to circular chamber']) && state.room==='below_room'){
-    const r = rollAction(action); if(!state.alive) return;
-    if(r.final <= 4){ addLog('You rush the retreat poorly, clip stone, and hesitate at the threshold. You remain in the same room, rattled but alive.', 'bad'); }
-    else { state.room = 'circular_chamber'; addLog('You backtrack through the old stone doorway into the circular chamber.', 'sys'); }
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['go through the stone door','enter the next room','enter the room']) && state.room==='circular_chamber'){
-    const r = rollAction(action); if(!state.alive) return;
-    if(r.final <= 4){ addLog('You misjudge the active grooves and back off before committing. The doorway remains open, but you stay put.', 'bad'); }
-    else { state.room = 'below_room'; addLog('You enter the older room below the cellar: niches left, collapse right, pedestal ahead.', r.final>=15?'good':'sys'); }
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['enter the hidden passage']) && state.room==='side_room'){
-    const r = rollAction(action); if(!state.alive) return;
-    if(r.final <= 4){ addLog('The passage feels too tight and hostile on this approach. You stop short before committing.', 'bad'); }
-    else { state.room = 'circular_chamber'; addLog('You duck into the hidden passage and emerge at the circular chamber landing.', 'sys'); }
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['return to the side room']) && state.room==='lower_hall'){
-    const r = rollAction(action); if(!state.alive) return;
-    if(r.final <=4){ addLog('You start back but noise in the hall makes you pause. You stay in the lower hall.', 'bad'); }
-    else { state.room = 'side_room'; addLog('You move into the sealed side room again.', 'sys'); }
-    saveGame(); updateUI(); return;
-  }
-
-  // room-specific actions
-  if(state.room==='below_room') return handleBelowRoom(action, lower);
-  if(state.room==='shaft_ledge') return handleShaftLedge(action, lower);
-  if(state.room==='circular_chamber') return handleCircular(action, lower);
-  if(state.room==='side_room') return handleSideRoom(action, lower);
-  if(state.room==='lower_hall') return handleLowerHall(action, lower);
-  if(state.room==='cellar_start') return handleCellarStart(action, lower);
-
-  const r = rollAction(action); if(!state.alive) return;
-  addLog('The dungeon acknowledges the action, but this build does not have a specialized handler for it yet. The freeform system is ready for more branches if you want to expand the file.', 'sys', `Fallback · ${r.final}`);
-  saveGame(); updateUI();
 }
 
-function handleBelowRoom(action, lower){
-  const r = rollAction(action); if(!state.alive) return;
+function exportSave(){ return JSON.stringify(state, null, 2); }
 
-  if(containsAny(lower,['inspect the niche object','inspect object','inspect niche'])){
-    if(r.final===0) return die('The floor collapses under your inspection path and you vanish into the dark.');
-    if(r.final<=4){
-      state.flags.pitOpened = true;
-      state.room = 'shaft_ledge';
-      state.health = Math.max(1, state.health - 3);
-      addLog('You edge too close to the broken side. The floor gives way. You crash down into a collapse shaft and wake on a narrow ledge, alive but badly hurt.', 'bad', `Result ${r.final}`);
-      saveGame(); updateUI(); return;
-    }
-    if(r.final<=9){
-      addLog('You inspect from too far to be sure. The niche object looks dark, dense, and likely metallic, but the broken floor keeps you from getting a clean read.', 'sys', `Result ${r.final}`);
-    } else if(r.final<=14){
-      addLog('You get a decent look: the niche object appears to be a dark ceremonial or practical item, perhaps metal-bound wood or a sealed case. It could be worth taking.', 'sys', `Result ${r.final}`);
-    } else {
-      addLog('You read the room well. The niche object looks recoverable, and there is a safer route along the left side if you commit to it cautiously.', 'good', `Result ${r.final}`);
-    }
-      saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['inspect the broken floor','inspect floor','check the broken floor'])){
-    if(r.final<=4){ addLog('You test the edge too boldly and send dust and stone down into the shaft. The collapse is worse than it looks.', 'bad'); }
-    else if(r.final<=14){ addLog('The right side is genuinely unstable. You could survive moving near it on a good roll, but a bad one could send you down.', 'sys'); }
-    else { addLog('You spot the safe and unsafe lines clearly. Left wall is your friend. The right collapse is a death lane unless you respect it.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['move to the pedestal','go to the pedestal','inspect the pedestal','inspect pedestal'])){
-    if(r.final<=4){ addLog('You start toward the pedestal and instinct stops you when the floor shifts under a loose step. You retreat before catastrophe.', 'bad'); }
-    else if(r.final<=9){ state.flags.pedestalSeen = true; addLog('You reach the pedestal, but not cleanly. It is low, old, and more ceremonial than structural. You are now close enough to inspect it further.', 'sys'); }
-    else { state.flags.pedestalSeen = true; addLog('You approach the far pedestal safely. Its top is worn smooth by age, and something about it suggests purpose rather than decoration.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['take the niche object','grab the niche object','get the niche object'])){
-    if(state.flags.nicheObjTaken){ addLog('You already took it.', 'sys'); return; }
-    if(r.final<=4){ state.flags.pitOpened=true; state.room='shaft_ledge'; state.health=Math.max(1,state.health-3); addLog('You commit to the grab and the broken edge punishes you. The floor breaks and drops you into the shaft.', 'bad'); saveGame(); updateUI(); return; }
-    if(r.final<=9){ addLog('You get close, but pull back before trusting your footing. The object remains in the niche.', 'sys'); }
-    else {
-      state.flags.nicheObjTaken = true;
-      uniquePush(state.inventory,'dark niche relic');
-      addLog('You recover the object: a compact dark relic or sealed case from the niche. It may open later or matter in another chamber.', 'good');
-    }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['weapon','give the player a weapon','encounter where i could get one'])){
-    if(r.final<=4){ addLog('You don’t find a weapon, just the unpleasant certainty that you need one.', 'bad'); }
-    else if(r.final<=9){ addLog('No weapon lands in your hand, but the room suggests two leads: the niche object and the far pedestal.', 'sys'); }
-    else if(r.final<=14){ addLog('You catch a viable weapon path: the collapse shaft below likely hides something lodged in stone or left behind by whoever fell before you.', 'good'); }
-    else { addLog('The room practically points at your route to a weapon. If you survive the shaft, something down there can become one.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['fly'])){
-    if(r.final<=4) addLog('You cannot fly. The room proves it immediately by stealing your balance.', 'bad');
-    else addLog('You cannot fly, but the attempt teaches you how your weight shifts near the collapse.', 'sys');
-    saveGame(); updateUI(); return;
-  }
-
-  addLog('The room accepts the action, but this branch is not yet authored. Add more handlers in the file to deepen continuity.', 'sys', `Result ${r.final}`);
-  saveGame(); updateUI();
+function saveAiSettings(){ localStorage.setItem(AI_KEY, JSON.stringify(AI_CONFIG)); }
+function loadAiSettings(){
+  try {
+    const raw = localStorage.getItem(AI_KEY);
+    if(!raw) return;
+    const parsed = JSON.parse(raw);
+    Object.assign(AI_CONFIG, parsed || {});
+  } catch {}
+}
+function syncAiInputsFromConfig(){
+  document.getElementById('apiKeyInput').value = AI_CONFIG.apiKey || '';
+  document.getElementById('apiEndpointInput').value = AI_CONFIG.endpoint || 'https://api.openai.com/v1/responses';
+  document.getElementById('modelInput').value = AI_CONFIG.model || 'gpt-5';
+  document.getElementById('apiStyleSelect').value = AI_CONFIG.apiStyle || 'auto';
+  document.getElementById('useAiToggle').checked = !!AI_CONFIG.useAi;
+}
+function syncAiConfigFromInputs(){
+  AI_CONFIG.apiKey = document.getElementById('apiKeyInput').value.trim();
+  AI_CONFIG.endpoint = document.getElementById('apiEndpointInput').value.trim() || 'https://api.openai.com/v1/responses';
+  AI_CONFIG.model = document.getElementById('modelInput').value.trim() || 'gpt-5';
+  AI_CONFIG.apiStyle = document.getElementById('apiStyleSelect').value;
+  AI_CONFIG.useAi = document.getElementById('useAiToggle').checked;
 }
 
-function handleShaftLedge(action, lower){
-  const r = rollAction(action); if(!state.alive) return;
-
-  if(containsAny(lower,['inspect the narrow alcove','inspect alcove','explore alcove'])){
-    if(r.final<=4){ addLog('You overcommit to the alcove and nearly lose the ledge. You get little beyond dust and old linen.', 'bad'); }
-    else {
-      uniquePush(state.inventory,'bronze clasp-lantern');
-      uniquePush(state.inventory,'old cloth strip');
-      state.flags.lantern = true;
-      addLog('The alcove yields useful salvage: a bronze clasp-lantern and an old cloth strip. No ambush, no undead surge, just survival gear.', r.final>=15 ? 'good' : 'sys');
-    }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['climb down carefully','descend carefully','climb down'])){
-    if(r.final<=4){ die('Your descent fails. Grip goes, body follows, and the shaft floor ends you.'); return; }
-    if(r.final<=9){ state.health=Math.max(1,state.health-1); state.room='below_room'; addLog('You make the floor below, but not gracefully. The impact hurts and costs you a little more health.', 'bad'); }
-    else { state.room='below_room'; addLog('You descend to the lower room floor under control and re-enter the chamber from below the collapse line.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['climb back up','go back up'])){
-    if(r.final<=4){ addLog('The climb back up is too ambitious from this posture. You stay where you are.', 'bad'); }
-    else if(r.final<=10){ addLog('You improve your position, but not enough to regain the upper room lip.', 'sys'); }
-    else { state.room='below_room'; addLog('You haul yourself back to the room edge above the collapse.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['inspect the bronze clasp-lantern','inspect lantern'])){
-    if(!state.inventory.includes('bronze clasp-lantern')){ addLog('You do not have the lantern yet.', 'bad'); saveGame(); updateUI(); return; }
-    if(r.final<=4){ addLog('Your inspection is clumsy. It stays shut and dusty.', 'bad'); }
-    else if(r.final<=14){ addLog('The bronze clasp-lantern is empty but intact. It could hold fuel or serve as a signal reflector.', 'sys'); }
-    else { addLog('You find a tiny service latch and confirm the lantern can be opened, cleaned, and reused later.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['sword of undefiled truth','pray','turn the object into the sword'])){
-    if(r.final<=4){ addLog('The prayer gives you no miracle. You are left with your body, the stone, and the need to survive honestly.', 'bad'); }
-    else if(r.final<=14){ addLog('Something about the metal below answers, but not fully. It feels like a weapon path, not a free miracle.', 'sys'); }
-    else {
-      uniquePush(state.inventory,'Sword of Undefiled Truth');
-      state.flags.swordTruth = true;
-      addLog('The object in the crack clarifies into the Sword of Undefiled Truth — stark, pale-edged, and hostile to corruption.', 'good');
-    }
-    saveGame(); updateUI(); return;
-  }
-
-  if(containsAny(lower,['fly'])){
-    if(r.final<=4){ addLog('You do not fly. The shaft wall teaches that brutally.', 'bad'); }
-    else if(r.final<=12){ addLog('Still no flight. What you achieve instead is a more controlled transfer of weight and position.', 'sys'); }
-    else { addLog('You do not fly, but determination turns into a real diagonal traverse across the shaft. Your body learns what your fantasy could not.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-
-  addLog('The ledge takes the action, but this branch is not yet authored in detail.', 'sys', `Result ${r.final}`);
-  saveGame(); updateUI();
+function beginOnboarding(){
+  state = freshState();
+  addLog("What's your name?", 'sys', 'Onboarding');
+  updateUI();
 }
 
-function handleCircular(action, lower){
-  const r = rollAction(action); if(!state.alive) return;
-  if(containsAny(lower,['inspect the central spindle','inspect spindle'])){
-    if(r.final<=4) addLog('You hesitate at the active mechanism and learn little except that it is under tension.', 'bad');
-    else addLog('The spindle is meant to receive the mask. Chamber logic here is ceremonial, not accidental.', r.final>=15?'good':'sys');
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['remove the mask'])){
-    if(!state.flags.maskOn && !state.flags.maskAttached){ addLog('The mask is not on your face.', 'bad'); saveGame(); updateUI(); return; }
-    if(state.flags.maskAttached){ addLog('The mask is already attached to the spindle, not on you.', 'sys'); saveGame(); updateUI(); return; }
-    if(r.final<=4){ addLog('The mask resists and you stop before forcing a worse outcome.', 'bad'); }
-    else { state.flags.maskOn=false; uniquePush(state.inventory,'gold mask'); addLog('You remove the gold mask and keep it.', 'sys'); }
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['take the key-lever','remove the key-lever'])){
-    if(!state.flags.keyLeverInserted){ addLog('The key-lever is not in the wall bracket.', 'bad'); saveGame(); updateUI(); return; }
-    if(r.final<=4){ addLog('You feel the chamber resisting the removal and back off.', 'bad'); }
-    else { state.flags.keyLeverInserted=false; uniquePush(state.inventory,'iron key-lever'); addLog('You remove the iron key-lever from the bracket.', 'sys'); }
-    saveGame(); updateUI(); return;
-  }
-  addLog('The circular chamber acknowledges the action, but this path is not authored yet.', 'sys', `Result ${r.final}`);
-  saveGame(); updateUI();
-}
-
-function handleSideRoom(action, lower){
-  const r = rollAction(action); if(!state.alive) return;
-  if(containsAny(lower,['pull the hanging chain','pull chain'])){
-    if(r.final<=4) addLog('The chain jolts but gives you no reliable opening. You need better leverage or balance.', 'bad');
-    else if(r.final<=14) { state.flags.sidePanelOpen = true; addLog('The chain partially opens the hidden panel and reveals the inscription logic of balance.', 'sys'); }
-    else { state.flags.sidePanelOpen = true; state.flags.chainSolved = true; addLog('The chain and room mechanism reveal the hidden passage cleanly. Balance opens the way.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['inspect the pedestal','inspect pedestal'])){
-    if(r.final<=4) addLog('You bump the pedestal badly and almost trigger a worse mechanical response.', 'bad');
-    else addLog('The pedestal holds a lever-like iron tool and hints at the inscription: not by hand alone. Balance opens the way.', r.final>=15?'good':'sys');
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['inspect the coffer','open the coffer'])){
-    if(r.final<=4) addLog('The coffer does not give cleanly. You leave it shut rather than break it blindly.', 'bad');
-    else if(r.final<=14) addLog('Inside the coffer is age, dust, and little else of immediate use.', 'sys');
-    else { uniquePush(state.inventory,'coffer token'); addLog('You recover a small coffer token from inside — maybe a marker, maybe a key surrogate.', 'good'); }
-    saveGame(); updateUI(); return;
-  }
-  addLog('The side room can take more authored actions if you want to expand the file later.', 'sys', `Result ${r.final}`);
-  saveGame(); updateUI();
-}
-
-function handleLowerHall(action, lower){
-  const r = rollAction(action); if(!state.alive) return;
-  if(containsAny(lower,['go to the water','drink the water','inspect the water'])){
-    if(r.final<=4) addLog('The water remains a bad idea. It costs you more than it gives.', 'bad');
-    else if(r.final<=14) addLog('The flooded section reveals a path and old danger, but not comfort.', 'sys');
-    else addLog('The wine-soaked miracle memory returns. The waterline still hides meaning and prior violence.', 'good');
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['inspect the east door','inspect door'])){
-    if(r.final<=4) addLog('You read only cold iron and uncertainty.', 'bad');
-    else addLog('The east door is important, old, and worth opening with the rusted key when the moment is right.', r.final>=15?'good':'sys');
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['go to the stairs','head to the stairs'])){
-    if(r.final<=4) addLog('You choose not to descend yet. The hall is still full of unfinished business.', 'bad');
-    else addLog('You move toward the stairs and feel the dungeon deepening around you.', 'sys');
-    saveGame(); updateUI(); return;
-  }
-  addLog('The lower hall takes the action, but this branch is not yet authored.', 'sys', `Result ${r.final}`);
-  saveGame(); updateUI();
-}
-
-function lowerHasDoorIntent(lower){
-  return /(open|go|walk|run|rush|sprint|move|head|approach|step|enter|leave|exit)[\s\S]{0,30}door/.test(lower)
-    || /through the door/.test(lower)
-    || /to the door/.test(lower)
-    || /into the next room/.test(lower)
-    || /next room/.test(lower);
-}
-
-function lowerHasInspectDoorIntent(lower){
-  return /(inspect|look at|check|examine|study|listen at)[\s\S]{0,30}door/.test(lower);
-}
-
-function handleCellarStart(action, lower){
-  const r = rollAction(action); if(!state.alive) return;
-  if(lowerHasInspectDoorIntent(lower) || containsAny(lower,['inspect the door','inspect door'])){
-    addLog('The heavy plank door is damp, warped, and recently used. It smells faintly burnt beneath the mildew.', r.final>=15?'good':'sys'); saveGame(); updateUI(); return;
-  }
-  if(lowerHasDoorIntent(lower) || containsAny(lower,['open the door','go through the door'])){
-    if(r.final<=4) addLog('You surge toward the eastern door, but the swollen wood and slick footing check your momentum. You stay in the first room with the exit still in front of you.', 'bad');
-    else { state.room='lower_hall'; addLog('You commit to the door, get it open, and push through into the colder adjoining chamber beyond.', r.final>=15 ? 'good' : 'sys'); }
-    saveGame(); updateUI(); return;
-  }
-  if(containsAny(lower,['look around','inspect room','look'])){
-    addLog(r.final<=4 ? 'You turn in place and gain little beyond damp stone and stale air.' : 'The starter chamber is simple: damp stone, stale air, and one heavy eastern door that clearly matters.', r.final>=15?'good':'sys', `Result ${r.final}`);
-    saveGame(); updateUI(); return;
-  }
-  addLog(`You attempt: ${action}. The room acknowledges the move, but this branch still needs deeper authored consequences.`, 'sys', `Result ${r.final}`);
-  saveGame(); updateUI();
-}
-
-
-function getRecentLogText(limit=8){
-  const entries = state.log || [];
-  return entries.slice(-limit).map(x => `${x.meta ? `[${x.meta}] ` : ''}${x.text}`).join('\n\n');
+function completeOnboarding(name){
+  state.playerName = name || 'Stranger';
+  state.premise = generatePremise(state.playerName);
+  state.inventory = [...state.premise.startingInventory];
+  state.room = 'cellar_start';
+  state.map = makeBaseMap('cellar_start');
+  state.onboardingStep = 99;
+  addLog(state.premise.opening + `\n\nGoal: ${state.premise.goal}`, 'sys', state.premise.title);
+  saveGame();
+  updateUI();
 }
 
 function serializeStateForAI(){
   return {
+    playerName: state.playerName,
     room: state.room,
-    roomTitle: roomTitle(state.room),
     health: state.health,
-    inventory: [...state.inventory],
-    flags: clone(state.flags || {}),
-    map: getMap(),
     alive: state.alive,
+    inventory: state.inventory,
+    flags: state.flags,
+    map: state.map,
+    premise: state.premise,
     lastRoll: state.lastRoll,
-    recentLog: getRecentLogText(8)
+    recentLog: state.log.slice(-10)
   };
 }
 
 function extractTextFromAiResponse(data){
-  if(!data || typeof data !== 'object') return '';
-  if(typeof data.output_text === 'string' && data.output_text.trim()) return data.output_text.trim();
-  if(Array.isArray(data.output)){
+  if(typeof data?.output_text === 'string' && data.output_text.trim()) return data.output_text.trim();
+  if(Array.isArray(data?.output)){
     const parts = [];
     for(const item of data.output){
       if(Array.isArray(item?.content)){
         for(const c of item.content){
-          if(typeof c?.text === 'string') parts.push(c.text);
-          else if(typeof c?.output_text === 'string') parts.push(c.output_text);
+          if(typeof c?.text === 'string' && c.text.trim()) parts.push(c.text.trim());
+          else if(typeof c?.content === 'string' && c.content.trim()) parts.push(c.content.trim());
         }
       }
+      if(typeof item?.text === 'string' && item.text.trim()) parts.push(item.text.trim());
     }
-    const joined = parts.join('\n').trim();
-    if(joined) return joined;
+    if(parts.length) return parts.join('\n').trim();
   }
   const msg = data?.choices?.[0]?.message;
   if(typeof msg?.content === 'string' && msg.content.trim()) return msg.content.trim();
@@ -848,327 +330,214 @@ function extractTextFromAiResponse(data){
   return '';
 }
 
-async function callOpenAIForTurn(action){
-  const key = (OPENAI_CONFIG.apiKey || '').trim();
-  if(!key){
-    throw new Error('Paste an API key into the AI / LLM Integration box before using AI mode.');
-  }
-
-  const systemPrompt = `You are the narrator and rules engine for a harsh ASCII dungeon crawler.
-
-Return STRICT JSON only.
-
-Rules:
-- Interpret the player's intent naturally. Synonyms and natural phrasing should map to the likely intended action.
-- Every meaningful action gets one roll from 0 to 20.
-- 0 means instant death.
-- If the request is unrealistic or insane, still roll completely randomly, then apply -3, with a minimum final result of 1.
-- Keep outcomes grounded and consistent with the current room, inventory, flags, and recent log.
-- Update continuity carefully. Do not invent impossible inventory unless earned.
-- Be concise but vivid.
-
-JSON shape:
-{
-  "roll": { "base": number, "final": number, "insane": boolean },
-  "room": string,
-  "health": number,
-  "inventory": string[],
-  "flags": object,
-  "alive": boolean,
-  "map": string,
-  "narration": string,
-  "meta": string
-}`;
-
+function buildAiBody(action){
+  const systemPrompt = `You are the narrator and rules engine for a harsh ASCII dungeon crawler.\n\nReturn STRICT JSON only. No markdown. No commentary outside JSON.\n\nRules:\n- Interpret the player's intent naturally. Natural phrasing and synonyms should map to likely intent.\n- Every meaningful action gets one roll from 0 to 20.\n- 0 means instant death.\n- Unrealistic or insane requests are still rolled randomly, then apply -3, with a minimum final result of 1.\n- Keep outcomes grounded, vivid, and continuous with current room, inventory, recent log, and flags.\n- Do not invent impossible inventory unless earned.\n- Health range is 0 to 10.\n- Keep the map coherent ASCII text.\n\nReturn JSON with this shape exactly:\n{\n  \"roll\": { \"base\": 0, \"final\": 0, \"insane\": false },\n  \"room\": \"cellar_start\",\n  \"health\": 10,\n  \"inventory\": [\"worn map\"],\n  \"flags\": {},\n  \"alive\": true,\n  \"map\": \"ASCII MAP\",\n  \"narration\": \"story result\",\n  \"meta\": \"brief plain-English rule note\"\n}`;
   const payload = {
     action,
     state: serializeStateForAI(),
-    availableRooms: Object.keys(checkpoints),
-    note: 'Keep room ids aligned to existing game rooms when possible: cellar_start, lower_hall, side_room, circular_chamber, below_room, shaft_ledge, dead.'
+    knownRooms: ['cellar_start','lower_hall','side_room','circular_chamber','below_room','shaft_ledge','dead']
   };
 
-  const endpoint = (OPENAI_CONFIG.endpoint || '').trim();
-  const isChat = /\/chat\/completions(?:\?|$)/i.test(endpoint);
-  const body = isChat ? {
-    model: OPENAI_CONFIG.model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: JSON.stringify(payload) }
-    ],
-    temperature: 0.9
-  } : {
-    model: OPENAI_CONFIG.model,
-    instructions: systemPrompt,
-    input: [{
-      role: 'user',
-      content: [{
-        type: 'input_text',
-        text: JSON.stringify(payload)
-      }]
-    }]
+  const endpoint = (AI_CONFIG.endpoint || '').trim();
+  const style = AI_CONFIG.apiStyle;
+  const isChat = style === 'chat' || (style === 'auto' && /\/chat\/completions(?:\?|$)/i.test(endpoint));
+  if(isChat){
+    return {
+      body: {
+        model: AI_CONFIG.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: JSON.stringify(payload) }
+        ],
+        temperature: 0.9
+      }
+    };
+  }
+  return {
+    body: {
+      model: AI_CONFIG.model,
+      instructions: systemPrompt,
+      input: [{ role: 'user', content: [{ type: 'input_text', text: JSON.stringify(payload) }] }]
+    }
   };
+}
 
-  const res = await fetch('/api/llm', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      apiKey: key,
-      endpoint,
-      body
-    })
-  });
-
+async function callAiTurn(action){
+  syncAiConfigFromInputs();
+  if(!AI_CONFIG.apiKey) throw new Error('Paste an API key before using AI mode.');
+  if(!AI_CONFIG.endpoint) throw new Error('Enter a valid API endpoint.');
+  const { body } = buildAiBody(action);
+  let res;
+  try {
+    res = await fetch(AI_CONFIG.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AI_CONFIG.apiKey}`
+      },
+      body: JSON.stringify(body)
+    });
+  } catch(err){
+    throw new Error('Network or CORS failure. Host over http/https and use a provider that allows browser-origin requests from your site.');
+  }
   if(!res.ok){
     const txt = await res.text();
     throw new Error(`AI request failed: ${res.status} ${txt}`);
   }
-
   const data = await res.json();
   const text = extractTextFromAiResponse(data);
-  if(!text.trim()) throw new Error('AI returned empty output. Check endpoint/model compatibility.');
-
+  if(!text) throw new Error('AI returned empty output. Check endpoint/model/API style compatibility.');
   let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch(err) {
+  try { parsed = JSON.parse(text); }
+  catch {
     const match = text.match(/\{[\s\S]*\}/);
-    if(match){
-      parsed = JSON.parse(match[0]);
-    } else {
-      throw new Error('AI returned non-JSON output: ' + text.slice(0, 500));
-    }
+    if(!match) throw new Error('AI did not return valid JSON.');
+    parsed = JSON.parse(match[0]);
   }
   return parsed;
 }
 
-async function processActionWithAI(raw){
-  const action = raw.trim();
-  if(!action) return;
-  if(state.onboarding?.active){
-    submitOnboardingAnswer(action);
-    saveGame();
-    updateUI();
-    return;
+function applyAiResult(result){
+  const rf = result?.roll?.final;
+  state.lastRoll = typeof rf === 'number' ? rf : null;
+  if(typeof result?.room === 'string' && result.room) state.room = result.room;
+  if(typeof result?.health === 'number') state.health = Math.max(0, Math.min(10, result.health));
+  if(Array.isArray(result?.inventory)) state.inventory = result.inventory.map(String);
+  if(result?.flags && typeof result.flags === 'object') state.flags = result.flags;
+  if(typeof result?.alive === 'boolean') state.alive = result.alive;
+  if(typeof result?.map === 'string' && result.map.trim()) state.map = result.map;
+  if(state.health <= 0) state.alive = false;
+  if(!state.alive) state.room = 'dead';
+  if(result?.roll){
+    addLog(`Roll ${result.roll.base} → ${result.roll.final}${result.roll.insane ? ' (insane request modifier applied)' : ''}`, 'roll', 'Roll');
   }
-  if(!state.alive && action.toLowerCase() !== 'load checkpoint') {
-    addLog('You are dead. Load a checkpoint or restore a save.', 'bad');
+  addLog(result?.narration || 'The world shifts, but the meaning of it fails to resolve.', 'narration', 'Narration');
+  if(result?.meta) addLog(result.meta, 'sys', 'Rule Note');
+  if(state.room === 'dead') state.map = makeBaseMap('dead');
+  updateUI(); saveGame();
+}
+
+function normalize(s){ return String(s || '').toLowerCase().trim(); }
+function includesAny(s, arr){ return arr.some(x => s.includes(x)); }
+function localFallbackTurn(action){
+  const raw = normalize(action);
+  let base = rint(0,20), final = base, insane = false;
+  const impossible = includesAny(raw, ['fly','become god','turn into a dragon','teleport','absolute fortune']);
+  if(impossible){ insane = true; final = Math.max(1, base - 3); }
+  if(base === 0){
+    state.alive = false; state.health = 0; state.room = 'dead'; state.map = makeBaseMap('dead');
+    state.lastRoll = 0;
+    addLog('Roll 0 → instant death. The dungeon corrects your story with final brutality.', 'roll', 'Roll');
+    addLog('Everything goes dark. This run is over.', 'narration', 'Narration');
+    updateUI(); saveGame(); return;
+  }
+
+  if(state.onboardingStep === 0 || state.room === 'onboarding'){
+    completeOnboarding(action.trim() || 'Stranger');
     return;
   }
 
-  setAiStatus('AI mode on. Resolving turn...');
-  addLog(`Action: <strong>${escapeHtml(action)}</strong>`, 'roll', 'AI narrator turn');
+  state.lastRoll = final;
+  addLog(`Roll ${base} → ${final}${insane ? ' (insane request modifier applied)' : ''}`, 'roll', 'Roll');
 
-  try {
-    const result = await callOpenAIForTurn(action);
-    state.lastRoll = result.roll || null;
-    if(typeof result.health === 'number') state.health = Math.max(0, Math.min(10, result.health));
-    if(Array.isArray(result.inventory)) state.inventory = result.inventory;
-    if(result.flags && typeof result.flags === 'object') state.flags = result.flags;
-    if(typeof result.room === 'string') state.room = result.room;
-    if(typeof result.alive === 'boolean') state.alive = result.alive;
-    if(!state.alive || state.room === 'dead') state.room = 'dead';
-    addLog(result.narration || 'The AI resolved the turn, but returned no narration.', result.alive === false ? 'bad' : 'sys', result.meta || (result.roll ? `AI result ${result.roll.final}` : 'AI turn'));
-    if(result.map) {
-      state.aiMapOverride = result.map;
+  if(state.room === 'cellar_start'){
+    if(includesAny(raw, ['door','open','go through','run to','toward the door','towards the door','rush door','sprint to door','head to the door'])){
+      state.room = 'lower_hall'; state.map = makeBaseMap('lower_hall');
+      addLog(final >= 10 ? 'You move through the damp door and into the colder lower hall before anything can stop you.' : 'You make it through the door, but not elegantly. Your movement echoes into the lower hall.', 'narration', 'Narration');
+    } else if(includesAny(raw, ['look','inspect','listen'])){
+      addLog('You study the swollen cellar door, the scrape marks under it, and the damp mortar around you. Something uses this passage.', 'narration', 'Narration');
     } else {
-      delete state.aiMapOverride;
+      addLog('You act in the first chamber. The room is real, the door is ahead, and your intention seems to center on moving deeper.', 'narration', 'Narration');
     }
-    saveGame();
-    updateUI();
-    setAiStatus('AI mode on. Last turn resolved successfully.');
-  } catch(err) {
-    console.error(err);
-    setAiStatus('AI mode failed. Fell back to local rules engine.');
-    addLog(`AI error: ${escapeHtml(err.message)}\nFalling back to the built-in local engine for this turn.`, 'bad', 'AI fallback');
-    processAction(action);
-  }
-}
-
-
-function syncAiInputsFromConfig(){
-  const keyEl = document.getElementById('apiKeyInput');
-  const endpointEl = document.getElementById('apiEndpointInput');
-  const modelEl = document.getElementById('apiModelInput');
-  if(keyEl) keyEl.value = OPENAI_CONFIG.apiKey || '';
-  if(endpointEl) endpointEl.value = OPENAI_CONFIG.endpoint || '';
-  if(modelEl) modelEl.value = OPENAI_CONFIG.model || '';
-}
-
-function applyAiInputsToConfig(){
-  const keyEl = document.getElementById('apiKeyInput');
-  const endpointEl = document.getElementById('apiEndpointInput');
-  const modelEl = document.getElementById('apiModelInput');
-  OPENAI_CONFIG.apiKey = keyEl ? keyEl.value.trim() : '';
-  OPENAI_CONFIG.endpoint = endpointEl && endpointEl.value.trim() ? endpointEl.value.trim() : 'https://api.openai.com/v1/responses';
-  OPENAI_CONFIG.model = modelEl && modelEl.value.trim() ? modelEl.value.trim() : 'gpt-5.4';
-}
-
-function saveAiSettings(){
-  applyAiInputsToConfig();
-  localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({
-    apiKey: OPENAI_CONFIG.apiKey,
-    endpoint: OPENAI_CONFIG.endpoint,
-    model: OPENAI_CONFIG.model,
-    enabled: !!OPENAI_CONFIG.enabled
-  }));
-  setAiStatus(OPENAI_CONFIG.apiKey ? 'AI settings saved locally in this browser.' : 'AI settings saved, but no API key is currently set.');
-}
-
-function loadAiSettings(){
-  try {
-    const raw = localStorage.getItem(AI_SETTINGS_KEY);
-    if(!raw) return;
-    const parsed = JSON.parse(raw);
-    if(parsed && typeof parsed === 'object'){
-      OPENAI_CONFIG.apiKey = typeof parsed.apiKey === 'string' ? parsed.apiKey : '';
-      OPENAI_CONFIG.endpoint = typeof parsed.endpoint === 'string' && parsed.endpoint ? parsed.endpoint : 'https://api.openai.com/v1/responses';
-      OPENAI_CONFIG.model = typeof parsed.model === 'string' && parsed.model ? parsed.model : 'gpt-5.4';
-      OPENAI_CONFIG.enabled = !!parsed.enabled;
-    }
-  } catch(err){
-    console.warn('Failed to load AI settings', err);
-  }
-}
-
-function clearAiSettings(){
-  OPENAI_CONFIG.apiKey = '';
-  OPENAI_CONFIG.endpoint = 'https://api.openai.com/v1/responses';
-  OPENAI_CONFIG.model = 'gpt-5.4';
-  OPENAI_CONFIG.enabled = false;
-  localStorage.removeItem(AI_SETTINGS_KEY);
-  syncAiInputsFromConfig();
-  const toggle = document.getElementById('useAiToggle');
-  if(toggle) toggle.checked = false;
-  setAiStatus('AI settings cleared from this browser.');
-}
-
-function setAiStatus(text){
-  const el = document.getElementById('aiStatus');
-  if(el) el.textContent = text;
-}
-
-function updateUI(){
-  document.getElementById('health').textContent = `${state.health}/10`;
-  document.getElementById('roomName').textContent = state.onboarding?.active ? 'Character Setup' : roomTitle(state.room);
-  document.getElementById('gameTitle').textContent = state.premise?.title || 'The Cellar Below';
-  document.getElementById('premiseText').textContent = state.onboarding?.active
-    ? 'Answer the onboarding questions in the log to generate a fresh premise for this run.'
-    : (state.premise
-      ? `${state.premise.opening} Goal: ${state.premise.goalText}. Threat: ${state.premise.threat}.`
-      : 'No premise generated yet.');
-  document.getElementById('lastRoll').textContent = state.lastRoll ? `${state.lastRoll.final}` : '—';
-  document.getElementById('modeText').textContent = state.lastRoll?.insane ? 'Insane -3' : 'Normal';
-  document.getElementById('map').textContent = getMap();
-  const inv = document.getElementById('inventory');
-  inv.innerHTML = '';
-  if(!state.inventory.length){
-    const c = document.createElement('div'); c.className='chip'; c.textContent='nothing'; inv.appendChild(c);
+  } else if(state.room === 'lower_hall'){
+    if(includesAny(raw, ['water','flood','pool'])) addLog('You edge toward the waterlogged section, where something metallic glints under the surface and the far side feels watched.', 'narration', 'Narration');
+    else if(includesAny(raw, ['east door','far door'])) addLog('The far eastern door waits beyond broken masonry and old warning marks. It looks used, not abandoned.', 'narration', 'Narration');
+    else addLog('The lower hall answers with damp echoes, shadow, and the feeling that your next mistake will matter.', 'narration', 'Narration');
   } else {
-    state.inventory.forEach(item => { const c = document.createElement('div'); c.className='chip'; c.textContent = item; inv.appendChild(c); });
+    addLog('The local fallback keeps the room coherent, but richer outcomes need AI enabled.', 'sys', 'Fallback');
   }
-  const qa = document.getElementById('quickActions');
-  qa.innerHTML='';
-  quickActionsForRoom().forEach(txt => {
-    const b = document.createElement('button'); b.className='small'; b.textContent = txt; b.onclick = () => processAction(txt); qa.appendChild(b);
-  });
+  updateUI(); saveGame();
 }
 
-function saveGame(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
-function loadGame(){
-  const raw = localStorage.getItem(SAVE_KEY);
-  if(!raw) return false;
-  try { state = JSON.parse(raw); return true; } catch(e){ return false; }
-}
-function exportSave(){
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'cellar_dungeon_save.json'; a.click();
-}
-function makeCheckpoint(){
-  state.checkpoints = state.checkpoints || [];
-  state.checkpoints.push(clone(state));
-  if(state.checkpoints.length > 8) state.checkpoints.shift();
-  addLog('Checkpoint created in memory and save data.', 'good');
-  saveGame();
-}
-function loadCheckpoint(name){
-  state = checkpoints[name]();
-  delete state.aiMapOverride;
-  document.getElementById('log').innerHTML='';
-  addRoomIntro();
-  saveGame();
-  updateUI();
-}
-
-function addIntro(){
-  addLog('Manual save or checkpoint loaded.', 'good', 'Loaded');
-  addRoomIntro();
+async function runAction(action){
+  if(!action.trim()) return;
+  addLog(action.trim(), 'sys', 'Action');
+  if(state.room === 'dead'){
+    addLog('This run is over. Start a new run or load a save.', 'err', 'Error');
+    return;
+  }
+  if(state.room === 'onboarding'){
+    completeOnboarding(action.trim() || 'Stranger');
+    return;
+  }
+  syncAiConfigFromInputs();
+  saveAiSettings();
+  if(AI_CONFIG.useAi){
+    try {
+      const result = await callAiTurn(action.trim());
+      applyAiResult(result);
+      return;
+    } catch(err){
+      addLog(err.message || String(err), 'err', 'AI Error');
+      addLog('Falling back to the local rules engine for this turn.', 'sys', 'Fallback');
+    }
+  }
+  localFallbackTurn(action.trim());
 }
 
-// UI hooks
-const cmd = document.getElementById('command');
-document.getElementById('newRunBtn').onclick = () => { beginOnboarding(); saveGame(); cmd.focus(); };
+function askAiAboutCurrentRoom(){
+  return runAction('Ask the narrator what stands out in the current room and what seems most dangerous right now.');
+}
 
-document.getElementById('goBtn').onclick = async () => {
-  if(OPENAI_CONFIG.enabled || document.getElementById('useAiToggle').checked){ await processActionWithAI(cmd.value); }
-  else { processAction(cmd.value); }
-  cmd.value=''; cmd.focus();
+// UI wiring
+const actionInput = document.getElementById('actionInput');
+document.getElementById('rollBtn').onclick = async () => {
+  const v = actionInput.value;
+  actionInput.value = '';
+  await runAction(v);
 };
-document.getElementById('aiGoBtn').onclick = async () => { await processActionWithAI(cmd.value); cmd.value=''; cmd.focus(); };
-cmd.addEventListener('keydown', e => { if(e.key==='Enter'){
-  if(OPENAI_CONFIG.enabled || document.getElementById('useAiToggle').checked){ document.getElementById('aiGoBtn').click(); }
-  else { document.getElementById('goBtn').click(); }
-} });
-document.getElementById('saveBtn').onclick = () => { saveGame(); addLog('Game saved to local browser storage.', 'good'); };
-document.getElementById('loadBtn').onclick = () => {
-  const ok = loadGame();
-  document.getElementById('log').innerHTML='';
-  if(ok){ addLog('Save restored from local browser storage.', 'good'); updateUI(); }
-  else { addLog('No manual save found in local browser storage.', 'bad'); updateUI(); }
+document.getElementById('actionInput').addEventListener('keydown', async (e) => {
+  if((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+    e.preventDefault();
+    const v = actionInput.value; actionInput.value = ''; await runAction(v);
+  }
+});
+document.getElementById('newRunBtn').onclick = () => { beginOnboarding(); saveGame(); };
+document.getElementById('saveBtn').onclick = () => { saveGame(); addLog('Saved current run locally.', 'sys', 'System'); };
+document.getElementById('loadBtn').onclick = () => { if(loadGame()){} else addLog('No save found.', 'err', 'Load'); };
+document.getElementById('exportBtn').onclick = async () => {
+  const txt = exportSave();
+  document.getElementById('importBox').value = txt;
+  try { await navigator.clipboard.writeText(txt); addLog('Exported save copied to clipboard and placed in the import box.', 'sys', 'Export'); }
+  catch { addLog('Exported save placed in the import box.', 'sys', 'Export'); }
 };
-document.getElementById('exportBtn').onclick = exportSave;
-document.getElementById('checkpointBtn').onclick = makeCheckpoint;
-document.getElementById('checkpointSelect').onchange = e => loadCheckpoint(e.target.value);
-document.getElementById('useAiToggle').onchange = e => {
-  OPENAI_CONFIG.enabled = e.target.checked;
-  setAiStatus(OPENAI_CONFIG.enabled ? 'AI mode on. All turns now try the AI narrator first.' : 'AI mode off. Local rules engine active.');
-};
-document.getElementById('saveAiSettingsBtn').onclick = () => { saveAiSettings(); };
-document.getElementById('clearAiSettingsBtn').onclick = () => { clearAiSettings(); };
-document.getElementById('apiKeyInput').addEventListener('change', applyAiInputsToConfig);
-document.getElementById('apiEndpointInput').addEventListener('change', applyAiInputsToConfig);
-document.getElementById('apiModelInput').addEventListener('change', applyAiInputsToConfig);
-document.getElementById('testAiBtn').onclick = async () => {
-  setAiStatus('Testing AI connection...');
+document.getElementById('importBtn').onclick = () => {
   try {
-    const result = await callOpenAIForTurn('ask narrator about the current room');
-    setAiStatus('AI connection worked.');
-    addLog(result.narration || 'AI test succeeded.', 'good', 'AI test');
-  } catch(err) {
-    setAiStatus('AI test failed.');
-    addLog(`AI test failed: ${escapeHtml(err.message)}`, 'bad', 'AI test');
-  }
+    const raw = document.getElementById('importBox').value.trim();
+    state = JSON.parse(raw); saveGame(); updateUI(); addLog('Imported save successfully.', 'sys', 'Import');
+  } catch { addLog('Import failed. That save JSON is invalid.', 'err', 'Import'); }
 };
-
-document.getElementById('toggleApiKeyBtn').onclick = () => {
-  const keyEl = document.getElementById('apiKeyInput');
-  const btn = document.getElementById('toggleApiKeyBtn');
-  if(!keyEl || !btn) return;
-  const show = keyEl.type === 'password';
-  keyEl.type = show ? 'text' : 'password';
+document.getElementById('askAiBtn').onclick = async () => { await askAiAboutCurrentRoom(); };
+document.getElementById('clearLogBtn').onclick = () => { state.log = []; renderLog(); };
+document.getElementById('saveAiBtn').onclick = () => { syncAiConfigFromInputs(); saveAiSettings(); addLog('AI settings saved in this browser.', 'sys', 'AI'); };
+document.getElementById('clearAiBtn').onclick = () => {
+  AI_CONFIG.apiKey=''; AI_CONFIG.endpoint='https://api.openai.com/v1/responses'; AI_CONFIG.model='gpt-5'; AI_CONFIG.apiStyle='auto'; AI_CONFIG.useAi=true;
+  saveAiSettings(); syncAiInputsFromConfig(); addLog('AI settings cleared.', 'sys', 'AI');
+};
+document.getElementById('toggleKeyBtn').onclick = () => {
+  const el = document.getElementById('apiKeyInput');
+  const btn = document.getElementById('toggleKeyBtn');
+  const show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
   btn.textContent = show ? 'Hide' : 'Show';
 };
+document.getElementById('useAiToggle').addEventListener('change', () => { syncAiConfigFromInputs(); saveAiSettings(); });
 
 // boot
 loadAiSettings();
 syncAiInputsFromConfig();
-const aiToggle = document.getElementById('useAiToggle');
-if(aiToggle) aiToggle.checked = !!OPENAI_CONFIG.enabled;
-beginOnboarding();
-saveGame();
+if(!loadGame()) beginOnboarding();
 updateUI();
-setAiStatus(OPENAI_CONFIG.apiKey ? (OPENAI_CONFIG.enabled ? 'AI mode on. Saved API settings restored for this browser.' : 'AI mode off. API key detected for this browser.') : 'AI mode off. Local rules engine active. Paste an API key to use your own LLM.');
 </script>
 </body>
 </html>
