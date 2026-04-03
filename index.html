@@ -6,121 +6,106 @@
 <title>Aillumi's Dungeon — Browser LLM Edition</title>
 <style>
   :root{
-    --bg:#0e0b08; --panel:#1a140f; --panel2:#231b14; --text:#f0e2c5; --muted:#baa78a;
-    --accent:#d5b27c; --accent2:#f0d9a6; --danger:#d98a75; --ok:#9fd0a4; --border:#4d3a29;
+    --text:#eadfc8; --muted:#bfae91; --accent:#e7c98a; --accent2:#d7a85b; --danger:#ff8d7a; --ok:#9fd8a6;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --sans: Georgia, "Palatino Linotype", "Book Antiqua", serif;
-    --shadow: 0 18px 42px rgba(0,0,0,.45);
+    --sans: Georgia, 'Times New Roman', serif;
   }
   *{box-sizing:border-box}
-  html,body{min-height:100%}
+  html,body{height:100%}
   body{
-    margin:0;
-    color:var(--text);
-    font-family:var(--sans);
-    background:
-      linear-gradient(rgba(8,5,3,.72), rgba(8,5,3,.86)),
-      url('bg_main.png') center top / cover no-repeat fixed,
-      url('panel_texture.png') center / cover no-repeat fixed;
-    text-shadow:0 1px 0 rgba(0,0,0,.4);
+    margin:0; color:var(--text); font-family:var(--sans);
+    background:#080604 url('bg_main_exact.png') center top / cover no-repeat fixed;
+    text-shadow:0 1px 1px rgba(0,0,0,.55);
   }
-  .wrap{max-width:1400px; margin:0 auto; padding:18px}
-  h1{margin:0 0 6px; font-size:34px; letter-spacing:.03em; color:#f7ead0}
-  .sub{color:#d7c6aa; font-size:15px; max-width:980px}
-  .grid{display:grid; grid-template-columns:360px 1fr 340px; gap:18px; margin-top:16px; align-items:start}
+  .wrap{max-width:1400px; margin:0 auto; padding:16px}
+  h1{margin:0 0 8px; font-size:32px; letter-spacing:.4px}
+  .sub{color:#c7b79b; font-size:14px}
+  .grid{display:grid; grid-template-columns:360px 668px 340px; gap:16px; margin-top:16px; align-items:start}
   .panel{
-    position:relative;
-    background:linear-gradient(rgba(14,10,7,.76), rgba(14,10,7,.84));
-    border:1px solid rgba(115,84,51,.35);
-    border-radius:18px;
-    padding:24px 22px 22px;
-    box-shadow:var(--shadow);
-    overflow:hidden;
-    min-height:220px;
+    border:none; border-radius:18px; padding:14px; height:920px; overflow:hidden; position:relative;
+    box-shadow:0 16px 40px rgba(0,0,0,.42);
+    background-repeat:no-repeat; background-position:center; background-size:100% 100%;
   }
-  .panel::before{
-    content:"";
-    position:absolute; inset:0;
-    background:url('frame_overlay.png') center/100% 100% no-repeat;
-    opacity:.72;
-    pointer-events:none;
-  }
-  .control-panel::before{ background-image:url('frame_overlay.png'); opacity:.82; }
-  .story-panel::before{ background-image:url('frame_textbox.png'); opacity:.8; }
-  .map-panel::before{ background-image:url('frame_dice.png'); opacity:.76; }
-  .panel > *{position:relative; z-index:1}
-  .panel h2{margin:0 0 12px; font-size:18px; color:var(--accent2); letter-spacing:.04em}
-  label{display:block; font-size:12px; color:var(--muted); margin:9px 0 5px; text-transform:uppercase; letter-spacing:.08em}
+  .grid > .panel:nth-child(1){background-image:url('panel_left_360x920.png')}
+  .grid > .panel:nth-child(2){background-image:url('panel_center_668x920.png')}
+  .grid > .panel:nth-child(3){background-image:url('panel_right_340x920.png')}
+  .panel h2{margin:0 0 10px; font-size:16px; color:var(--accent); letter-spacing:.08em; text-transform:uppercase}
+  label{display:block; font-size:12px; color:#c7b79b; margin:8px 0 4px}
   input[type=text], input[type=password], textarea, select{
-    width:100%;
-    color:#f8edd7;
-    border:1px solid rgba(163,126,81,.45);
-    border-radius:12px;
-    padding:12px 14px;
-    font:15px var(--sans);
-    background:
-      linear-gradient(rgba(18,12,8,.82), rgba(18,12,8,.86)),
-      url('frame_input.png') center/100% 100% no-repeat;
-    box-shadow: inset 0 0 0 1px rgba(255,232,193,.03);
+    width:100%; color:var(--text); border:none; outline:none;
+    background:transparent; font:14px var(--sans);
+    padding:13px 16px;
   }
-  input::placeholder, textarea::placeholder{color:#ccb898}
-  textarea{min-height:92px; resize:vertical; line-height:1.4}
-  button{
-    background:linear-gradient(180deg,#3a2b1e,#23190f);
-    color:#f6e7c5;
-    border:1px solid #7b5a39;
-    border-radius:12px;
-    padding:10px 14px;
-    cursor:pointer;
-    font:600 14px var(--sans);
-    box-shadow:0 6px 14px rgba(0,0,0,.28);
-  }
-  button:hover{filter:brightness(1.08)}
-  button.primary{
-    background:linear-gradient(rgba(15,10,7,.2), rgba(15,10,7,.2)), url('button_roll.png') center/100% 100% no-repeat;
-    border-color:#8d6a41;
-    min-height:46px;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-  }
-  button.warn{background:linear-gradient(180deg,#633026,#381711); border-color:#9b5c50}
-  button.ghost{background:linear-gradient(180deg,#221a13,#15100b)}
   .row{display:flex; gap:8px; flex-wrap:wrap}
-  .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:rgba(18,12,8,.72); border:1px solid rgba(145,111,75,.5); font-size:12px; color:#ddccaf}
+  .row > input[type=text], .row > input[type=password]{flex:1 1 auto}
+  select{
+    background:rgba(10,8,5,.72); border:1px solid rgba(160,130,90,.35); border-radius:10px;
+    padding:10px 12px;
+  }
+  textarea{min-height:92px; resize:vertical}
+  #apiKeyInput, #apiEndpointInput, #modelInput, #importBox{
+    height:52px; background:url('field_short_332x52.png') center / 100% 100% no-repeat;
+  }
+  #actionInput{
+    min-height:92px; max-height:180px;
+    background:url('field_long_640x92.png') center / 100% 100% no-repeat;
+  }
+  button{
+    color:#f2e7d0; border:none; background:transparent; cursor:pointer;
+    font:700 14px var(--sans); letter-spacing:.08em; text-transform:uppercase;
+    min-width:126px; height:44px; padding:0 18px;
+    background-image:url('button_secondary_126x44.png'); background-size:100% 100%; background-repeat:no-repeat;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  }
+  button.primary{min-width:180px; height:50px; background-image:url('button_primary_180x50.png')}
+  #askAiBtn{min-width:220px; background-image:url('button_wide_220x44.png')}
+  button:hover{filter:brightness(1.08) drop-shadow(0 2px 4px rgba(0,0,0,.35))}
+  button:disabled{opacity:.55; cursor:not-allowed; filter:none}
+  .pill{
+    display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
+    background:rgba(10,8,5,.55); border:1px solid rgba(177,145,98,.28); font-size:12px; color:#d2c0a2
+  }
   .mono{font-family:var(--mono)}
-  .map{
-    white-space:pre; font:13px/1.25 var(--mono); color:#f6e8cb;
-    background:linear-gradient(rgba(16,11,8,.72), rgba(16,11,8,.8));
-    border:1px solid rgba(145,111,75,.45); padding:14px; border-radius:14px; min-height:280px; overflow:auto;
-    box-shadow: inset 0 0 22px rgba(0,0,0,.25);
+  .log{
+    height:620px; overflow:auto; display:flex; flex-direction:column; gap:10px;
+    padding:14px; background:url('story_log_frame_640x620.png') center / 100% 100% no-repeat;
   }
-  .log{height:66vh; overflow:auto; display:flex; flex-direction:column; gap:10px; padding-right:4px}
   .entry{
-    background:linear-gradient(rgba(22,15,10,.84), rgba(22,15,10,.9));
-    border:1px solid rgba(145,111,75,.4); border-radius:14px; padding:12px 14px;
-    box-shadow:0 8px 18px rgba(0,0,0,.18);
+    min-height:110px; padding:12px 16px; border:none; border-radius:0;
+    background:url('entry_card_612x110.png') center / 100% 100% no-repeat;
+    color:#efe5d2;
   }
-  .entry .k{font-size:11px; color:#bda78a; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px}
-  .entry.roll{border-color:#9c7d4d}
-  .entry.err{border-color:#864454}
-  .entry.sys{border-color:#6d5639}
+  .entry .k{font-size:11px; color:#bfae91; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px}
+  .entry.roll .k{color:#d8be89}
+  .entry.err .k{color:#ff9f8a}
+  .entry.sys .k{color:#d9c7a6}
+  .map{
+    white-space:pre; font:13px/1.25 var(--mono); color:#efe5d2;
+    min-height:620px; overflow:auto; padding:16px;
+    background:url('map_frame_312x620.png') center / 100% 100% no-repeat;
+  }
   .status{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-  .small{font-size:12px; color:var(--muted)}
+  .small{font-size:12px; color:#bfae91}
   .actions{display:grid; gap:8px}
   .inventory{display:flex; gap:6px; flex-wrap:wrap}
-  .chip{padding:6px 9px; border-radius:999px; background:rgba(20,14,10,.78); border:1px solid rgba(145,111,75,.45); font-size:12px}
+  .chip{padding:6px 9px; border-radius:999px; background:rgba(10,8,5,.55); border:1px solid rgba(177,145,98,.28); font-size:12px}
   .ok{color:var(--ok)} .danger{color:var(--danger)} .accent2{color:var(--accent2)}
   .hidden{display:none !important}
   .thinking{opacity:.75; font-style:italic}
-  button:disabled{opacity:.55; cursor:not-allowed; filter:none}
-  .warning{margin-top:10px; padding:10px 12px; border-radius:10px; background:#311a1d; border:1px solid #864454; color:#ffd7dc; font-size:12px}
-  .footer{margin-top:10px; color:#cfbfa4; font-size:12px}
-  #actionInput{min-height:120px; font-size:16px}
-  #premiseBox{background:linear-gradient(rgba(18,12,8,.78), rgba(18,12,8,.84));}
-  .log::-webkit-scrollbar, .map::-webkit-scrollbar {width:10px;height:10px}
-  .log::-webkit-scrollbar-thumb, .map::-webkit-scrollbar-thumb {background:#5c4328;border-radius:10px}
-  .log::-webkit-scrollbar-track, .map::-webkit-scrollbar-track {background:rgba(0,0,0,.18)}
-  @media (max-width:1100px){ .grid{grid-template-columns:1fr} .log{height:40vh} }
+  .warning{margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(60,18,16,.8); border:1px solid rgba(255,120,100,.4); color:#ffd7dc; font-size:12px}
+  .footer{margin-top:10px; color:#bfae91; font-size:12px}
+  #premiseBox{
+    min-height:120px; padding:16px; background:url('premise_frame_332x120.png') center / 100% 100% no-repeat;
+    border:none;
+  }
+  #inventoryBox{min-height:54px}
+  .panel > *{position:relative; z-index:1}
+  @media (max-width:1450px){
+    .wrap{max-width:100%; padding:10px}
+    .grid{grid-template-columns:1fr; gap:12px}
+    .panel{height:auto; min-height:unset; background-size:cover}
+    .log,.map{height:40vh; background-size:cover}
+  }
 </style>
 </head>
 <body>
@@ -129,7 +114,7 @@
   <div class="sub">Interactive AI dungeon crawl. Users paste their own API key, endpoint, and model. AI-first turns, continuity, onboarding, save/load, and a local fallback if AI fails.</div>
 
   <div class="grid">
-    <div class="panel control-panel">
+    <div class="panel">
       <h2>AI / LLM Integration</h2>
       <label>API key</label>
       <div class="row">
@@ -185,7 +170,7 @@
       </div>
     </div>
 
-    <div class="panel story-panel">
+    <div class="panel">
       <h2>Story</h2>
       <div id="log" class="log"></div>
       <div class="actions" style="margin-top:12px">
@@ -197,7 +182,7 @@
       </div>
     </div>
 
-    <div class="panel map-panel">
+    <div class="panel">
       <h2>ASCII Map</h2>
       <div id="mapBox" class="map"></div>
       <div class="footer">Lean AI mode keeps requests smaller for faster turns. The local fallback engine only covers a few opening beats and simple movement when AI is unavailable.</div>
@@ -212,7 +197,7 @@ const AI_KEY = 'aillumi_dungeon_browser_llm_ai_v2';
 const AI_CONFIG = {
   apiKey: '',
   endpoint: 'https://api.openai.com/v1/responses',
-  model: 'gpt-5.4',
+  model: 'gpt-5',
   apiStyle: 'auto',
   useAi: true
 };
