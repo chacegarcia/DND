@@ -3,753 +3,856 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aillumi's Dungeon — Browser LLM Edition</title>
+<title>Aillumi's Dungeon</title>
 <style>
   :root{
-    --text:#eadfc8; --muted:#bfae91; --accent:#e7c98a; --accent2:#d7a85b; --danger:#ff8d7a; --ok:#9fd8a6;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --sans: Georgia, "Times New Roman", serif;
-    --panelInset: rgba(18,12,8,.72);
-    --panelLine: rgba(198,157,101,.18);
-    --fieldBg: rgba(18,12,8,.74);
-    --fieldBorder: rgba(198,157,101,.22);
+    --bg:#0f0c09;
+    --panel:rgba(20,15,12,.82);
+    --panel-2:rgba(34,24,18,.78);
+    --line:rgba(180,140,90,.35);
+    --line-strong:rgba(211,167,103,.58);
+    --text:#ead8b4;
+    --muted:#bda57c;
+    --accent:#e1b56c;
+    --danger:#d36d55;
+    --ok:#8cbc7f;
+    --shadow:0 10px 28px rgba(0,0,0,.42);
+    --radius:16px;
+    --map-tile:10;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; color:var(--text); font-family:var(--sans);
+    margin:0;
+    color:var(--text);
+    font:14px/1.4 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     background:
-      linear-gradient(rgba(7,5,4,.45), rgba(7,5,4,.62)),
-      #080604 url('bg_main_exact.png') center top / cover no-repeat fixed;
-    text-shadow:0 1px 1px rgba(0,0,0,.55);
+      linear-gradient(rgba(8,6,5,.70), rgba(8,6,5,.82)),
+      url('bg_main_exact.png') center/cover fixed no-repeat,
+      var(--bg);
   }
-  .wrap{max-width:1400px; margin:0 auto; padding:18px}
-  h1{margin:0 0 8px; font-size:34px; letter-spacing:.4px}
-  .sub{color:#c7b79b; font-size:14px; max-width:1000px}
-  .grid{display:grid; grid-template-columns:360px 668px 340px; gap:16px; margin-top:16px; align-items:start}
+  .app{
+    min-height:100%;
+    display:grid;
+    grid-template-columns: 300px minmax(540px, 1fr) 320px;
+    gap:14px;
+    padding:14px;
+  }
   .panel{
-    border:none; border-radius:18px; padding:18px; height:920px; overflow:hidden; position:relative;
-    box-shadow:0 16px 40px rgba(0,0,0,.42);
-    background-repeat:no-repeat; background-position:center; background-size:100% 100%;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(3px);
+    overflow:hidden;
   }
-  .panel::before{
-    content:""; position:absolute; inset:18px; border-radius:14px;
-    background:linear-gradient(180deg, rgba(10,7,5,.32), rgba(10,7,5,.18));
-    pointer-events:none;
+  .panel-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0));
   }
-  .grid > .panel:nth-child(1){background-image:url('panel_left_360x920.png')}
-  .grid > .panel:nth-child(2){background-image:url('panel_center_668x920.png')}
-  .grid > .panel:nth-child(3){background-image:url('panel_right_340x920.png')}
-  .panel > *{position:relative; z-index:1}
-  .panel h2{margin:0 0 10px; font-size:16px; color:var(--accent); letter-spacing:.08em; text-transform:uppercase}
-  label{display:block; font-size:12px; color:#c7b79b; margin:8px 0 4px}
-  .surface{
-    background:var(--fieldBg);
-    border:1px solid var(--fieldBorder);
+  .panel-title{
+    font-size:12px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .panel-body{padding:12px 14px}
+  .left,.center,.right{
+    display:grid;
+    gap:14px;
+    align-content:start;
+  }
+  .left{grid-template-rows:auto auto 1fr auto}
+  .center{grid-template-rows:auto 1fr auto}
+  .right{grid-template-rows:auto auto auto 1fr}
+  .brand{
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:.03em;
+    margin:0;
+  }
+  .subtle{color:var(--muted)}
+  .stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .stat{
+    padding:10px 12px;
+    border:1px solid var(--line);
     border-radius:12px;
-    box-shadow: inset 0 1px 0 rgba(255,240,215,.03), 0 8px 18px rgba(0,0,0,.14);
+    background:rgba(0,0,0,.18);
   }
-  input[type=text], input[type=password], textarea, select{
-    width:100%; color:var(--text); outline:none; border:1px solid var(--fieldBorder);
-    background:var(--fieldBg); font:14px var(--sans); padding:12px 14px; border-radius:12px;
-    box-shadow: inset 0 1px 0 rgba(255,240,215,.03);
+  .stat-label{
+    color:var(--muted);
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.14em;
   }
-  input[type=text]:focus, input[type=password]:focus, textarea:focus, select:focus{
-    border-color: rgba(231,201,138,.48); box-shadow: 0 0 0 2px rgba(231,201,138,.10), inset 0 1px 0 rgba(255,240,215,.03);
+  .stat-value{
+    font-size:20px;
+    font-weight:700;
+    margin-top:4px;
   }
-  textarea{min-height:92px; resize:vertical}
-  .row{display:flex; gap:8px; flex-wrap:wrap}
-  .row > input[type=text], .row > input[type=password]{flex:1 1 auto}
-  button{
-    color:#f4e8d0; cursor:pointer; font:700 13px var(--sans); letter-spacing:.08em; text-transform:uppercase;
-    min-width:126px; height:42px; padding:0 16px; border-radius:12px;
-    border:1px solid rgba(198,157,101,.26);
-    background:linear-gradient(180deg, rgba(78,59,39,.94), rgba(36,24,15,.95));
-    box-shadow: inset 0 1px 0 rgba(255,240,215,.10), 0 6px 16px rgba(0,0,0,.25);
+  .inventory-list,.actions-list{
+    display:grid;
+    gap:8px;
   }
-  button.primary{
-    background:linear-gradient(180deg, rgba(111,84,50,.98), rgba(49,31,18,.98));
-    border-color: rgba(219,173,105,.34);
+  .chip{
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.03);
+    border-radius:999px;
+    padding:7px 10px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    color:var(--text);
+    width:max-content;
+    max-width:100%;
   }
-  #askAiBtn{min-width:220px}
-  button:hover{filter:brightness(1.06)}
-  button:disabled{opacity:.55; cursor:not-allowed; filter:none}
-  .pill{
-    display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px;
-    background:rgba(10,8,5,.55); border:1px solid rgba(177,145,98,.28); font-size:12px; color:#d2c0a2
+  .premise{
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:rgba(0,0,0,.18);
   }
-  .mono{font-family:var(--mono)}
+  .premise h3{
+    margin:0 0 6px;
+    font-size:16px;
+  }
+  .premise p{margin:6px 0;color:var(--text)}
   .log{
-    height:620px; overflow:auto; display:flex; flex-direction:column; gap:10px;
-    padding:16px; border-radius:16px;
-    background:linear-gradient(180deg, rgba(16,10,7,.64), rgba(12,8,6,.76));
-    border:1px solid rgba(198,157,101,.16);
-    box-shadow: inset 0 0 0 1px rgba(255,240,215,.025), inset 0 20px 30px rgba(255,255,255,.015);
+    height:100%;
+    min-height:480px;
+    overflow:auto;
+    padding-right:4px;
   }
   .entry{
-    min-height:unset; padding:12px 14px; border-radius:12px;
-    background:linear-gradient(180deg, rgba(57,41,26,.55), rgba(28,19,12,.60));
-    border:1px solid rgba(198,157,101,.14);
-    color:#efe5d2;
+    border-left:3px solid var(--line);
+    padding:10px 12px;
+    margin:0 0 10px;
+    background:rgba(255,255,255,.03);
+    border-radius:0 12px 12px 0;
   }
-  .entry .k{font-size:11px; color:#bfae91; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px}
-  .entry.roll .k{color:#d8be89}.entry.err .k{color:#ff9f8a}.entry.sys .k{color:#d9c7a6}
-  .map{
-    white-space:pre; font:13px/1.25 var(--mono); color:#efe5d2;
-    min-height:620px; overflow:auto; padding:16px; border-radius:16px;
-    background:linear-gradient(180deg, rgba(16,10,7,.64), rgba(12,8,6,.76));
-    border:1px solid rgba(198,157,101,.16);
-    box-shadow: inset 0 0 0 1px rgba(255,240,215,.025), inset 0 20px 30px rgba(255,255,255,.015);
+  .entry.sys{border-left-color:var(--accent)}
+  .entry.ai{border-left-color:#8cb6ff}
+  .entry.err{border-left-color:var(--danger)}
+  .entry .meta{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    color:var(--muted);
+    font-size:12px;
+    margin-bottom:4px;
   }
-  .mapCanvas{display:block; width:100%; height:620px; border-radius:16px; background:linear-gradient(180deg, rgba(16,10,7,.64), rgba(12,8,6,.76)); border:1px solid rgba(198,157,101,.16); box-shadow: inset 0 0 0 1px rgba(255,240,215,.025), inset 0 20px 30px rgba(255,255,255,.015); image-rendering: pixelated; }
-  .status{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-  .small{font-size:12px; color:#bfae91}
-  .actions{display:grid; gap:8px}
-  .inventory{display:flex; gap:6px; flex-wrap:wrap}
-  .chip{padding:6px 9px; border-radius:999px; background:rgba(10,8,5,.55); border:1px solid rgba(177,145,98,.28); font-size:12px}
-  .ok{color:var(--ok)} .danger{color:var(--danger)} .accent2{color:var(--accent2)}
-  .hidden{display:none !important}
-  .thinking{opacity:.75; font-style:italic}
-  .warning{margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(60,18,16,.8); border:1px solid rgba(255,120,100,.4); color:#ffd7dc; font-size:12px}
-  .footer{margin-top:10px; color:#bfae91; font-size:12px}
-  #premiseBox{
-    min-height:120px; padding:14px 16px; border-radius:14px;
-    background:linear-gradient(180deg, rgba(57,41,26,.55), rgba(28,19,12,.60));
-    border:1px solid rgba(198,157,101,.14);
+  .entry pre{
+    white-space:pre-wrap;
+    margin:0;
+    font:inherit;
+    color:var(--text);
   }
-  #inventoryBox{min-height:54px}
-  @media (max-width:1450px){
-    .wrap{max-width:100%; padding:10px}
-    .grid{grid-template-columns:1fr; gap:12px}
-    .panel{height:auto; min-height:unset; background-size:cover}
-    .panel::before{inset:14px}
-    .log,.map{height:40vh}
+  .controls{
+    display:grid;
+    gap:10px;
+  }
+  textarea, input, select{
+    width:100%;
+    color:var(--text);
+    background:rgba(10,8,6,.72);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 12px;
+    outline:none;
+    transition:border-color .18s ease, box-shadow .18s ease;
+  }
+  textarea:focus, input:focus, select:focus{
+    border-color:var(--line-strong);
+    box-shadow:0 0 0 3px rgba(225,181,108,.10);
+  }
+  #actionInput{
+    min-height:88px;
+    resize:vertical;
+  }
+  .btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  button{
+    border:1px solid var(--line);
+    color:var(--text);
+    background:linear-gradient(180deg,rgba(73,52,34,.95),rgba(41,29,20,.95));
+    border-radius:12px;
+    padding:10px 14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:transform .08s ease, border-color .18s ease, filter .18s ease;
+  }
+  button:hover{filter:brightness(1.08); border-color:var(--line-strong)}
+  button:active{transform:translateY(1px)}
+  button.secondary{
+    background:linear-gradient(180deg,rgba(35,35,35,.9),rgba(18,18,18,.9));
+  }
+  button.ghost{
+    background:rgba(255,255,255,.03);
+  }
+  button.warn{
+    background:linear-gradient(180deg,rgba(123,52,39,.95),rgba(72,28,21,.95));
+    border-color:rgba(211,109,85,.5);
+  }
+  .small{font-size:12px}
+  .map-wrap{
+    display:grid;
+    gap:10px;
+  }
+  .map-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .map-toolbar .btn-row{gap:6px}
+  .map-shell{
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:rgba(0,0,0,.28);
+    overflow:auto;
+    padding:12px;
+    min-height:320px;
+  }
+  #mapCanvas{
+    display:block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background:
+      radial-gradient(circle at 50% 30%, rgba(255,203,120,.08), transparent 28%),
+      linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.12)),
+      rgba(17,12,9,.88);
+    border:1px solid rgba(255,255,255,.05);
+    border-radius:8px;
+  }
+  .legend{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px 10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .legend code{
+    color:var(--accent);
+    background:rgba(255,255,255,.04);
+    padding:1px 5px;
+    border-radius:6px;
+  }
+  .settings-grid{
+    display:grid;
+    gap:8px;
+  }
+  .row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .toggle input{width:auto}
+  .footer-note{
+    color:var(--muted);
+    font-size:12px;
+  }
+  .statusline{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:5px 9px;
+    background:rgba(255,255,255,.03);
+    font-size:12px;
+    color:var(--muted);
+  }
+  .danger{color:var(--danger)}
+  .ok{color:var(--ok)}
+  @media (max-width: 1180px){
+    .app{
+      grid-template-columns:1fr;
+    }
+    .left,.center,.right{grid-template-rows:auto}
+    .log{min-height:320px}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Aillumi's Dungeon</h1>
-  <div class="sub">Interactive AI dungeon crawl. Users paste their own API key, endpoint, and model. AI-first turns, continuity, onboarding, save/load, and a local fallback if AI fails.</div>
-
-  <div class="grid">
+<div class="app">
+  <section class="left">
     <div class="panel">
-      <h2>AI / LLM Integration</h2>
-      <label>API key</label>
-      <div class="row">
-        <input id="apiKeyInput" type="password" placeholder="Paste your API key" />
-        <button id="toggleKeyBtn" class="ghost" type="button">Show</button>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Dungeon</div>
+          <h1 class="brand">Aillumi’s Dungeon</h1>
+        </div>
       </div>
-      <label>Endpoint</label>
-      <input id="apiEndpointInput" type="text" value="https://api.openai.com/v1/responses" />
-      <label>Model</label>
-      <input id="modelInput" type="text" value="gpt-5" />
-      <label>API style</label>
-      <select id="apiStyleSelect">
-        <option value="auto">Auto detect</option>
-        <option value="responses">OpenAI Responses</option>
-        <option value="chat">Chat Completions compatible</option>
-      </select>
-      <div class="row" style="margin-top:10px">
-        <button id="saveAiBtn" class="primary" type="button">Save AI Settings</button>
-        <button id="clearAiBtn" class="ghost" type="button">Clear AI Settings</button>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <label class="pill"><input id="useAiToggle" type="checkbox" checked /> Use AI narrator</label>
-      </div>
-      <div class="footer">Host this over <span class="mono">https://</span> or <span class="mono">http://localhost</span>, not <span class="mono">file://</span>. Some providers may still block browser-origin requests with CORS.</div>
-
-      <h2 style="margin-top:16px">Run Control</h2>
-      <div class="status">
-        <div class="pill">Health <strong id="healthText">10/10</strong></div>
-        <div class="pill">Room <strong id="roomText">onboarding</strong></div>
-        <div class="pill">Alive <strong id="aliveText">yes</strong></div>
-        <div class="pill">Last roll <strong id="lastRollText">—</strong></div>
-        <div class="pill">Engine <strong id="engineText">local</strong></div>
-        <div class="pill">Status <strong id="thinkingText">idle</strong></div>
-      </div>
-      <div id="fileWarning" class="warning hidden">You are opening this as <span class="mono">file://</span>. Browser AI calls are flaky there. Host it on GitHub Pages or open it through a local web server for smoother turns.</div>
-
-      <label style="margin-top:12px">Inventory</label>
-      <div id="inventoryBox" class="inventory"></div>
-
-      <label style="margin-top:12px">Current premise</label>
-      <div id="premiseBox" class="entry sys"></div>
-
-      <div class="row" style="margin-top:12px">
-        <button id="newRunBtn" class="primary" type="button">New Run</button>
-        <button id="saveBtn" type="button">Save</button>
-        <button id="loadBtn" type="button">Load</button>
-        <button id="exportBtn" type="button">Export Save</button>
-      </div>
-      <textarea id="importBox" placeholder="Paste exported save JSON here to import"></textarea>
-      <div class="row">
-        <button id="importBtn" type="button">Import Save</button>
-        <button id="askAiBtn" type="button">Ask AI About Current Room</button>
+      <div class="panel-body">
+        <div id="premiseBox" class="premise"></div>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Story</h2>
-      <div id="log" class="log"></div>
-      <div class="actions" style="margin-top:12px">
-        <textarea id="actionInput" placeholder="Type what you do. Example: I sprint toward the eastern door and listen before opening it."></textarea>
-        <div class="row">
-          <button id="rollBtn" class="primary" type="button">Roll Action</button>
-          <button id="clearLogBtn" class="ghost" type="button">Clear Log View</button>
+      <div class="panel-header"><div class="panel-title">Status</div></div>
+      <div class="panel-body">
+        <div class="stat-grid">
+          <div class="stat"><div class="stat-label">Health</div><div class="stat-value" id="healthValue">10/10</div></div>
+          <div class="stat"><div class="stat-label">Location</div><div class="stat-value" id="locationValue">—</div></div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="statusline">
+          <span class="badge">Engine <strong id="engineLabel">Local</strong></span>
+          <span class="badge">Alive <strong id="aliveLabel">Yes</strong></span>
+          <span class="badge">Zoom <strong id="zoomLabel">10px</strong></span>
         </div>
       </div>
     </div>
 
     <div class="panel">
-      <h2>ASCII Map</h2>
-      <canvas id="mapCanvas" class="mapCanvas" width="312" height="620"></canvas><div id="mapBox" class="map hidden"></div>
-      <div class="footer">Lean AI mode keeps requests smaller for faster turns. The local fallback engine only covers a few opening beats and simple movement when AI is unavailable.</div>
+      <div class="panel-header"><div class="panel-title">Inventory</div></div>
+      <div class="panel-body">
+        <div id="inventoryList" class="inventory-list"></div>
+      </div>
     </div>
-  </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Run Controls</div></div>
+      <div class="panel-body controls">
+        <div class="btn-row">
+          <button id="newRunBtn">New Run</button>
+          <button id="loadBtn" class="secondary">Load</button>
+          <button id="saveBtn" class="ghost">Save</button>
+          <button id="clearSaveBtn" class="warn">Clear Save</button>
+        </div>
+        <div class="footer-note">Only the background image is used now. The rest of the UI is CSS so it stays cleaner and less blocky.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="center">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Story Log</div>
+      </div>
+      <div class="panel-body log" id="log"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Action</div></div>
+      <div class="panel-body controls">
+        <textarea id="actionInput" placeholder="Type what you do... Enter sends. Shift+Enter makes a new line."></textarea>
+        <div class="btn-row">
+          <button id="rollActionBtn">Roll Action</button>
+          <button id="rerollPremiseBtn" class="secondary">Reroll Premise</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="right">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Map</div></div>
+      <div class="panel-body map-wrap">
+        <div class="map-toolbar">
+          <div class="statusline">
+            <span class="badge">Tile Scale <strong id="tileScaleText">10px</strong></span>
+          </div>
+          <div class="btn-row">
+            <button id="zoomOutBtn" class="secondary">−</button>
+            <button id="zoomResetBtn" class="ghost">Reset</button>
+            <button id="zoomInBtn">+</button>
+          </div>
+        </div>
+        <div class="map-shell">
+          <canvas id="mapCanvas" width="300" height="300"></canvas>
+        </div>
+        <div class="legend">
+          <div><code>#</code> Wall</div>
+          <div><code>.</code> Floor</div>
+          <div><code>@</code> Player</div>
+          <div><code>D/O</code> Door</div>
+          <div><code>C</code> Chest</div>
+          <div><code>S</code> Stairs</div>
+          <div><code>T</code> Trap</div>
+          <div><code>W</code> Water</div>
+          <div><code>X</code> Rubble</div>
+          <div><code>E</code> Enemy</div>
+          <div><code>?</code> Unknown</div>
+          <div><code>%</code> Corpse</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">AI Settings</div></div>
+      <div class="panel-body settings-grid">
+        <div class="toggle"><input id="useAiToggle" type="checkbox"><label for="useAiToggle">Use AI narrator</label></div>
+        <input id="apiKeyInput" type="password" placeholder="API key" />
+        <div class="row">
+          <input id="endpointInput" type="text" placeholder="Endpoint" value="https://api.openai.com/v1/responses" />
+          <input id="modelInput" type="text" placeholder="Model" value="gpt-5.4" />
+        </div>
+        <div class="btn-row">
+          <button id="showKeyBtn" class="ghost">Show Key</button>
+          <button id="saveAiBtn" class="secondary">Save AI</button>
+        </div>
+        <div class="footer-note">Run this from GitHub Pages or another normal web host, not by double-clicking a file.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Quick Actions</div></div>
+      <div class="panel-body actions-list" id="quickActions"></div>
+    </div>
+  </section>
 </div>
 
 <script>
-const SAVE_KEY = 'aillumi_dungeon_browser_llm_save_v2';
-const AI_KEY = 'aillumi_dungeon_browser_llm_ai_v2';
-
-const tileAtlas = new Image();
-tileAtlas.src = 'dungeon_tiles_atlas_32.png';
-const TILE_SIZE = 32;
-const DISPLAY_TILE = 10;
-const tileIndex = {
-  wall: [0,0], wall_alt:[1,0], wall_dark:[2,0], wall_corner:[3,0],
-  floor:[0,1], floor_alt:[1,1], water:[2,1], rubble:[3,1],
-  door:[0,2], open:[1,2], trap:[2,2], chest:[3,2],
-  fog:[0,3], player:[1,3], enemy:[2,3], stairs:[3,3]
-};
-const symbolTile = {
-  '#':'wall', '.':'floor', '@':'player', 'D':'door', 'O':'open', 'C':'chest',
-  'S':'stairs', 'T':'trap', 'W':'water', 'V':'water', 'X':'rubble', '?':'fog',
-  'E':'enemy', 'M':'enemy', '!':'enemy', '%':'rubble', 'R':'rubble', 'H':'wall_alt',
-  'L':'floor_alt', 'P':'floor_alt', 'G':'floor_alt', 'I':'floor_alt', 'U':'door',
-  'u':'open', 'A':'rubble', 'b':'rubble', '>':'stairs', '/':'wall_corner', '|':'wall_alt',
-  '~':'water', 'K':'chest', 'm':'enemy'
-};
-
-function drawTile(ctx, tileName, dx, dy, scale){
-  const pos = tileIndex[tileName] || tileIndex.floor;
-  const sx = pos[0] * TILE_SIZE;
-  const sy = pos[1] * TILE_SIZE;
-  ctx.drawImage(tileAtlas, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, scale, scale);
-}
-
-function renderMapCanvas(){
-  const canvas = document.getElementById('mapCanvas');
-  if(!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const ascii = String(state.map || makeBaseMap(state.room) || '');
-  const rows = ascii.split(/\r?\n/).filter(r => r.length);
-  const width = Math.max(1, ...rows.map(r => r.length));
-  const height = Math.max(1, rows.length);
-  const scale = DISPLAY_TILE;
-  canvas.width = Math.max(312, width * scale + 16);
-  canvas.height = Math.max(620, height * scale + 16);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  // background grid area
-  ctx.fillStyle = '#120c08';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  const offsetX = 8;
-  const offsetY = 8;
-  for(let y=0; y<rows.length; y++){
-    const row = rows[y];
-    for(let x=0; x<row.length; x++){
-      const ch = row[x];
-      const tileName = symbolTile[ch] || 'floor';
-      if(tileName === 'player'){
-        drawTile(ctx, 'floor', offsetX + x*scale, offsetY + y*scale, scale);
-        drawTile(ctx, 'player', offsetX + x*scale, offsetY + y*scale, scale);
-      } else if(tileName === 'enemy'){
-        drawTile(ctx, 'floor', offsetX + x*scale, offsetY + y*scale, scale);
-        drawTile(ctx, 'enemy', offsetX + x*scale, offsetY + y*scale, scale);
-      } else if(tileName === 'door' || tileName==='open' || tileName==='chest' || tileName==='trap' || tileName==='stairs' || tileName==='rubble'){
-        drawTile(ctx, 'floor', offsetX + x*scale, offsetY + y*scale, scale);
-        drawTile(ctx, tileName, offsetX + x*scale, offsetY + y*scale, scale);
-      } else {
-        drawTile(ctx, tileName, offsetX + x*scale, offsetY + y*scale, scale);
-      }
-    }
-  }
-}
-
-tileAtlas.onload = () => renderMapCanvas();
-
-const AI_CONFIG = {
-  apiKey: '',
-  endpoint: 'https://api.openai.com/v1/responses',
-  model: 'gpt-5',
-  apiStyle: 'auto',
-  useAi: true
-};
-
-let state = null;
-
-function rint(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
-function choice(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-
-function generatePremise(name='Stranger'){
-  const titles = ['The Ash Cellar','The Flooded Chapel Below','The Bone Lock Vault','The Hushed Well','The Iron Saint Crypt','The Orchard Under Stone'];
-  const openings = [
-    `${name}, you wake on cold stone with wet dust in your mouth and a cellar door breathing in the dark ahead.`,
-    `${name}, you descend a stair you do not remember entering and find a door swollen shut with damp.`,
-    `${name}, you push through warped planks into a place older than the house above and hear dripping somewhere ahead.`,
-    `${name}, you come to beside a cracked lantern, a half-burned map, and a door marked by fresh scrape lines.`
-  ];
-  const goals = ['Survive long enough to reach the lower sanctum.','Recover the thing the dungeon fears losing.','Find the truth-mask or die trying.','Reach the deeper chamber and come back with proof.'];
-  const items = [ ['worn map'], ['rusted key'], ['old cloth strip'], ['bronze clasp-lantern'], ['worn map','old cloth strip'] ];
-  return {
-    title: choice(titles),
-    opening: choice(openings),
-    goal: choice(goals),
-    startingInventory: [...choice(items)]
-  };
-}
-
-function makeBaseMap(room){
-  const maps = {
-    onboarding:`╔════════════════════════════╗\n║     AILLUMI'S DUNGEON      ║\n╚════════════════════════════╝\n\n@ = you\nD = door\n# = wall\n. = floor\n? = unknown\n\n###########\n#....@....#\n#.........D\n###########`,
-    cellar_start:`###########\n#....@....#\n#.........D\n###########`,
-    lower_hall:`  ###########   #################\n  #.........#   #.......C.......#\n  #.........O...@...............#\n  #.........#   #...............#\n  ###########   #...A...X....D..#\n                #####.###########\n                    #.#\n         ############.###########\n         #......T............?..#\n         #......................#\n         #..W.W..............E..#\n         #..W.W................D#\n         ######.#################`,
-    side_room:`         ######.#################.###\n              #.#               #@#\n          #####.#####           #P#\n          #....S....#           #H#\n          #.........#           #B#\n          ###########           ###`,
-    circular_chamber:`                                   ##\n                                   #@#\n                              ######.######\n                              #....(G)...D#\n                              #..........#\n                              #.......)B.#\n                              ############`,
-    below_room:`#################\n#@..............#\n#.N.N.o.N.......#\n#.............XX#\n#.............~~#\n#..........P....#\n#################`,
-    dead:`~~~~~~~~ YOU ARE DEAD ~~~~~~~~`
-  };
-  return maps[room] || maps.cellar_start;
-}
-
-function freshState(){
-  return {
-    playerName: '',
-    onboardingStep: 0,
-    premise: null,
-    room: 'onboarding',
-    health: 10,
-    alive: true,
-    inventory: [],
-    flags: {},
-    map: makeBaseMap('onboarding'),
-    log: [],
-    lastRoll: null
-  };
-}
-
-function addLog(text, kind='narration', title='Narration'){
-  state.log.push({ text, kind, title, ts: Date.now() });
-  renderLog();
-}
-
-function renderLog(){
-  const log = document.getElementById('log');
-  log.innerHTML = state.log.map(e => `<div class="entry ${escapeHtml(e.kind)}"><div class="k">${escapeHtml(e.title)}</div><div>${escapeHtml(e.text).replace(/\n/g,'<br>')}</div></div>`).join('');
-  log.scrollTop = log.scrollHeight;
-}
-
-function renderInventory(){
-  const box = document.getElementById('inventoryBox');
-  if(!state.inventory.length){ box.innerHTML = '<div class="small">nothing useful yet</div>'; return; }
-  box.innerHTML = state.inventory.map(i => `<div class="chip">${escapeHtml(i)}</div>`).join('');
-}
-
-function renderPremise(){
-  const p = state.premise;
-  document.getElementById('premiseBox').innerHTML = p ? `<strong>${escapeHtml(p.title)}</strong><br>${escapeHtml(p.goal)}` : '<span class="small">Onboarding in progress.</span>';
-}
-
-function updateUI(){
-  document.getElementById('mapBox').textContent = state.map || makeBaseMap(state.room);
-  renderMapCanvas();
-  document.getElementById('healthText').textContent = `${state.health}/10`;
-  document.getElementById('roomText').textContent = state.room;
-  document.getElementById('aliveText').textContent = state.alive ? 'yes' : 'no';
-  document.getElementById('lastRollText').textContent = state.lastRoll == null ? '—' : state.lastRoll;
-  if(document.getElementById('engineText').textContent === '') document.getElementById('engineText').textContent = 'local';
-  if(document.getElementById('thinkingText').textContent === '') document.getElementById('thinkingText').textContent = 'idle';
-  renderInventory();
-  renderPremise();
-  renderLog();
-}
-
-function saveGame(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
-function loadGame(){
-  const raw = localStorage.getItem(SAVE_KEY);
-  if(!raw) return false;
-  try {
-    state = JSON.parse(raw);
-    if(!state || typeof state !== 'object') throw new Error('bad save');
-    updateUI();
-    addLog('Loaded previous run.', 'sys', 'System');
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function exportSave(){ return JSON.stringify(state, null, 2); }
-
-function saveAiSettings(){ localStorage.setItem(AI_KEY, JSON.stringify(AI_CONFIG)); }
-function loadAiSettings(){
-  try {
-    const raw = localStorage.getItem(AI_KEY);
-    if(!raw) return;
-    const parsed = JSON.parse(raw);
-    Object.assign(AI_CONFIG, parsed || {});
-  } catch {}
-}
-function syncAiInputsFromConfig(){
-  document.getElementById('apiKeyInput').value = AI_CONFIG.apiKey || '';
-  document.getElementById('apiEndpointInput').value = AI_CONFIG.endpoint || 'https://api.openai.com/v1/responses';
-  document.getElementById('modelInput').value = AI_CONFIG.model || 'gpt-5';
-  document.getElementById('apiStyleSelect').value = AI_CONFIG.apiStyle || 'auto';
-  document.getElementById('useAiToggle').checked = !!AI_CONFIG.useAi;
-}
-function syncAiConfigFromInputs(){
-  AI_CONFIG.apiKey = document.getElementById('apiKeyInput').value.trim();
-  AI_CONFIG.endpoint = document.getElementById('apiEndpointInput').value.trim() || 'https://api.openai.com/v1/responses';
-  AI_CONFIG.model = document.getElementById('modelInput').value.trim() || 'gpt-5';
-  AI_CONFIG.apiStyle = document.getElementById('apiStyleSelect').value;
-  AI_CONFIG.useAi = document.getElementById('useAiToggle').checked;
-}
-
-function beginOnboarding(){
-  state = freshState();
-  addLog("What's your name?", 'sys', 'Onboarding');
-  updateUI();
-}
-
-function completeOnboarding(name){
-  state.playerName = name || 'Stranger';
-  state.premise = generatePremise(state.playerName);
-  state.inventory = [...state.premise.startingInventory];
-  state.room = 'cellar_start';
-  state.map = makeBaseMap('cellar_start');
-  state.onboardingStep = 99;
-  addLog(state.premise.opening + `\n\nGoal: ${state.premise.goal}`, 'sys', state.premise.title);
-  saveGame();
-  updateUI();
-}
-
-function serializeStateForAI(){
-  const compactLog = state.log.slice(-6).map(e => ({
-    title: e.title,
-    kind: e.kind,
-    text: String(e.text || '').slice(0, 280)
-  }));
-  return {
-    playerName: state.playerName,
-    room: state.room,
-    health: state.health,
-    alive: state.alive,
-    inventory: state.inventory.slice(0, 12),
-    flags: state.flags,
-    premise: state.premise ? {
-      title: state.premise.title,
-      goal: state.premise.goal
-    } : null,
-    lastRoll: state.lastRoll,
-    map: String(state.map || '').slice(0, 1800),
-    recentLog: compactLog
-  };
-}
-
-function extractTextFromAiResponse(data){
-  if(typeof data?.output_text === 'string' && data.output_text.trim()) return data.output_text.trim();
-  if(Array.isArray(data?.output)){
-    const parts = [];
-    for(const item of data.output){
-      if(Array.isArray(item?.content)){
-        for(const c of item.content){
-          if(typeof c?.text === 'string' && c.text.trim()) parts.push(c.text.trim());
-          else if(typeof c?.content === 'string' && c.content.trim()) parts.push(c.content.trim());
-        }
-      }
-      if(typeof item?.text === 'string' && item.text.trim()) parts.push(item.text.trim());
-    }
-    if(parts.length) return parts.join('\n').trim();
-  }
-  const msg = data?.choices?.[0]?.message;
-  if(typeof msg?.content === 'string' && msg.content.trim()) return msg.content.trim();
-  if(Array.isArray(msg?.content)){
-    const joined = msg.content.map(c => c?.text || c?.content || '').join('\n').trim();
-    if(joined) return joined;
-  }
-  if(typeof data?.choices?.[0]?.text === 'string' && data.choices[0].text.trim()) return data.choices[0].text.trim();
-  return '';
-}
-
-function buildAiBody(action){
-  const systemPrompt = `You are the narrator and rules engine for a harsh ASCII dungeon crawler.
-Return STRICT JSON only.
-Interpret player intent naturally.
-Keep continuity tight.
-Keep narration vivid but concise.
-Every meaningful action gets one random roll from 0 to 20.
-0 means instant death.
-Insane or reality-breaking requests are still rolled, then apply -3, minimum final result 1.
-Health is 0 to 10.
-Do not give impossible inventory unless earned.
-
-Return exactly:
-{
-  "roll": { "base": 0, "final": 0, "insane": false },
-  "room": "cellar_start",
-  "health": 10,
-  "inventory": ["worn map"],
-  "flags": {},
-  "alive": true,
-  "map": "ASCII MAP",
-  "narration": "short but vivid outcome",
-  "meta": "brief rule note",
-  "suggestions": ["look", "move", "inspect door"]
-}`;
-  const payload = {
-    action,
-    state: serializeStateForAI()
+(() => {
+  const SAVE_KEY = 'aillumi_dungeon_save_v4';
+  const AI_KEY = 'aillumi_dungeon_ai_v4';
+  const TILE_ATLAS = 'dungeon_tiles_atlas_32.png';
+  const state = {
+    premise:null,
+    health:10,
+    maxHealth:10,
+    location:'cellar_start',
+    inventory:[],
+    log:[],
+    alive:true,
+    map:[],
+    engine:'Local',
+    tileScale:10
   };
 
-  const endpoint = (AI_CONFIG.endpoint || '').trim();
-  const style = AI_CONFIG.apiStyle;
-  const isChat = style === 'chat' || (style === 'auto' && /\/chat\/completions(?:\?|$)/i.test(endpoint));
-  if(isChat){
-    return {
-      body: {
-        model: AI_CONFIG.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: JSON.stringify(payload) }
+  const el = {
+    log: document.getElementById('log'),
+    premiseBox: document.getElementById('premiseBox'),
+    healthValue: document.getElementById('healthValue'),
+    locationValue: document.getElementById('locationValue'),
+    inventoryList: document.getElementById('inventoryList'),
+    engineLabel: document.getElementById('engineLabel'),
+    aliveLabel: document.getElementById('aliveLabel'),
+    actionInput: document.getElementById('actionInput'),
+    mapCanvas: document.getElementById('mapCanvas'),
+    zoomLabel: document.getElementById('zoomLabel'),
+    tileScaleText: document.getElementById('tileScaleText'),
+    quickActions: document.getElementById('quickActions'),
+    useAiToggle: document.getElementById('useAiToggle'),
+    apiKeyInput: document.getElementById('apiKeyInput'),
+    endpointInput: document.getElementById('endpointInput'),
+    modelInput: document.getElementById('modelInput')
+  };
+
+  const ctx = el.mapCanvas.getContext('2d');
+  const atlas = new Image();
+  atlas.src = TILE_ATLAS;
+  atlas.onload = () => renderMap();
+
+  // atlas 6 cols, 4 rows at 32px from previous implementation
+  const TILE = 32;
+  const atlasTiles = {
+    wall: [0,0], wall2:[1,0], wall3:[2,0], wallCorner:[3,0], wallL:[4,0], wall4:[5,0],
+    floor:[0,1], floor2:[1,1], water:[2,1], water2:[3,1], rubble:[4,1], rubble2:[5,1],
+    door:[0,2], open:[1,2], trap:[2,2], chest:[3,2], chest2:[4,2], fog:[5,2],
+    player:[0,3], enemy:[1,3], stairsDown:[2,3], stairsUp:[3,3]
+  };
+  const symbolToTile = {
+    '#':'wall', '.':'floor', '@':'player', 'D':'door', 'O':'open', 'C':'chest',
+    'S':'stairsDown', 'T':'trap', 'W':'water', 'X':'rubble', '?':'fog', 'E':'enemy',
+    '%':'rubble2', 'R':'wallCorner', 'A':'floor2', '!':'enemy', 'V':'water2'
+  };
+
+  const checkpoints = {
+    cellar_start() {
+      return {
+        location:'cellar_start',
+        map:[
+          '###########',
+          '#.........#',
+          '#....@....D',
+          '#.........#',
+          '###########'
         ],
-        temperature: 0.7,
-        max_completion_tokens: 700
-      }
+        inventory:['worn map'],
+        health:10,
+        maxHealth:10
+      };
+    },
+    lower_hall() {
+      return {
+        location:'lower_hall',
+        map:[
+          '  ###########   #################',
+          '  #.........#   #.......C.......#',
+          '  #.........O...@...............#',
+          '  #.........#   #...............#',
+          '  ###########   #...A...X....D..#',
+          '                #####.###########',
+          '                    #.#',
+          '         ############.###########',
+          '         #......T............?..#',
+          '         #......................#',
+          '         #..W.W..............E..#',
+          '         #..W.W................D#',
+          '         ######.#################',
+          '              #.#',
+          '          #####.#####',
+          '          #....S....#',
+          '          #.........#',
+          '          ###########'
+        ],
+        inventory:['worn map','rusted key'],
+        health:7,
+        maxHealth:10
+      };
+    }
+  };
+
+  function randomChoice(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+  function generatePremise(){
+    const titles = ['The Ash Cellar','The Flooded Chapel Below','The Iron Saint Crypt','The Bone Lock Vault','The Hushed Well'];
+    const openings = [
+      'You wake on cold stone with dust in your mouth and a sense that you were expected.',
+      'You descend through a warped cellar door into a place older than the house above.',
+      'You come to with a half-burned map in your pocket and torch smoke in the air.',
+      'You stand at the edge of a forgotten threshold, already hearing water drip below.'
+    ];
+    const goals = [
+      'Find what the dungeon is hiding and survive the descent.',
+      'Recover the relic before the dark reaches it first.',
+      'Uncover why this place still answers when spoken to.',
+      'Push deeper until the truth becomes impossible to ignore.'
+    ];
+    const starts = ['cellar_start','lower_hall'];
+    return {
+      title: randomChoice(titles),
+      opening: randomChoice(openings),
+      goal: randomChoice(goals),
+      startRoom: randomChoice(starts)
     };
   }
-  return {
-    body: {
-      model: AI_CONFIG.model,
-      instructions: systemPrompt,
-      input: JSON.stringify(payload),
-      max_output_tokens: 700
-    }
-  };
-}
 
-function setThinking(on, mode='local'){
-  const btn = document.getElementById('rollBtn');
-  const askBtn = document.getElementById('askAiBtn');
-  const input = document.getElementById('actionInput');
-  const text = document.getElementById('thinkingText');
-  const engine = document.getElementById('engineText');
-  btn.disabled = !!on;
-  askBtn.disabled = !!on;
-  input.disabled = !!on;
-  text.textContent = on ? 'thinking…' : 'idle';
-  engine.textContent = mode;
-  if(on) document.getElementById('log').classList.add('thinking');
-  else document.getElementById('log').classList.remove('thinking');
-}
-
-async function callAiTurn(action){
-  syncAiConfigFromInputs();
-  if(!AI_CONFIG.apiKey) throw new Error('Paste an API key before using AI mode.');
-  if(!AI_CONFIG.endpoint) throw new Error('Enter a valid API endpoint.');
-  AI_CONFIG.endpoint = AI_CONFIG.endpoint.trim();
-  if(/^https:\/\/api\.openai\.com\/?$/i.test(AI_CONFIG.endpoint)) AI_CONFIG.endpoint = 'https://api.openai.com/v1/responses';
-  const { body } = buildAiBody(action);
-  let res;
-  try {
-    res = await fetch(AI_CONFIG.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${AI_CONFIG.apiKey}`
-      },
-      body: JSON.stringify(body)
-    });
-  } catch(err){
-    throw new Error('Network or CORS failure. Host over http/https and use a provider that allows browser-origin requests from your site.');
-  }
-  if(!res.ok){
-    const txt = await res.text();
-    throw new Error(`AI request failed: ${res.status}. Check endpoint, model, and request format. ${txt.slice(0, 500)}`);
-  }
-  const data = await res.json();
-  const text = extractTextFromAiResponse(data);
-  if(!text) throw new Error('AI returned empty output. Check endpoint/model/API style compatibility.');
-  let parsed;
-  try { parsed = JSON.parse(text); }
-  catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if(!match) throw new Error('AI did not return valid JSON.');
-    parsed = JSON.parse(match[0]);
-  }
-  return parsed;
-}
-
-function applyAiResult(result){
-  const rf = result?.roll?.final;
-  state.lastRoll = typeof rf === 'number' ? rf : null;
-  if(typeof result?.room === 'string' && result.room) state.room = result.room;
-  if(typeof result?.health === 'number') state.health = Math.max(0, Math.min(10, result.health));
-  if(Array.isArray(result?.inventory)) state.inventory = result.inventory.map(String);
-  if(result?.flags && typeof result.flags === 'object') state.flags = result.flags;
-  if(typeof result?.alive === 'boolean') state.alive = result.alive;
-  if(typeof result?.map === 'string' && result.map.trim()) state.map = result.map;
-  if(state.health <= 0) state.alive = false;
-  if(!state.alive) state.room = 'dead';
-  if(result?.roll){
-    addLog(`Roll ${result.roll.base} → ${result.roll.final}${result.roll.insane ? ' (insane request modifier applied)' : ''}`, 'roll', 'Roll');
-  }
-  addLog(result?.narration || 'The world shifts, but the meaning of it fails to resolve.', 'narration', 'Narration');
-  if(result?.meta) addLog(result.meta, 'sys', 'Rule Note');
-  if(Array.isArray(result?.suggestions) && result.suggestions.length){ addLog('Try next: ' + result.suggestions.slice(0,3).join(' · '), 'sys', 'Suggestions'); }
-  if(state.room === 'dead') state.map = makeBaseMap('dead');
-  updateUI(); saveGame();
-}
-
-function normalize(s){ return String(s || '').toLowerCase().trim(); }
-function includesAny(s, arr){ return arr.some(x => s.includes(x)); }
-function localFallbackTurn(action){
-  document.getElementById('engineText').textContent = 'local';
-  const raw = normalize(action);
-  let base = rint(0,20), final = base, insane = false;
-  const impossible = includesAny(raw, ['fly','become god','turn into a dragon','teleport','absolute fortune']);
-  if(impossible){ insane = true; final = Math.max(1, base - 3); }
-  if(base === 0){
-    state.alive = false; state.health = 0; state.room = 'dead'; state.map = makeBaseMap('dead');
-    state.lastRoll = 0;
-    addLog('Roll 0 → instant death. The dungeon corrects your story with final brutality.', 'roll', 'Roll');
-    addLog('Everything goes dark. This run is over.', 'narration', 'Narration');
-    updateUI(); saveGame(); return;
+  function addLog(text, type='sys', label='Narration'){
+    const entry = { text, type, label, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) };
+    state.log.push(entry);
+    const div = document.createElement('div');
+    div.className = 'entry ' + type;
+    div.innerHTML = `<div class="meta"><span>${label}</span><span>${entry.time}</span></div><pre></pre>`;
+    div.querySelector('pre').textContent = text;
+    el.log.appendChild(div);
+    el.log.scrollTop = el.log.scrollHeight;
   }
 
-  if(state.onboardingStep === 0 || state.room === 'onboarding'){
-    completeOnboarding(action.trim() || 'Stranger');
-    return;
+  function renderPremise(){
+    const p = state.premise;
+    el.premiseBox.innerHTML = p ? `<h3>${p.title}</h3><p>${p.opening}</p><p class="subtle">Goal: ${p.goal}</p>` : '<h3>No run loaded</h3>';
   }
 
-  state.lastRoll = final;
-  addLog(`Roll ${base} → ${final}${insane ? ' (insane request modifier applied)' : ''}`, 'roll', 'Roll');
-
-  if(state.room === 'cellar_start'){
-    if(includesAny(raw, ['door','open','go through','run to','toward the door','towards the door','rush door','sprint to door','head to the door'])){
-      state.room = 'lower_hall'; state.map = makeBaseMap('lower_hall');
-      addLog(final >= 10 ? 'You move through the damp door and into the colder lower hall before anything can stop you.' : 'You make it through the door, but not elegantly. Your movement echoes into the lower hall.', 'narration', 'Narration');
-    } else if(includesAny(raw, ['look','inspect','listen'])){
-      addLog('You study the swollen cellar door, the scrape marks under it, and the damp mortar around you. Something uses this passage.', 'narration', 'Narration');
-    } else {
-      addLog('You act in the first chamber. The room is real, the door is ahead, and your intention seems to center on moving deeper.', 'narration', 'Narration');
-    }
-  } else if(state.room === 'lower_hall'){
-    if(includesAny(raw, ['water','flood','pool'])) addLog('You edge toward the waterlogged section, where something metallic glints under the surface and the far side feels watched.', 'narration', 'Narration');
-    else if(includesAny(raw, ['east door','far door'])) addLog('The far eastern door waits beyond broken masonry and old warning marks. It looks used, not abandoned.', 'narration', 'Narration');
-    else addLog('The lower hall answers with damp echoes, shadow, and the feeling that your next mistake will matter.', 'narration', 'Narration');
-  } else {
-    addLog('The local fallback keeps the room coherent, but richer outcomes need AI enabled.', 'sys', 'Fallback');
-  }
-  updateUI(); saveGame();
-}
-
-async function runAction(action){
-  if(!action.trim()) return;
-  addLog(action.trim(), 'sys', 'Action');
-  if(state.room === 'dead'){
-    addLog('This run is over. Start a new run or load a save.', 'err', 'Error');
-    return;
-  }
-  if(state.room === 'onboarding'){
-    completeOnboarding(action.trim() || 'Stranger');
-    actionInput.focus();
-    return;
-  }
-  syncAiConfigFromInputs();
-  saveAiSettings();
-  if(AI_CONFIG.useAi){
-    setThinking(true, 'ai');
-    try {
-      const result = await callAiTurn(action.trim());
-      applyAiResult(result);
+  function renderInventory(){
+    el.inventoryList.innerHTML = '';
+    if(!state.inventory.length){
+      el.inventoryList.innerHTML = '<div class="subtle">Nothing on you.</div>';
       return;
-    } catch(err){
-      addLog(err.message || String(err), 'err', 'AI Error');
-      addLog('Falling back to the local rules engine for this turn.', 'sys', 'Fallback');
-    } finally {
-      setThinking(false, AI_CONFIG.useAi ? 'ai' : 'local');
-      actionInput.focus();
+    }
+    state.inventory.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'chip';
+      div.textContent = item;
+      el.inventoryList.appendChild(div);
+    });
+  }
+
+  function renderQuickActions(){
+    const actions = ['inspect the room','listen at the door','move carefully','check inventory','head toward the stairs'];
+    el.quickActions.innerHTML = '';
+    actions.forEach(text => {
+      const b = document.createElement('button');
+      b.className = 'ghost small';
+      b.textContent = text;
+      b.onclick = () => {
+        el.actionInput.value = text;
+        el.actionInput.focus();
+      };
+      el.quickActions.appendChild(b);
+    });
+  }
+
+  function updateStatus(){
+    el.healthValue.textContent = `${state.health}/${state.maxHealth}`;
+    el.locationValue.textContent = state.location.replaceAll('_', ' ');
+    el.engineLabel.textContent = state.engine;
+    el.aliveLabel.textContent = state.alive ? 'Yes' : 'No';
+    el.zoomLabel.textContent = `${state.tileScale}px`;
+    el.tileScaleText.textContent = `${state.tileScale}px`;
+  }
+
+  function updateUI(){
+    renderPremise();
+    renderInventory();
+    updateStatus();
+    renderMap();
+    renderQuickActions();
+  }
+
+  function saveGame(){
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    addLog('Game saved.', 'sys', 'Save');
+  }
+
+  function loadGame(){
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw){ addLog('No save found.', 'err', 'Load'); return; }
+    try{
+      const parsed = JSON.parse(raw);
+      Object.assign(state, parsed);
+      el.log.innerHTML = '';
+      state.log = [];
+      addLog('Save loaded.', 'sys', 'Load');
+      updateUI();
+    } catch (e){
+      addLog('Save could not be loaded.', 'err', 'Load');
     }
   }
-  setThinking(true, 'local');
-  try {
-    localFallbackTurn(action.trim());
-  } finally {
-    setThinking(false, 'local');
-    actionInput.focus();
+
+  function clearSave(){
+    localStorage.removeItem(SAVE_KEY);
+    addLog('Save cleared.', 'sys', 'Save');
   }
-}
 
-function askAiAboutCurrentRoom(){
-  return runAction('Ask the narrator what stands out in the current room and what seems most dangerous right now.');
-}
-
-// UI wiring
-const actionInput = document.getElementById('actionInput');
-document.getElementById('rollBtn').onclick = async () => {
-  const v = actionInput.value;
-  actionInput.value = '';
-  await runAction(v);
-};
-document.getElementById('actionInput').addEventListener('keydown', async (e) => {
-  if(e.key === 'Enter' && !e.shiftKey){
-    e.preventDefault();
-    const v = actionInput.value;
-    actionInput.value = '';
-    await runAction(v);
+  function saveAiSettings(){
+    localStorage.setItem(AI_KEY, JSON.stringify({
+      useAi: el.useAiToggle.checked,
+      apiKey: el.apiKeyInput.value,
+      endpoint: el.endpointInput.value,
+      model: el.modelInput.value
+    }));
+    addLog('AI settings saved.', 'sys', 'AI');
   }
-});
-document.getElementById('newRunBtn').onclick = () => { beginOnboarding(); saveGame(); };
-document.getElementById('saveBtn').onclick = () => { saveGame(); addLog('Saved current run locally.', 'sys', 'System'); };
-document.getElementById('loadBtn').onclick = () => { if(loadGame()){} else addLog('No save found.', 'err', 'Load'); };
-document.getElementById('exportBtn').onclick = async () => {
-  const txt = exportSave();
-  document.getElementById('importBox').value = txt;
-  try { await navigator.clipboard.writeText(txt); addLog('Exported save copied to clipboard and placed in the import box.', 'sys', 'Export'); }
-  catch { addLog('Exported save placed in the import box.', 'sys', 'Export'); }
-};
-document.getElementById('importBtn').onclick = () => {
-  try {
-    const raw = document.getElementById('importBox').value.trim();
-    state = JSON.parse(raw); saveGame(); updateUI(); addLog('Imported save successfully.', 'sys', 'Import');
-  } catch { addLog('Import failed. That save JSON is invalid.', 'err', 'Import'); }
-};
-document.getElementById('askAiBtn').onclick = async () => { await askAiAboutCurrentRoom(); };
-document.getElementById('clearLogBtn').onclick = () => { state.log = []; renderLog(); };
-document.getElementById('saveAiBtn').onclick = () => { syncAiConfigFromInputs(); saveAiSettings(); addLog('AI settings saved in this browser.', 'sys', 'AI'); };
-document.getElementById('clearAiBtn').onclick = () => {
-  AI_CONFIG.apiKey=''; AI_CONFIG.endpoint='https://api.openai.com/v1/responses'; AI_CONFIG.model='gpt-5'; AI_CONFIG.apiStyle='auto'; AI_CONFIG.useAi=true;
-  saveAiSettings(); syncAiInputsFromConfig(); addLog('AI settings cleared.', 'sys', 'AI');
-};
-document.getElementById('toggleKeyBtn').onclick = () => {
-  const el = document.getElementById('apiKeyInput');
-  const btn = document.getElementById('toggleKeyBtn');
-  const show = el.type === 'password';
-  el.type = show ? 'text' : 'password';
-  btn.textContent = show ? 'Hide' : 'Show';
-};
-document.getElementById('useAiToggle').addEventListener('change', () => { syncAiConfigFromInputs(); saveAiSettings(); });
 
-// boot
-if(location.protocol === 'file:'){
-  document.getElementById('fileWarning').classList.remove('hidden');
-}
-loadAiSettings();
-syncAiInputsFromConfig();
-if(!loadGame()) beginOnboarding();
-updateUI();
+  function loadAiSettings(){
+    const raw = localStorage.getItem(AI_KEY);
+    if(!raw) return;
+    try{
+      const ai = JSON.parse(raw);
+      el.useAiToggle.checked = !!ai.useAi;
+      el.apiKeyInput.value = ai.apiKey || '';
+      el.endpointInput.value = ai.endpoint || 'https://api.openai.com/v1/responses';
+      el.modelInput.value = ai.model || 'gpt-5.4';
+    }catch{}
+  }
+
+  function startNewRun(){
+    const premise = generatePremise();
+    const base = checkpoints[premise.startRoom]();
+    state.premise = premise;
+    state.health = base.health;
+    state.maxHealth = base.maxHealth;
+    state.location = base.location;
+    state.inventory = [...base.inventory];
+    state.map = [...base.map];
+    state.alive = true;
+    state.engine = 'Local';
+    el.log.innerHTML = '';
+    state.log = [];
+    addLog(`${premise.title}\n\n${premise.opening}\n\nGoal: ${premise.goal}`, 'sys', 'New Run');
+    updateUI();
+  }
+
+  function rollDie(){ return Math.floor(Math.random()*21); }
+
+  function localTurn(action){
+    const roll = rollDie();
+    let narration = '';
+    let label = `Roll ${roll}`;
+    state.engine = 'Local';
+
+    if(roll === 0){
+      state.alive = false;
+      narration = `Roll: 0\nThe dungeon refuses your move outright.\nYou die.`;
+      addLog(narration, 'err', label);
+      updateUI();
+      return;
+    }
+
+    const a = action.toLowerCase();
+    if(a.includes('door') && (a.includes('run') || a.includes('open') || a.includes('go') || a.includes('toward') || a.includes('towards'))){
+      narration = `Roll: ${roll}\nYou commit to the door. The chamber answers with damp wood, cold iron, and the sense that something beyond it has waited too long.\nYou reach it and the world shifts in your favor enough to keep moving.`;
+      if(state.location === 'cellar_start'){
+        const nxt = checkpoints.lower_hall();
+        state.location = nxt.location;
+        state.map = [...nxt.map];
+        state.inventory = Array.from(new Set([...state.inventory, ...nxt.inventory]));
+        state.health = Math.min(state.maxHealth, Math.max(1, state.health - (roll < 6 ? 1 : 0)));
+      }
+    } else if(a.includes('listen')){
+      narration = `Roll: ${roll}\nYou still yourself and listen. Water drips somewhere ahead. Stone settles. The dungeon is not quiet so much as patient.`;
+    } else if(a.includes('inspect') || a.includes('look')){
+      narration = `Roll: ${roll}\nYou take a careful look. The stonework is old, damp at the seams, and marked by more use than abandonment would suggest.`;
+    } else {
+      narration = `Roll: ${roll}\nYou try: "${action}"\nThe dungeon accepts the intent. The move shifts your footing, your nerves, and the shape of the moment, even if the deeper consequence is still gathering.`;
+    }
+
+    addLog(narration, 'sys', label);
+    updateUI();
+  }
+
+  async function aiTurn(action){
+    state.engine = 'AI';
+    updateStatus();
+    const apiKey = el.apiKeyInput.value.trim();
+    const endpoint = el.endpointInput.value.trim();
+    const model = el.modelInput.value.trim();
+    if(!apiKey || !endpoint || !model){
+      addLog('AI is enabled, but API key, endpoint, or model is missing. Falling back to local.', 'err', 'AI');
+      localTurn(action);
+      return;
+    }
+
+    const payload = {
+      action,
+      state: {
+        title: state.premise?.title || '',
+        goal: state.premise?.goal || '',
+        location: state.location,
+        health: state.health,
+        maxHealth: state.maxHealth,
+        inventory: state.inventory,
+        recent_log: state.log.slice(-6).map(x => `${x.label}: ${x.text}`),
+        map: state.map
+      },
+      rules: {
+        die: '0-20',
+        zero: 'instant death',
+        return_json: true
+      }
+    };
+
+    addLog('The dungeon is thinking...', 'ai', 'AI');
+    try{
+      const body = {
+        model,
+        instructions: 'You are the narrator and rules engine for a dark dungeon crawler. Return strict JSON only with keys: roll, narration, health, maxHealth, inventory, location, map, alive.',
+        input: JSON.stringify(payload)
+      };
+
+      const res = await fetch(endpoint, {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':`Bearer ${apiKey}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      const rawText = await res.text();
+      if(!res.ok) throw new Error(`HTTP ${res.status}: ${rawText.slice(0,300)}`);
+      let data = JSON.parse(rawText);
+      let text = data.output_text || data.output?.[0]?.content?.[0]?.text || '';
+      if(!text && data.choices?.[0]?.message?.content) text = data.choices[0].message.content;
+      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+
+      state.health = parsed.health ?? state.health;
+      state.maxHealth = parsed.maxHealth ?? state.maxHealth;
+      state.inventory = parsed.inventory ?? state.inventory;
+      state.location = parsed.location ?? state.location;
+      state.map = parsed.map ?? state.map;
+      state.alive = parsed.alive ?? state.alive;
+      addLog(`Roll: ${parsed.roll}\n${parsed.narration}`, 'ai', `AI Roll ${parsed.roll}`);
+      updateUI();
+    }catch(err){
+      addLog(`AI failed: ${err.message}\nFalling back to local.`, 'err', 'AI');
+      localTurn(action);
+    }
+  }
+
+  function renderMap(){
+    const rows = state.map || [];
+    const maxCols = rows.reduce((m, r) => Math.max(m, r.length), 0);
+    const tile = state.tileScale;
+    el.mapCanvas.width = Math.max(1, maxCols * tile);
+    el.mapCanvas.height = Math.max(1, rows.length * tile);
+    ctx.clearRect(0,0,el.mapCanvas.width, el.mapCanvas.height);
+
+    for(let y=0; y<rows.length; y++){
+      const row = rows[y];
+      for(let x=0; x<row.length; x++){
+        const ch = row[x];
+        const key = symbolToTile[ch] || 'floor2';
+        const [cx, cy] = atlasTiles[key] || atlasTiles.floor2;
+        if(atlas.complete && atlas.naturalWidth){
+          ctx.drawImage(atlas, cx*TILE, cy*TILE, TILE, TILE, x*tile, y*tile, tile, tile);
+        } else {
+          // simple fallback
+          ctx.fillStyle = ch === '#' ? '#594634' : ch === '@' ? '#f0cf89' : ch === 'W' ? '#355f73' : '#2b241d';
+          ctx.fillRect(x*tile, y*tile, tile, tile);
+        }
+      }
+    }
+  }
+
+  function setZoom(n){
+    state.tileScale = Math.max(6, Math.min(32, n));
+    updateUI();
+  }
+
+  document.getElementById('zoomInBtn').onclick = () => setZoom(state.tileScale + 2);
+  document.getElementById('zoomOutBtn').onclick = () => setZoom(state.tileScale - 2);
+  document.getElementById('zoomResetBtn').onclick = () => setZoom(10);
+
+  document.getElementById('newRunBtn').onclick = startNewRun;
+  document.getElementById('rerollPremiseBtn').onclick = startNewRun;
+  document.getElementById('saveBtn').onclick = saveGame;
+  document.getElementById('loadBtn').onclick = loadGame;
+  document.getElementById('clearSaveBtn').onclick = clearSave;
+  document.getElementById('saveAiBtn').onclick = saveAiSettings;
+  document.getElementById('showKeyBtn').onclick = () => {
+    el.apiKeyInput.type = el.apiKeyInput.type === 'password' ? 'text' : 'password';
+  };
+
+  async function submitAction(){
+    if(!state.alive){
+      addLog('You are dead. Start a new run or load a save.', 'err', 'Dead');
+      return;
+    }
+    const action = el.actionInput.value.trim();
+    if(!action) return;
+    el.actionInput.value = '';
+    if(el.useAiToggle.checked) await aiTurn(action);
+    else localTurn(action);
+  }
+
+  document.getElementById('rollActionBtn').onclick = submitAction;
+  el.actionInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      submitAction();
+    }
+  });
+
+  loadAiSettings();
+  startNewRun();
+})();
 </script>
 </body>
 </html>
