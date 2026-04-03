@@ -101,6 +101,7 @@
     border:1px solid rgba(198,157,101,.16);
     box-shadow: inset 0 0 0 1px rgba(255,240,215,.025), inset 0 20px 30px rgba(255,255,255,.015);
   }
+  .mapCanvas{display:block; width:100%; height:620px; border-radius:16px; background:linear-gradient(180deg, rgba(16,10,7,.64), rgba(12,8,6,.76)); border:1px solid rgba(198,157,101,.16); box-shadow: inset 0 0 0 1px rgba(255,240,215,.025), inset 0 20px 30px rgba(255,255,255,.015); image-rendering: pixelated; }
   .status{display:grid; grid-template-columns:1fr 1fr; gap:8px}
   .small{font-size:12px; color:#bfae91}
   .actions{display:grid; gap:8px}
@@ -202,7 +203,7 @@
 
     <div class="panel">
       <h2>ASCII Map</h2>
-      <div id="mapBox" class="map"></div>
+      <canvas id="mapCanvas" class="mapCanvas" width="312" height="620"></canvas><div id="mapBox" class="map hidden"></div>
       <div class="footer">Lean AI mode keeps requests smaller for faster turns. The local fallback engine only covers a few opening beats and simple movement when AI is unavailable.</div>
     </div>
   </div>
@@ -211,6 +212,73 @@
 <script>
 const SAVE_KEY = 'aillumi_dungeon_browser_llm_save_v2';
 const AI_KEY = 'aillumi_dungeon_browser_llm_ai_v2';
+
+const tileAtlas = new Image();
+tileAtlas.src = 'dungeon_tiles_atlas_32.png';
+const TILE_SIZE = 32;
+const DISPLAY_TILE = 10;
+const tileIndex = {
+  wall: [0,0], wall_alt:[1,0], wall_dark:[2,0], wall_corner:[3,0],
+  floor:[0,1], floor_alt:[1,1], water:[2,1], rubble:[3,1],
+  door:[0,2], open:[1,2], trap:[2,2], chest:[3,2],
+  fog:[0,3], player:[1,3], enemy:[2,3], stairs:[3,3]
+};
+const symbolTile = {
+  '#':'wall', '.':'floor', '@':'player', 'D':'door', 'O':'open', 'C':'chest',
+  'S':'stairs', 'T':'trap', 'W':'water', 'V':'water', 'X':'rubble', '?':'fog',
+  'E':'enemy', 'M':'enemy', '!':'enemy', '%':'rubble', 'R':'rubble', 'H':'wall_alt',
+  'L':'floor_alt', 'P':'floor_alt', 'G':'floor_alt', 'I':'floor_alt', 'U':'door',
+  'u':'open', 'A':'rubble', 'b':'rubble', '>':'stairs', '/':'wall_corner', '|':'wall_alt',
+  '~':'water', 'K':'chest', 'm':'enemy'
+};
+
+function drawTile(ctx, tileName, dx, dy, scale){
+  const pos = tileIndex[tileName] || tileIndex.floor;
+  const sx = pos[0] * TILE_SIZE;
+  const sy = pos[1] * TILE_SIZE;
+  ctx.drawImage(tileAtlas, sx, sy, TILE_SIZE, TILE_SIZE, dx, dy, scale, scale);
+}
+
+function renderMapCanvas(){
+  const canvas = document.getElementById('mapCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const ascii = String(state.map || makeBaseMap(state.room) || '');
+  const rows = ascii.split(/
+/).filter(r => r.length);
+  const width = Math.max(1, ...rows.map(r => r.length));
+  const height = Math.max(1, rows.length);
+  const scale = DISPLAY_TILE;
+  canvas.width = Math.max(312, width * scale + 16);
+  canvas.height = Math.max(620, height * scale + 16);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // background grid area
+  ctx.fillStyle = '#120c08';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const offsetX = 8;
+  const offsetY = 8;
+  for(let y=0; y<rows.length; y++){
+    const row = rows[y];
+    for(let x=0; x<row.length; x++){
+      const ch = row[x];
+      const tileName = symbolTile[ch] || 'floor';
+      if(tileName === 'player'){
+        drawTile(ctx, 'floor', offsetX + x*scale, offsetY + y*scale, scale);
+        drawTile(ctx, 'player', offsetX + x*scale, offsetY + y*scale, scale);
+      } else if(tileName === 'enemy'){
+        drawTile(ctx, 'floor', offsetX + x*scale, offsetY + y*scale, scale);
+        drawTile(ctx, 'enemy', offsetX + x*scale, offsetY + y*scale, scale);
+      } else if(tileName === 'door' || tileName==='open' || tileName==='chest' || tileName==='trap' || tileName==='stairs' || tileName==='rubble'){
+        drawTile(ctx, 'floor', offsetX + x*scale, offsetY + y*scale, scale);
+        drawTile(ctx, tileName, offsetX + x*scale, offsetY + y*scale, scale);
+      } else {
+        drawTile(ctx, tileName, offsetX + x*scale, offsetY + y*scale, scale);
+      }
+    }
+  }
+}
+
+tileAtlas.onload = () => renderMapCanvas();
 
 const AI_CONFIG = {
   apiKey: '',
@@ -297,6 +365,7 @@ function renderPremise(){
 
 function updateUI(){
   document.getElementById('mapBox').textContent = state.map || makeBaseMap(state.room);
+  renderMapCanvas();
   document.getElementById('healthText').textContent = `${state.health}/10`;
   document.getElementById('roomText').textContent = state.room;
   document.getElementById('aliveText').textContent = state.alive ? 'yes' : 'no';
