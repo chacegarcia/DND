@@ -222,9 +222,24 @@
     border:1px solid var(--line);
     border-radius:14px;
     background:rgba(0,0,0,.28);
-    overflow:auto;
-    padding:12px;
+    overflow:hidden;
+    padding:0;
     min-height:320px;
+    height:420px;
+    position:relative;
+    cursor:grab;
+    user-select:none;
+  }
+  .map-shell.dragging{cursor:grabbing}
+  .map-viewport{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+  }
+  #mapCanvas, #asciiMap{
+    position:absolute;
+    left:0;
+    top:0;
   }
   #mapCanvas{
     display:block;
@@ -249,6 +264,25 @@
     background:rgba(255,255,255,.04);
     padding:1px 5px;
     border-radius:6px;
+  }
+  #asciiMap{
+    display:none;
+    margin:0;
+    padding:12px;
+    color:var(--text);
+    font:12px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space:pre;
+    background:
+      radial-gradient(circle at 50% 30%, rgba(255,203,120,.08), transparent 28%),
+      linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.12)),
+      rgba(17,12,9,.88);
+    border:1px solid rgba(255,255,255,.05);
+    border-radius:8px;
+  }
+  .mode-toggle{display:flex; gap:6px; flex-wrap:wrap}
+  .mode-toggle button.active{
+    border-color:var(--line-strong);
+    box-shadow:0 0 0 2px rgba(225,181,108,.10);
   }
   .settings-grid{
     display:grid;
@@ -376,15 +410,23 @@
         <div class="map-toolbar">
           <div class="statusline">
             <span class="badge">Tile Scale <strong id="tileScaleText">10px</strong></span>
+            <span class="badge">View <strong id="mapModeLabel">Tiles</strong></span>
           </div>
           <div class="btn-row">
+            <div class="mode-toggle">
+              <button id="tilesModeBtn" class="secondary active">Tiles</button>
+              <button id="asciiModeBtn" class="ghost">ASCII</button>
+            </div>
             <button id="zoomOutBtn" class="secondary">−</button>
             <button id="zoomResetBtn" class="ghost">Reset</button>
             <button id="zoomInBtn">+</button>
           </div>
         </div>
-        <div class="map-shell">
-          <canvas id="mapCanvas" width="300" height="300"></canvas>
+        <div class="map-shell" id="mapShell">
+          <div class="map-viewport" id="mapViewport">
+            <canvas id="mapCanvas" width="300" height="300"></canvas>
+            <pre id="asciiMap"></pre>
+          </div>
         </div>
         <div class="legend">
           <div><code>#</code> Wall</div>
@@ -442,7 +484,10 @@
     alive:true,
     map:[],
     engine:'Local',
-    tileScale:10
+    tileScale:10,
+    mapMode:'tiles',
+    mapOffsetX:12,
+    mapOffsetY:12
   };
 
   const el = {
@@ -455,6 +500,10 @@
     aliveLabel: document.getElementById('aliveLabel'),
     actionInput: document.getElementById('actionInput'),
     mapCanvas: document.getElementById('mapCanvas'),
+    asciiMap: document.getElementById('asciiMap'),
+    mapShell: document.getElementById('mapShell'),
+    mapViewport: document.getElementById('mapViewport'),
+    mapModeLabel: document.getElementById('mapModeLabel'),
     zoomLabel: document.getElementById('zoomLabel'),
     tileScaleText: document.getElementById('tileScaleText'),
     quickActions: document.getElementById('quickActions'),
@@ -605,6 +654,9 @@
     el.aliveLabel.textContent = state.alive ? 'Yes' : 'No';
     el.zoomLabel.textContent = `${state.tileScale}px`;
     el.tileScaleText.textContent = `${state.tileScale}px`;
+    el.mapModeLabel.textContent = state.mapMode === 'tiles' ? 'Tiles' : 'ASCII';
+    document.getElementById('tilesModeBtn').classList.toggle('active', state.mapMode === 'tiles');
+    document.getElementById('asciiModeBtn').classList.toggle('active', state.mapMode === 'ascii');
   }
 
   function updateUI(){
@@ -786,10 +838,46 @@
     }
   }
 
+  function applyMapTransform(){
+    const x = Math.round(state.mapOffsetX);
+    const y = Math.round(state.mapOffsetY);
+    el.mapCanvas.style.transform = `translate(${x}px, ${y}px)`;
+    el.asciiMap.style.transform = `translate(${x}px, ${y}px)`;
+  }
+
+  function clampMapOffset(){
+    const target = state.mapMode === 'tiles' ? el.mapCanvas : el.asciiMap;
+    const shellW = el.mapShell.clientWidth;
+    const shellH = el.mapShell.clientHeight;
+    const targetW = target.offsetWidth || target.width || 0;
+    const targetH = target.offsetHeight || target.height || 0;
+
+    if(targetW <= shellW){
+      state.mapOffsetX = Math.max(0, (shellW - targetW) / 2);
+    } else {
+      const minX = shellW - targetW - 12;
+      const maxX = 12;
+      state.mapOffsetX = Math.min(maxX, Math.max(minX, state.mapOffsetX));
+    }
+
+    if(targetH <= shellH){
+      state.mapOffsetY = Math.max(0, (shellH - targetH) / 2);
+    } else {
+      const minY = shellH - targetH - 12;
+      const maxY = 12;
+      state.mapOffsetY = Math.min(maxY, Math.max(minY, state.mapOffsetY));
+    }
+  }
+
   function renderMap(){
     const rows = state.map || [];
-    const maxCols = rows.reduce((m, r) => Math.max(m, r.length), 0);
     const tile = state.tileScale;
+    const maxCols = rows.reduce((m, r) => Math.max(m, r.length), 0);
+
+    el.asciiMap.textContent = rows.join('');
+    el.asciiMap.style.display = state.mapMode === 'ascii' ? 'block' : 'none';
+    el.mapCanvas.style.display = state.mapMode === 'tiles' ? 'block' : 'none';
+
     el.mapCanvas.width = Math.max(1, maxCols * tile);
     el.mapCanvas.height = Math.max(1, rows.length * tile);
     ctx.clearRect(0,0,el.mapCanvas.width, el.mapCanvas.height);
@@ -798,27 +886,95 @@
       const row = rows[y];
       for(let x=0; x<row.length; x++){
         const ch = row[x];
-        const key = symbolToTile[ch] || 'floor2';
-        const [cx, cy] = atlasTiles[key] || atlasTiles.floor2;
+        if(ch === ' ') continue;
+        const key = symbolToTile[ch] || 'floor';
+        const [tx, ty] = atlasTiles[key] || atlasTiles.floor;
         if(atlas.complete && atlas.naturalWidth){
-          ctx.drawImage(atlas, cx*TILE, cy*TILE, TILE, TILE, x*tile, y*tile, tile, tile);
+          ctx.drawImage(atlas, tx*TILE, ty*TILE, TILE, TILE, x*tile, y*tile, tile, tile);
         } else {
-          // simple fallback
-          ctx.fillStyle = ch === '#' ? '#594634' : ch === '@' ? '#f0cf89' : ch === 'W' ? '#355f73' : '#2b241d';
+          ctx.fillStyle = ch === '#' ? '#584636' : ch === '@' ? '#dcb16b' : '#2a2118';
           ctx.fillRect(x*tile, y*tile, tile, tile);
         }
       }
     }
+
+    requestAnimationFrame(() => {
+      clampMapOffset();
+      applyMapTransform();
+    });
   }
 
-  function setZoom(n){
-    state.tileScale = Math.max(6, Math.min(32, n));
-    updateUI();
+  function setZoom(next){
+    state.tileScale = Math.max(6, Math.min(28, next));
+    renderMap();
+    updateStatus();
+  }
+
+  function setMapMode(mode){
+    state.mapMode = mode;
+    renderMap();
+    updateStatus();
   }
 
   document.getElementById('zoomInBtn').onclick = () => setZoom(state.tileScale + 2);
   document.getElementById('zoomOutBtn').onclick = () => setZoom(state.tileScale - 2);
   document.getElementById('zoomResetBtn').onclick = () => setZoom(10);
+  document.getElementById('tilesModeBtn').onclick = () => setMapMode('tiles');
+  document.getElementById('asciiModeBtn').onclick = () => setMapMode('ascii');
+
+  (() => {
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let baseX = 0;
+    let baseY = 0;
+
+    const onMove = (clientX, clientY) => {
+      if(!dragging) return;
+      state.mapOffsetX = baseX + (clientX - startX);
+      state.mapOffsetY = baseY + (clientY - startY);
+      clampMapOffset();
+      applyMapTransform();
+    };
+
+    el.mapShell.addEventListener('mousedown', (e) => {
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      baseX = state.mapOffsetX;
+      baseY = state.mapOffsetY;
+      el.mapShell.classList.add('dragging');
+    });
+    window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', () => {
+      dragging = false;
+      el.mapShell.classList.remove('dragging');
+    });
+
+    el.mapShell.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      dragging = true;
+      startX = t.clientX;
+      startY = t.clientY;
+      baseX = state.mapOffsetX;
+      baseY = state.mapOffsetY;
+      el.mapShell.classList.add('dragging');
+    }, {passive:true});
+    window.addEventListener('touchmove', (e) => {
+      if(!dragging) return;
+      const t = e.touches[0];
+      onMove(t.clientX, t.clientY);
+    }, {passive:true});
+    window.addEventListener('touchend', () => {
+      dragging = false;
+      el.mapShell.classList.remove('dragging');
+    });
+
+    window.addEventListener('resize', () => {
+      clampMapOffset();
+      applyMapTransform();
+    });
+  })();
 
   document.getElementById('newRunBtn').onclick = startNewRun;
   document.getElementById('rerollPremiseBtn').onclick = startNewRun;
