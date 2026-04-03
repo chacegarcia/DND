@@ -244,8 +244,7 @@ function renderMapCanvas(){
   if(!canvas) return;
   const ctx = canvas.getContext('2d');
   const ascii = String(state.map || makeBaseMap(state.room) || '');
-  const rows = ascii.split(/
-/).filter(r => r.length);
+  const rows = ascii.split(/\r?\n/).filter(r => r.length);
   const width = Math.max(1, ...rows.map(r => r.length));
   const height = Math.max(1, rows.length);
   const scale = DISPLAY_TILE;
