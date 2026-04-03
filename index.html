@@ -6,54 +6,120 @@
 <title>Aillumi's Dungeon — Browser LLM Edition</title>
 <style>
   :root{
-    --bg:#0b1020; --panel:#121a31; --panel2:#0f1730; --text:#e8eefc; --muted:#a5b1d8;
-    --accent:#7cc7ff; --accent2:#ffd166; --danger:#ff6b6b; --ok:#7ef0a0; --border:#26345f;
+    --bg:#0e0b08; --panel:#1a140f; --panel2:#231b14; --text:#f0e2c5; --muted:#baa78a;
+    --accent:#d5b27c; --accent2:#f0d9a6; --danger:#d98a75; --ok:#9fd0a4; --border:#4d3a29;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --sans: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+    --shadow: 0 18px 42px rgba(0,0,0,.45);
   }
   *{box-sizing:border-box}
-  body{margin:0; background:linear-gradient(180deg,#08101d,#0d1530); color:var(--text); font-family:var(--sans)}
-  .wrap{max-width:1400px; margin:0 auto; padding:16px}
-  h1{margin:0 0 8px; font-size:28px}
-  .sub{color:var(--muted); font-size:14px}
-  .grid{display:grid; grid-template-columns:360px 1fr 340px; gap:16px; margin-top:16px}
-  .panel{background:rgba(18,26,49,.95); border:1px solid var(--border); border-radius:14px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.22)}
-  .panel h2{margin:0 0 10px; font-size:16px; color:var(--accent)}
-  label{display:block; font-size:12px; color:var(--muted); margin:8px 0 4px}
-  input[type=text], input[type=password], textarea, select{
-    width:100%; background:#0a1226; color:var(--text); border:1px solid var(--border);
-    border-radius:10px; padding:10px 12px; font:14px var(--sans);
+  html,body{min-height:100%}
+  body{
+    margin:0;
+    color:var(--text);
+    font-family:var(--sans);
+    background:
+      linear-gradient(rgba(8,5,3,.72), rgba(8,5,3,.86)),
+      url('bg_main.png') center top / cover no-repeat fixed,
+      url('panel_texture.png') center / cover no-repeat fixed;
+    text-shadow:0 1px 0 rgba(0,0,0,.4);
   }
-  textarea{min-height:84px; resize:vertical}
+  .wrap{max-width:1400px; margin:0 auto; padding:18px}
+  h1{margin:0 0 6px; font-size:34px; letter-spacing:.03em; color:#f7ead0}
+  .sub{color:#d7c6aa; font-size:15px; max-width:980px}
+  .grid{display:grid; grid-template-columns:360px 1fr 340px; gap:18px; margin-top:16px; align-items:start}
+  .panel{
+    position:relative;
+    background:linear-gradient(rgba(14,10,7,.76), rgba(14,10,7,.84));
+    border:1px solid rgba(115,84,51,.35);
+    border-radius:18px;
+    padding:24px 22px 22px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    min-height:220px;
+  }
+  .panel::before{
+    content:"";
+    position:absolute; inset:0;
+    background:url('frame_overlay.png') center/100% 100% no-repeat;
+    opacity:.72;
+    pointer-events:none;
+  }
+  .control-panel::before{ background-image:url('frame_overlay.png'); opacity:.82; }
+  .story-panel::before{ background-image:url('frame_textbox.png'); opacity:.8; }
+  .map-panel::before{ background-image:url('frame_dice.png'); opacity:.76; }
+  .panel > *{position:relative; z-index:1}
+  .panel h2{margin:0 0 12px; font-size:18px; color:var(--accent2); letter-spacing:.04em}
+  label{display:block; font-size:12px; color:var(--muted); margin:9px 0 5px; text-transform:uppercase; letter-spacing:.08em}
+  input[type=text], input[type=password], textarea, select{
+    width:100%;
+    color:#f8edd7;
+    border:1px solid rgba(163,126,81,.45);
+    border-radius:12px;
+    padding:12px 14px;
+    font:15px var(--sans);
+    background:
+      linear-gradient(rgba(18,12,8,.82), rgba(18,12,8,.86)),
+      url('frame_input.png') center/100% 100% no-repeat;
+    box-shadow: inset 0 0 0 1px rgba(255,232,193,.03);
+  }
+  input::placeholder, textarea::placeholder{color:#ccb898}
+  textarea{min-height:92px; resize:vertical; line-height:1.4}
   button{
-    background:#1a2b53; color:var(--text); border:1px solid #34508c; border-radius:10px; padding:10px 12px;
-    cursor:pointer; font-weight:600;
+    background:linear-gradient(180deg,#3a2b1e,#23190f);
+    color:#f6e7c5;
+    border:1px solid #7b5a39;
+    border-radius:12px;
+    padding:10px 14px;
+    cursor:pointer;
+    font:600 14px var(--sans);
+    box-shadow:0 6px 14px rgba(0,0,0,.28);
   }
   button:hover{filter:brightness(1.08)}
-  button.primary{background:#1e4b7a; border-color:#4f8fd5}
-  button.warn{background:#5a2430; border-color:#9b4858}
-  button.ghost{background:#0e1730}
+  button.primary{
+    background:linear-gradient(rgba(15,10,7,.2), rgba(15,10,7,.2)), url('button_roll.png') center/100% 100% no-repeat;
+    border-color:#8d6a41;
+    min-height:46px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  button.warn{background:linear-gradient(180deg,#633026,#381711); border-color:#9b5c50}
+  button.ghost{background:linear-gradient(180deg,#221a13,#15100b)}
   .row{display:flex; gap:8px; flex-wrap:wrap}
-  .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#0a1226; border:1px solid var(--border); font-size:12px; color:var(--muted)}
+  .pill{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:rgba(18,12,8,.72); border:1px solid rgba(145,111,75,.5); font-size:12px; color:#ddccaf}
   .mono{font-family:var(--mono)}
-  .map{white-space:pre; font:13px/1.25 var(--mono); background:#091122; border:1px solid var(--border); padding:12px; border-radius:12px; min-height:260px; overflow:auto}
-  .log{height:66vh; overflow:auto; display:flex; flex-direction:column; gap:10px}
-  .entry{background:#0a1226; border:1px solid var(--border); border-radius:12px; padding:10px 12px}
-  .entry .k{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px}
-  .entry.roll{border-color:#47679f}
+  .map{
+    white-space:pre; font:13px/1.25 var(--mono); color:#f6e8cb;
+    background:linear-gradient(rgba(16,11,8,.72), rgba(16,11,8,.8));
+    border:1px solid rgba(145,111,75,.45); padding:14px; border-radius:14px; min-height:280px; overflow:auto;
+    box-shadow: inset 0 0 22px rgba(0,0,0,.25);
+  }
+  .log{height:66vh; overflow:auto; display:flex; flex-direction:column; gap:10px; padding-right:4px}
+  .entry{
+    background:linear-gradient(rgba(22,15,10,.84), rgba(22,15,10,.9));
+    border:1px solid rgba(145,111,75,.4); border-radius:14px; padding:12px 14px;
+    box-shadow:0 8px 18px rgba(0,0,0,.18);
+  }
+  .entry .k{font-size:11px; color:#bda78a; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px}
+  .entry.roll{border-color:#9c7d4d}
   .entry.err{border-color:#864454}
-  .entry.sys{border-color:#34508c}
+  .entry.sys{border-color:#6d5639}
   .status{display:grid; grid-template-columns:1fr 1fr; gap:8px}
   .small{font-size:12px; color:var(--muted)}
   .actions{display:grid; gap:8px}
   .inventory{display:flex; gap:6px; flex-wrap:wrap}
-  .chip{padding:6px 9px; border-radius:999px; background:#0a1226; border:1px solid var(--border); font-size:12px}
+  .chip{padding:6px 9px; border-radius:999px; background:rgba(20,14,10,.78); border:1px solid rgba(145,111,75,.45); font-size:12px}
   .ok{color:var(--ok)} .danger{color:var(--danger)} .accent2{color:var(--accent2)}
   .hidden{display:none !important}
   .thinking{opacity:.75; font-style:italic}
   button:disabled{opacity:.55; cursor:not-allowed; filter:none}
   .warning{margin-top:10px; padding:10px 12px; border-radius:10px; background:#311a1d; border:1px solid #864454; color:#ffd7dc; font-size:12px}
-  .footer{margin-top:10px; color:var(--muted); font-size:12px}
+  .footer{margin-top:10px; color:#cfbfa4; font-size:12px}
+  #actionInput{min-height:120px; font-size:16px}
+  #premiseBox{background:linear-gradient(rgba(18,12,8,.78), rgba(18,12,8,.84));}
+  .log::-webkit-scrollbar, .map::-webkit-scrollbar {width:10px;height:10px}
+  .log::-webkit-scrollbar-thumb, .map::-webkit-scrollbar-thumb {background:#5c4328;border-radius:10px}
+  .log::-webkit-scrollbar-track, .map::-webkit-scrollbar-track {background:rgba(0,0,0,.18)}
   @media (max-width:1100px){ .grid{grid-template-columns:1fr} .log{height:40vh} }
 </style>
 </head>
@@ -63,7 +129,7 @@
   <div class="sub">Interactive AI dungeon crawl. Users paste their own API key, endpoint, and model. AI-first turns, continuity, onboarding, save/load, and a local fallback if AI fails.</div>
 
   <div class="grid">
-    <div class="panel">
+    <div class="panel control-panel">
       <h2>AI / LLM Integration</h2>
       <label>API key</label>
       <div class="row">
@@ -119,7 +185,7 @@
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel story-panel">
       <h2>Story</h2>
       <div id="log" class="log"></div>
       <div class="actions" style="margin-top:12px">
@@ -131,7 +197,7 @@
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel map-panel">
       <h2>ASCII Map</h2>
       <div id="mapBox" class="map"></div>
       <div class="footer">Lean AI mode keeps requests smaller for faster turns. The local fallback engine only covers a few opening beats and simple movement when AI is unavailable.</div>
