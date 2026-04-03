@@ -3,1011 +3,1132 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aillumi's Dungeon</title>
+<title>Aillumi's Dungeon — Suso Engine v1</title>
 <style>
   :root{
-    --bg:#0f0c09;
-    --panel:rgba(20,15,12,.82);
-    --panel-2:rgba(34,24,18,.78);
-    --line:rgba(180,140,90,.35);
-    --line-strong:rgba(211,167,103,.58);
-    --text:#ead8b4;
-    --muted:#bda57c;
-    --accent:#e1b56c;
-    --danger:#d36d55;
-    --ok:#8cbc7f;
-    --shadow:0 10px 28px rgba(0,0,0,.42);
-    --radius:16px;
-    --map-tile:10;
+    --bg:#120f0d;
+    --panel:rgba(18,14,12,.82);
+    --panel2:rgba(28,22,18,.78);
+    --line:rgba(201,163,104,.28);
+    --line-strong:rgba(201,163,104,.52);
+    --ink:#eadbbf;
+    --muted:#cbb18a;
+    --accent:#e5b25c;
+    --danger:#d96b56;
+    --good:#7bd68b;
+    --shadow:0 18px 40px rgba(0,0,0,.42);
+    --radius:18px;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
+  html,body{height:100%;margin:0;font-family:Georgia, 'Times New Roman', serif;background:#000;color:var(--ink)}
   body{
-    margin:0;
-    color:var(--text);
-    font:14px/1.4 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     background:
-      linear-gradient(rgba(8,6,5,.70), rgba(8,6,5,.82)),
+      linear-gradient(rgba(6,4,3,.68), rgba(7,5,4,.8)),
       url('bg_main_exact.png') center/cover fixed no-repeat,
       var(--bg);
   }
   .app{
-    min-height:100%;
+    max-width:1440px;
+    margin:0 auto;
+    min-height:100vh;
+    padding:18px;
     display:grid;
-    grid-template-columns: 300px minmax(540px, 1fr) 320px;
-    gap:14px;
-    padding:14px;
+    grid-template-columns: 320px minmax(520px, 1fr) 360px;
+    gap:18px;
   }
   .panel{
-    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    background:linear-gradient(180deg, rgba(24,18,15,.88), rgba(14,11,9,.9));
     border:1px solid var(--line);
     border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    backdrop-filter: blur(3px);
+    box-shadow:var(--shadow), inset 0 0 0 1px rgba(255,255,255,.02);
+    backdrop-filter: blur(4px);
     overflow:hidden;
   }
-  .panel-header{
+  .panel h2,.panel h3{
+    margin:0;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:#f1dfc2;
+  }
+  .panel-head{
+    padding:14px 16px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:8px;
-    padding:12px 14px;
-    border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0));
+    gap:12px;
   }
-  .panel-title{
-    font-size:12px;
-    letter-spacing:.16em;
-    text-transform:uppercase;
-    color:var(--muted);
-  }
-  .panel-body{padding:12px 14px}
-  .left,.center,.right{
-    display:grid;
-    gap:14px;
-    align-content:start;
-  }
-  .left{grid-template-rows:auto auto 1fr auto}
-  .center{grid-template-rows:auto 1fr auto}
-  .right{grid-template-rows:auto auto auto 1fr}
-  .brand{
-    font-size:22px;
-    font-weight:800;
-    letter-spacing:.03em;
-    margin:0;
-  }
-  .subtle{color:var(--muted)}
-  .stat-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-  }
-  .stat{
-    padding:10px 12px;
-    border:1px solid var(--line);
-    border-radius:12px;
-    background:rgba(0,0,0,.18);
-  }
-  .stat-label{
-    color:var(--muted);
-    font-size:11px;
-    text-transform:uppercase;
-    letter-spacing:.14em;
-  }
-  .stat-value{
-    font-size:20px;
-    font-weight:700;
-    margin-top:4px;
-  }
-  .inventory-list,.actions-list{
-    display:grid;
-    gap:8px;
-  }
+  .panel-body{padding:16px}
+  .left,.right{display:flex; flex-direction:column; gap:18px}
+  .center{display:grid; grid-template-rows:auto 1fr auto; gap:18px; min-height:calc(100vh - 36px)}
+  .title-card{padding:18px 18px 14px}
+  .subtitle{color:var(--muted); font-size:.95rem; line-height:1.45; margin-top:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
   .chip{
     border:1px solid var(--line);
-    background:rgba(255,255,255,.03);
+    padding:6px 10px;
     border-radius:999px;
-    padding:7px 10px;
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    color:var(--text);
-    width:max-content;
-    max-width:100%;
+    color:var(--muted);
+    background:rgba(255,255,255,.03);
+    font-size:.84rem;
   }
-  .premise{
-    padding:12px;
-    border:1px solid var(--line);
+  .stats{display:grid;grid-template-columns:repeat(2, 1fr);gap:10px}
+  .stat{padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:14px}
+  .stat .label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .stat .value{font-size:1.05rem;margin-top:6px}
+  .meter{height:10px;background:#221913;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.05);margin-top:8px}
+  .meter > span{display:block;height:100%;background:linear-gradient(90deg,#a8423a,#d67a5c,#f5b37a);width:100%}
+  .small{font-size:.9rem;color:var(--muted)}
+  .inv-list,.facts-list,.moves-list{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow:auto;padding-right:4px}
+  .list-item{
+    border:1px solid rgba(229,178,92,.16);
+    background:rgba(255,255,255,.03);
     border-radius:12px;
-    background:rgba(0,0,0,.18);
+    padding:9px 10px;
+    line-height:1.35;
   }
-  .premise h3{
-    margin:0 0 6px;
-    font-size:16px;
-  }
-  .premise p{margin:6px 0;color:var(--text)}
-  .log{
-    height:100%;
-    min-height:480px;
+  .log-wrap{display:flex;flex-direction:column;min-height:0}
+  #log{
+    padding:18px;
     overflow:auto;
-    padding-right:4px;
+    min-height:320px;
+    max-height:100%;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+      rgba(8,6,5,.16);
   }
   .entry{
-    border-left:3px solid var(--line);
-    padding:10px 12px;
-    margin:0 0 10px;
-    background:rgba(255,255,255,.03);
-    border-radius:0 12px 12px 0;
-  }
-  .entry.sys{border-left-color:var(--accent)}
-  .entry.ai{border-left-color:#8cb6ff}
-  .entry.err{border-left-color:var(--danger)}
-  .entry .meta{
-    display:flex;
-    justify-content:space-between;
-    gap:8px;
-    color:var(--muted);
-    font-size:12px;
-    margin-bottom:4px;
-  }
-  .entry pre{
-    white-space:pre-wrap;
-    margin:0;
-    font:inherit;
-    color:var(--text);
-  }
-  .controls{
-    display:grid;
-    gap:10px;
-  }
-  textarea, input, select{
-    width:100%;
-    color:var(--text);
-    background:rgba(10,8,6,.72);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:11px 12px;
-    outline:none;
-    transition:border-color .18s ease, box-shadow .18s ease;
-  }
-  textarea:focus, input:focus, select:focus{
-    border-color:var(--line-strong);
-    box-shadow:0 0 0 3px rgba(225,181,108,.10);
-  }
-  #actionInput{
-    min-height:88px;
-    resize:vertical;
-  }
-  .btn-row{
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-  }
-  button{
-    border:1px solid var(--line);
-    color:var(--text);
-    background:linear-gradient(180deg,rgba(73,52,34,.95),rgba(41,29,20,.95));
-    border-radius:12px;
-    padding:10px 14px;
-    font-weight:700;
-    cursor:pointer;
-    transition:transform .08s ease, border-color .18s ease, filter .18s ease;
-  }
-  button:hover{filter:brightness(1.08); border-color:var(--line-strong)}
-  button:active{transform:translateY(1px)}
-  button.secondary{
-    background:linear-gradient(180deg,rgba(35,35,35,.9),rgba(18,18,18,.9));
-  }
-  button.ghost{
-    background:rgba(255,255,255,.03);
-  }
-  button.warn{
-    background:linear-gradient(180deg,rgba(123,52,39,.95),rgba(72,28,21,.95));
-    border-color:rgba(211,109,85,.5);
-  }
-  .small{font-size:12px}
-  .map-wrap{
-    display:grid;
-    gap:10px;
-  }
-  .map-toolbar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-  .map-toolbar .btn-row{gap:6px}
-  .map-shell{
-    border:1px solid var(--line);
+    margin:0 0 14px;
+    padding:12px 14px;
     border-radius:14px;
-    background:rgba(0,0,0,.28);
-    overflow:hidden;
-    padding:0;
-    min-height:320px;
-    height:420px;
+    border:1px solid rgba(229,178,92,.1);
+    background:rgba(0,0,0,.18);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.015);
+  }
+  .entry.sys{border-color:rgba(123,214,139,.2)}
+  .entry.player{border-color:rgba(110,160,255,.18); background:rgba(19,25,40,.28)}
+  .entry.bad{border-color:rgba(217,107,86,.28)}
+  .entry .meta{font-size:.78rem;color:var(--muted);margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase}
+  .entry .body{white-space:pre-wrap; line-height:1.5}
+
+  .input-panel .panel-body{display:flex;flex-direction:column;gap:12px}
+  textarea{
+    width:100%; min-height:84px; resize:vertical;
+    background:rgba(20,16,13,.86); color:var(--ink);
+    border:1px solid var(--line); border-radius:14px;
+    padding:14px 14px; font:inherit; line-height:1.45;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+  }
+  textarea:focus,input:focus,button:focus{outline:none;box-shadow:0 0 0 2px rgba(229,178,92,.28)}
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px}
+  button, .toggle-btn{
+    appearance:none;border:none;cursor:pointer;
+    background:linear-gradient(180deg,#64472a,#3a281a);
+    color:#f5e7c9;padding:10px 14px;border-radius:12px;
+    font:600 .95rem/1 Georgia, serif;
+    border:1px solid rgba(255,222,170,.14);
+    box-shadow:0 8px 16px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  button.secondary, .toggle-btn{
+    background:linear-gradient(180deg,#2d241d,#18120f);
+    color:var(--muted);
+  }
+  button.danger{background:linear-gradient(180deg,#6a2c22,#391510)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .quick-actions button{padding:9px 10px;font-size:.88rem}
+
+  .map-tools{display:flex;flex-wrap:wrap;gap:8px}
+  .map-stage{
     position:relative;
+    height:520px;
+    border-top:1px solid var(--line);
+    background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.04), rgba(0,0,0,.12) 45%, rgba(0,0,0,.42));
+    overflow:hidden;
     cursor:grab;
     user-select:none;
   }
-  .map-shell.dragging{cursor:grabbing}
-  .map-viewport{
-    position:absolute;
-    inset:0;
-    overflow:hidden;
-  }
+  .map-stage.dragging{cursor:grabbing}
   #mapCanvas, #asciiMap{
-    position:absolute;
-    left:0;
-    top:0;
-  }
-  #mapCanvas{
-    display:block;
+    position:absolute; left:0; top:0;
+    transform-origin: 0 0;
     image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    background:
-      radial-gradient(circle at 50% 30%, rgba(255,203,120,.08), transparent 28%),
-      linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.12)),
-      rgba(17,12,9,.88);
-    border:1px solid rgba(255,255,255,.05);
-    border-radius:8px;
-  }
-  .legend{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:6px 10px;
-    font-size:12px;
-    color:var(--muted);
-  }
-  .legend code{
-    color:var(--accent);
-    background:rgba(255,255,255,.04);
-    padding:1px 5px;
-    border-radius:6px;
   }
   #asciiMap{
     display:none;
-    margin:0;
-    padding:12px;
-    color:var(--text);
-    font:12px/1.1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color:#edd6b0;
+    background:rgba(10,7,6,.22);
+    padding:10px;
+    border-radius:12px;
+    font: 13px/13px 'Courier New', monospace;
     white-space:pre;
-    background:
-      radial-gradient(circle at 50% 30%, rgba(255,203,120,.08), transparent 28%),
-      linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.12)),
-      rgba(17,12,9,.88);
-    border:1px solid rgba(255,255,255,.05);
-    border-radius:8px;
   }
-  .mode-toggle{display:flex; gap:6px; flex-wrap:wrap}
-  .mode-toggle button.active{
-    border-color:var(--line-strong);
-    box-shadow:0 0 0 2px rgba(225,181,108,.10);
+  .map-legend{display:grid;grid-template-columns:repeat(2, minmax(0,1fr));gap:8px;font-size:.9rem;color:var(--muted)}
+  .map-legend span{display:flex;align-items:center;gap:8px}
+  .swatch{width:14px;height:14px;border-radius:4px;background:#666;border:1px solid rgba(255,255,255,.15)}
+
+  .onboard{
+    position:fixed; inset:0; background:rgba(0,0,0,.74);
+    display:flex; align-items:center; justify-content:center; padding:16px;
+    z-index:30;
   }
-  .settings-grid{
-    display:grid;
-    gap:8px;
+  .modal{
+    width:min(680px, 100%);
+    background:linear-gradient(180deg, rgba(27,20,17,.96), rgba(15,11,10,.98));
+    border-radius:24px; border:1px solid var(--line-strong); box-shadow:var(--shadow);
+    overflow:hidden;
   }
-  .row{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px;
+  .modal .panel-head{padding:18px 22px}
+  .modal .panel-body{padding:22px;display:flex;flex-direction:column;gap:14px}
+  .field{display:flex;flex-direction:column;gap:8px}
+  .field label{color:var(--muted);font-size:.92rem}
+  input[type="text"]{
+    width:100%;background:rgba(20,16,13,.9);color:var(--ink);
+    border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;
   }
-  .toggle{
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
-  .toggle input{width:auto}
-  .footer-note{
-    color:var(--muted);
-    font-size:12px;
-  }
-  .statusline{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    border:1px solid var(--line);
-    border-radius:999px;
-    padding:5px 9px;
-    background:rgba(255,255,255,.03);
-    font-size:12px;
-    color:var(--muted);
-  }
-  .danger{color:var(--danger)}
-  .ok{color:var(--ok)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:.9rem;color:var(--muted);line-height:1.45}
+  .badge{font-size:.75rem;color:#271a10;background:#efc07a;padding:5px 8px;border-radius:999px;font-weight:700}
+  .footer-note{font-size:.8rem;color:var(--muted)}
+
   @media (max-width: 1180px){
-    .app{
-      grid-template-columns:1fr;
-    }
-    .left,.center,.right{grid-template-rows:auto}
-    .log{min-height:320px}
+    .app{grid-template-columns:1fr;}
+    .center{min-height:auto}
+    .map-stage{height:420px}
   }
 </style>
 </head>
 <body>
 <div class="app">
-  <section class="left">
-    <div class="panel">
-      <div class="panel-header">
-        <div>
-          <div class="panel-title">Dungeon</div>
-          <h1 class="brand">Aillumi’s Dungeon</h1>
+  <aside class="left">
+    <section class="panel title-card">
+      <h1 style="margin:0;font-size:1.8rem">Aillumi's Dungeon</h1>
+      <div class="subtitle" id="premiseText">A fresh ruin waits below. Suso is thinking.</div>
+      <div class="chips" id="runChips"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h3>Expedition</h3><span class="badge" id="engineBadge">Suso Local</span></div>
+      <div class="panel-body stats">
+        <div class="stat">
+          <div class="label">Delver</div>
+          <div class="value" id="playerNameOut">Unknown</div>
+        </div>
+        <div class="stat">
+          <div class="label">Location</div>
+          <div class="value" id="locationOut">—</div>
+        </div>
+        <div class="stat" style="grid-column:1/-1">
+          <div class="label">Health</div>
+          <div class="value" id="healthOut">10 / 10</div>
+          <div class="meter"><span id="healthBar"></span></div>
         </div>
       </div>
-      <div class="panel-body">
-        <div id="premiseBox" class="premise"></div>
-      </div>
-    </div>
+    </section>
 
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">Status</div></div>
-      <div class="panel-body">
-        <div class="stat-grid">
-          <div class="stat"><div class="stat-label">Health</div><div class="stat-value" id="healthValue">10/10</div></div>
-          <div class="stat"><div class="stat-label">Location</div><div class="stat-value" id="locationValue">—</div></div>
-        </div>
-        <div style="height:10px"></div>
-        <div class="statusline">
-          <span class="badge">Engine <strong id="engineLabel">Local</strong></span>
-          <span class="badge">Alive <strong id="aliveLabel">Yes</strong></span>
-          <span class="badge">Zoom <strong id="zoomLabel">10px</strong></span>
-        </div>
-      </div>
-    </div>
+    <section class="panel">
+      <div class="panel-head"><h3>Inventory</h3></div>
+      <div class="panel-body inv-list" id="inventoryList"></div>
+    </section>
 
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">Inventory</div></div>
-      <div class="panel-body">
-        <div id="inventoryList" class="inventory-list"></div>
-      </div>
-    </div>
+    <section class="panel">
+      <div class="panel-head"><h3>Known Truths</h3></div>
+      <div class="panel-body facts-list" id="factsList"></div>
+    </section>
+  </aside>
 
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">Run Controls</div></div>
-      <div class="panel-body controls">
+  <main class="center">
+    <section class="panel log-wrap">
+      <div class="panel-head">
+        <h2>Narrative Log</h2>
         <div class="btn-row">
-          <button id="newRunBtn">New Run</button>
-          <button id="loadBtn" class="secondary">Load</button>
-          <button id="saveBtn" class="ghost">Save</button>
-          <button id="clearSaveBtn" class="warn">Clear Save</button>
+          <button class="secondary" id="saveBtn">Save</button>
+          <button class="secondary" id="loadBtn">Load</button>
+          <button class="secondary" id="newRunBtn">New Run</button>
+          <button class="danger" id="clearSaveBtn">Clear Save</button>
         </div>
-        <div class="footer-note">Only the background image is used now. The rest of the UI is CSS so it stays cleaner and less blocky.</div>
       </div>
-    </div>
-  </section>
+      <div id="log"></div>
+    </section>
 
-  <section class="center">
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">Story Log</div>
-      </div>
-      <div class="panel-body log" id="log"></div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">Action</div></div>
-      <div class="panel-body controls">
-        <textarea id="actionInput" placeholder="Type what you do... Enter sends. Shift+Enter makes a new line."></textarea>
+    <section class="panel input-panel">
+      <div class="panel-head"><h3>Speak to the dungeon</h3><div class="small" id="statusLine">Enter to send. Shift+Enter for newline.</div></div>
+      <div class="panel-body">
+        <textarea id="actionInput" placeholder="Try anything. Move north. Inspect the water. Kick the door. Ask who built this place."></textarea>
         <div class="btn-row">
-          <button id="rollActionBtn">Roll Action</button>
-          <button id="rerollPremiseBtn" class="secondary">Reroll Premise</button>
+          <button id="actBtn">Roll Action</button>
+          <button class="secondary" id="restBtn">Rest</button>
+          <button class="secondary" id="listenBtn">Listen</button>
+          <button class="secondary" id="searchBtn">Search</button>
         </div>
+        <div class="quick-actions" id="quickActions"></div>
       </div>
-    </div>
-  </section>
+    </section>
+  </main>
 
-  <section class="right">
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">Map</div></div>
-      <div class="panel-body map-wrap">
-        <div class="map-toolbar">
-          <div class="statusline">
-            <span class="badge">Tile Scale <strong id="tileScaleText">10px</strong></span>
-            <span class="badge">View <strong id="mapModeLabel">Tiles</strong></span>
-          </div>
-          <div class="btn-row">
-            <div class="mode-toggle">
-              <button id="tilesModeBtn" class="secondary active">Tiles</button>
-              <button id="asciiModeBtn" class="ghost">ASCII</button>
-            </div>
-            <button id="zoomOutBtn" class="secondary">−</button>
-            <button id="zoomResetBtn" class="ghost">Reset</button>
-            <button id="zoomInBtn">+</button>
-          </div>
-        </div>
-        <div class="map-shell" id="mapShell">
-          <div class="map-viewport" id="mapViewport">
-            <canvas id="mapCanvas" width="300" height="300"></canvas>
-            <pre id="asciiMap"></pre>
-          </div>
-        </div>
-        <div class="legend">
-          <div><code>#</code> Wall</div>
-          <div><code>.</code> Floor</div>
-          <div><code>@</code> Player</div>
-          <div><code>D/O</code> Door</div>
-          <div><code>C</code> Chest</div>
-          <div><code>S</code> Stairs</div>
-          <div><code>T</code> Trap</div>
-          <div><code>W</code> Water</div>
-          <div><code>X</code> Rubble</div>
-          <div><code>E</code> Enemy</div>
-          <div><code>?</code> Unknown</div>
-          <div><code>%</code> Corpse</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">AI Settings</div></div>
-      <div class="panel-body settings-grid">
-        <div class="toggle"><input id="useAiToggle" type="checkbox"><label for="useAiToggle">Use AI narrator</label></div>
-        <input id="apiKeyInput" type="password" placeholder="API key" />
-        <div class="row">
-          <input id="endpointInput" type="text" placeholder="Endpoint" value="https://api.openai.com/v1/responses" />
-          <input id="modelInput" type="text" placeholder="Model" value="gpt-5.4" />
-        </div>
+  <aside class="right">
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Dungeon Map</h3>
         <div class="btn-row">
-          <button id="showKeyBtn" class="ghost">Show Key</button>
-          <button id="saveAiBtn" class="secondary">Save AI</button>
+          <button class="toggle-btn" id="tileModeBtn">Tiles</button>
+          <button class="toggle-btn" id="asciiModeBtn">ASCII</button>
         </div>
-        <div class="footer-note">Run this from GitHub Pages or another normal web host, not by double-clicking a file.</div>
       </div>
-    </div>
+      <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+        <div class="map-tools">
+          <button class="secondary" id="zoomOutBtn">−</button>
+          <button class="secondary" id="zoomResetBtn">Reset</button>
+          <button class="secondary" id="zoomInBtn">+</button>
+          <span class="small" id="zoomOut">Zoom 1.0x</span>
+        </div>
+        <div class="map-stage" id="mapStage">
+          <canvas id="mapCanvas" width="800" height="640"></canvas>
+          <pre id="asciiMap"></pre>
+        </div>
+        <div class="map-legend">
+          <span><i class="swatch" style="background:#9d7a49"></i> door / structure</span>
+          <span><i class="swatch" style="background:#365c78"></i> water</span>
+          <span><i class="swatch" style="background:#8b6537"></i> chest / loot</span>
+          <span><i class="swatch" style="background:#6e2a20"></i> enemy / danger</span>
+        </div>
+      </div>
+    </section>
 
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">Quick Actions</div></div>
-      <div class="panel-body actions-list" id="quickActions"></div>
+    <section class="panel">
+      <div class="panel-head"><h3>Suso Reads Intent</h3></div>
+      <div class="panel-body moves-list" id="movesList"></div>
+    </section>
+  </aside>
+</div>
+
+<div class="onboard" id="onboard">
+  <div class="modal">
+    <div class="panel-head"><h2>Begin a fresh descent</h2><span class="badge">Suso v1</span></div>
+    <div class="panel-body">
+      <div class="hint">This build generates a different premise, dungeon layout, and local narration each run. The fallback is now a procedural storyteller instead of a dead placeholder.</div>
+      <div class="row">
+        <div class="field">
+          <label for="nameInput">What’s your name?</label>
+          <input id="nameInput" type="text" maxlength="24" placeholder="Chace" />
+        </div>
+        <div class="field">
+          <label for="titleInput">What title do you carry?</label>
+          <input id="titleInput" type="text" maxlength="32" placeholder="Torchbearer" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="toneInput">Pick a tone</label>
+        <input id="toneInput" type="text" maxlength="32" placeholder="grim, mystic, brutal, eerie" value="grim" />
+      </div>
+      <div class="btn-row">
+        <button id="startRunBtn">Start New Run</button>
+        <button class="secondary" id="loadFromModalBtn">Load Save</button>
+      </div>
+      <div class="footer-note">This version is fully local: procedural map, local narrator, optional tileset map, save/load, new premise each run.</div>
     </div>
-  </section>
+  </div>
 </div>
 
 <script>
 (() => {
-  const SAVE_KEY = 'aillumi_dungeon_save_v4';
-  const AI_KEY = 'aillumi_dungeon_ai_v4';
-  const TILE_ATLAS = 'dungeon_tiles_atlas_32.png';
-  const state = {
-    premise:null,
-    health:10,
-    maxHealth:10,
-    location:'cellar_start',
-    inventory:[],
-    log:[],
-    alive:true,
-    map:[],
-    engine:'Local',
-    tileScale:10,
-    mapMode:'tiles',
-    mapOffsetX:12,
-    mapOffsetY:12
-  };
-
-  const el = {
-    log: document.getElementById('log'),
-    premiseBox: document.getElementById('premiseBox'),
-    healthValue: document.getElementById('healthValue'),
-    locationValue: document.getElementById('locationValue'),
-    inventoryList: document.getElementById('inventoryList'),
-    engineLabel: document.getElementById('engineLabel'),
-    aliveLabel: document.getElementById('aliveLabel'),
-    actionInput: document.getElementById('actionInput'),
-    mapCanvas: document.getElementById('mapCanvas'),
-    asciiMap: document.getElementById('asciiMap'),
-    mapShell: document.getElementById('mapShell'),
-    mapViewport: document.getElementById('mapViewport'),
-    mapModeLabel: document.getElementById('mapModeLabel'),
-    zoomLabel: document.getElementById('zoomLabel'),
-    tileScaleText: document.getElementById('tileScaleText'),
-    quickActions: document.getElementById('quickActions'),
-    useAiToggle: document.getElementById('useAiToggle'),
-    apiKeyInput: document.getElementById('apiKeyInput'),
-    endpointInput: document.getElementById('endpointInput'),
-    modelInput: document.getElementById('modelInput')
-  };
-
-  const ctx = el.mapCanvas.getContext('2d');
+  const SAVE_KEY = 'aillumi_suso_v1_save';
+  const TILESET_SRC = 'dungeon_tiles_atlas_32.png';
+  const tileSize = 10;
+  const atlasTile = 32;
+  const mapCanvas = document.getElementById('mapCanvas');
+  const ctx = mapCanvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
   const atlas = new Image();
-  atlas.src = TILE_ATLAS;
-  atlas.onload = () => renderMap();
+  atlas.src = TILESET_SRC;
 
-  // atlas 6 cols, 4 rows at 32px from previous implementation
-  const TILE = 32;
-  const atlasTiles = {
-    wall: [0,0], wall2:[1,0], wall3:[2,0], wallCorner:[3,0], wallL:[4,0], wall4:[5,0],
-    floor:[0,1], floor2:[1,1], water:[2,1], water2:[3,1], rubble:[4,1], rubble2:[5,1],
-    door:[0,2], open:[1,2], trap:[2,2], chest:[3,2], chest2:[4,2], fog:[5,2],
-    player:[0,3], enemy:[1,3], stairsDown:[2,3], stairsUp:[3,3]
-  };
-  const symbolToTile = {
-    '#':'wall', '.':'floor', '@':'player', 'D':'door', 'O':'open', 'C':'chest',
-    'S':'stairsDown', 'T':'trap', 'W':'water', 'X':'rubble', '?':'fog', 'E':'enemy',
-    '%':'rubble2', 'R':'wallCorner', 'A':'floor2', '!':'enemy', 'V':'water2'
+  const els = {
+    log: document.getElementById('log'),
+    actionInput: document.getElementById('actionInput'),
+    actBtn: document.getElementById('actBtn'),
+    restBtn: document.getElementById('restBtn'),
+    listenBtn: document.getElementById('listenBtn'),
+    searchBtn: document.getElementById('searchBtn'),
+    saveBtn: document.getElementById('saveBtn'),
+    loadBtn: document.getElementById('loadBtn'),
+    newRunBtn: document.getElementById('newRunBtn'),
+    clearSaveBtn: document.getElementById('clearSaveBtn'),
+    playerNameOut: document.getElementById('playerNameOut'),
+    locationOut: document.getElementById('locationOut'),
+    healthOut: document.getElementById('healthOut'),
+    healthBar: document.getElementById('healthBar'),
+    inventoryList: document.getElementById('inventoryList'),
+    factsList: document.getElementById('factsList'),
+    movesList: document.getElementById('movesList'),
+    premiseText: document.getElementById('premiseText'),
+    runChips: document.getElementById('runChips'),
+    statusLine: document.getElementById('statusLine'),
+    onboard: document.getElementById('onboard'),
+    nameInput: document.getElementById('nameInput'),
+    titleInput: document.getElementById('titleInput'),
+    toneInput: document.getElementById('toneInput'),
+    startRunBtn: document.getElementById('startRunBtn'),
+    loadFromModalBtn: document.getElementById('loadFromModalBtn'),
+    tileModeBtn: document.getElementById('tileModeBtn'),
+    asciiModeBtn: document.getElementById('asciiModeBtn'),
+    asciiMap: document.getElementById('asciiMap'),
+    mapStage: document.getElementById('mapStage'),
+    zoomOutBtn: document.getElementById('zoomOutBtn'),
+    zoomInBtn: document.getElementById('zoomInBtn'),
+    zoomResetBtn: document.getElementById('zoomResetBtn'),
+    zoomOut: document.getElementById('zoomOut'),
+    quickActions: document.getElementById('quickActions'),
   };
 
-  const checkpoints = {
-    cellar_start() {
-      return {
-        location:'cellar_start',
-        map:[
-          '###########',
-          '#.........#',
-          '#....@....D',
-          '#.........#',
-          '###########'
-        ],
-        inventory:['worn map'],
-        health:10,
-        maxHealth:10
-      };
+  let state = null;
+  let showAscii = false;
+  let mapZoom = 1;
+  let mapPanX = 12;
+  let mapPanY = 12;
+  let drag = null;
+
+  const THEMES = [
+    {
+      name:'Flooded Reliquary',
+      vibe:['sodden','echoing','candle-starved'],
+      premise:'A drowned reliquary beneath broken stone. The water remembers prayers no one meant to keep.',
+      truths:['The water carries whispers from sealed rooms.', 'Bronze fittings appear where sanctity once mattered.'],
+      lie:'The deepest chamber is empty.',
+      motifs:['water','relics','bronze','choirs'],
+      roomNames:['Votive Wash','Sunken Chapel','Reliquary Niche','Choir Drain']
     },
-    lower_hall() {
-      return {
-        location:'lower_hall',
-        map:[
-          '  ###########   #################',
-          '  #.........#   #.......C.......#',
-          '  #.........O...@...............#',
-          '  #.........#   #...............#',
-          '  ###########   #...A...X....D..#',
-          '                #####.###########',
-          '                    #.#',
-          '         ############.###########',
-          '         #......T............?..#',
-          '         #......................#',
-          '         #..W.W..............E..#',
-          '         #..W.W................D#',
-          '         ######.#################',
-          '              #.#',
-          '          #####.#####',
-          '          #....S....#',
-          '          #.........#',
-          '          ###########'
-        ],
-        inventory:['worn map','rusted key'],
-        health:7,
-        maxHealth:10
-      };
+    {
+      name:'Ash Vault',
+      vibe:['smoked','dry','punishing'],
+      premise:'A furnace-vault collapsed into itself long ago. Ash still drifts when no one breathes on it.',
+      truths:['Fire blackened the stone but not what nested after.', 'A sealed hall still wants an operator.'],
+      lie:'Ash means the flames are dead.',
+      motifs:['ash','brass','smoke','chains'],
+      roomNames:['Cinder Hall','Black Hearth','Keeper Walk','Spent Furnace']
+    },
+    {
+      name:'Bone Orchard',
+      vibe:['hushed','ritual','wrong'],
+      premise:'A catacomb that grew inward around its dead. Bone and root have forgotten which is older.',
+      truths:['Many doors were grown, not built.', 'The quiet breaks before the danger does.'],
+      lie:'Nothing living feeds here.',
+      motifs:['bone','roots','mist','grave-cloth'],
+      roomNames:['Root Nave','Bone Court','Orchard Crypt','Veil Gate']
+    },
+    {
+      name:'Iron Saint Crypt',
+      vibe:['solemn','mechanical','cold'],
+      premise:'A buried crypt of iron scripture and armored silence. Something below still follows the old rites.',
+      truths:['Mechanisms answer posture as much as force.', 'The saint was buried with a lie.'],
+      lie:'The guardians are mindless.',
+      motifs:['iron','bells','scripture','oil'],
+      roomNames:['Bell Archive','Scriptor Vault','Marshal Steps','Anointing Well']
     }
+  ];
+
+  const TILE_INDEX = {
+    '#':[0,0],
+    '.':[1,0],
+    'W':[2,0],
+    'X':[3,0],
+    'D':[0,1],
+    'O':[1,1],
+    'T':[2,1],
+    'C':[3,1],
+    '@':[0,2],
+    'E':[1,2],
+    'S':[3,2],
+    '?':[1,3],
+    '^':[2,3],
+    '%':[3,3]
   };
 
-  function randomChoice(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
-  function generatePremise(){
-    const titles = ['The Ash Cellar','The Flooded Chapel Below','The Iron Saint Crypt','The Bone Lock Vault','The Hushed Well'];
-    const openings = [
-      'You wake on cold stone with dust in your mouth and a sense that you were expected.',
-      'You descend through a warped cellar door into a place older than the house above.',
-      'You come to with a half-burned map in your pocket and torch smoke in the air.',
-      'You stand at the edge of a forgotten threshold, already hearing water drip below.'
-    ];
-    const goals = [
-      'Find what the dungeon is hiding and survive the descent.',
-      'Recover the relic before the dark reaches it first.',
-      'Uncover why this place still answers when spoken to.',
-      'Push deeper until the truth becomes impossible to ignore.'
-    ];
-    const starts = ['cellar_start','lower_hall'];
-    return {
-      title: randomChoice(titles),
-      opening: randomChoice(openings),
-      goal: randomChoice(goals),
-      startRoom: randomChoice(starts)
+  const WALKABLE = new Set(['.', 'O', 'W', 'S', 'T', '^']);
+  const DIRS = {
+    north:[0,-1], south:[0,1], west:[-1,0], east:[1,0],
+    up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]
+  };
+
+  function rngFactory(seed){
+    let s = seed >>> 0;
+    return function(){
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
     };
   }
-
-  function addLog(text, type='sys', label='Narration'){
-    const entry = { text, type, label, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) };
-    state.log.push(entry);
-    const div = document.createElement('div');
-    div.className = 'entry ' + type;
-    div.innerHTML = `<div class="meta"><span>${label}</span><span>${entry.time}</span></div><pre></pre>`;
-    div.querySelector('pre').textContent = text;
-    el.log.appendChild(div);
-    el.log.scrollTop = el.log.scrollHeight;
+  function randInt(rng,min,max){ return Math.floor(rng() * (max-min+1)) + min; }
+  function pick(rng,arr){ return arr[Math.floor(rng() * arr.length)]; }
+  function shuffle(rng,arr){
+    const a=[...arr];
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
   }
 
-  function renderPremise(){
-    const p = state.premise;
-    el.premiseBox.innerHTML = p ? `<h3>${p.title}</h3><p>${p.opening}</p><p class="subtle">Goal: ${p.goal}</p>` : '<h3>No run loaded</h3>';
-  }
+  function createRun(profile={}){
+    const seed = Date.now() ^ ((Math.random()*1e9)|0);
+    const rng = rngFactory(seed);
+    const theme = pick(rng, THEMES);
+    const tone = (profile.tone || 'grim').trim() || 'grim';
+    const map = generateDungeon(rng, theme);
+    const name = (profile.name || 'Unknown').trim() || 'Unknown';
+    const title = (profile.title || 'Delver').trim() || 'Delver';
 
-  function renderInventory(){
-    el.inventoryList.innerHTML = '';
-    if(!state.inventory.length){
-      el.inventoryList.innerHTML = '<div class="subtle">Nothing on you.</div>';
-      return;
-    }
-    state.inventory.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'chip';
-      div.textContent = item;
-      el.inventoryList.appendChild(div);
-    });
-  }
-
-  function renderQuickActions(){
-    const actions = ['inspect the room','listen at the door','move carefully','check inventory','head toward the stairs'];
-    el.quickActions.innerHTML = '';
-    actions.forEach(text => {
-      const b = document.createElement('button');
-      b.className = 'ghost small';
-      b.textContent = text;
-      b.onclick = () => {
-        el.actionInput.value = text;
-        el.actionInput.focus();
-      };
-      el.quickActions.appendChild(b);
-    });
-  }
-
-  function updateStatus(){
-    el.healthValue.textContent = `${state.health}/${state.maxHealth}`;
-    el.locationValue.textContent = state.location.replaceAll('_', ' ');
-    el.engineLabel.textContent = state.engine;
-    el.aliveLabel.textContent = state.alive ? 'Yes' : 'No';
-    el.zoomLabel.textContent = `${state.tileScale}px`;
-    el.tileScaleText.textContent = `${state.tileScale}px`;
-    el.mapModeLabel.textContent = state.mapMode === 'tiles' ? 'Tiles' : 'ASCII';
-    document.getElementById('tilesModeBtn').classList.toggle('active', state.mapMode === 'tiles');
-    document.getElementById('asciiModeBtn').classList.toggle('active', state.mapMode === 'ascii');
-  }
-
-  function updateUI(){
-    renderPremise();
-    renderInventory();
-    updateStatus();
-    renderMap();
-    renderQuickActions();
-  }
-
-  function saveGame(){
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-    addLog('Game saved.', 'sys', 'Save');
-  }
-
-  function loadGame(){
-    const raw = localStorage.getItem(SAVE_KEY);
-    if(!raw){ addLog('No save found.', 'err', 'Load'); return; }
-    try{
-      const parsed = JSON.parse(raw);
-      Object.assign(state, parsed);
-      el.log.innerHTML = '';
-      state.log = [];
-      addLog('Save loaded.', 'sys', 'Load');
-      updateUI();
-    } catch (e){
-      addLog('Save could not be loaded.', 'err', 'Load');
-    }
-  }
-
-  function clearSave(){
-    localStorage.removeItem(SAVE_KEY);
-    addLog('Save cleared.', 'sys', 'Save');
-  }
-
-  function saveAiSettings(){
-    localStorage.setItem(AI_KEY, JSON.stringify({
-      useAi: el.useAiToggle.checked,
-      apiKey: el.apiKeyInput.value,
-      endpoint: el.endpointInput.value,
-      model: el.modelInput.value
-    }));
-    addLog('AI settings saved.', 'sys', 'AI');
-  }
-
-  function loadAiSettings(){
-    const raw = localStorage.getItem(AI_KEY);
-    if(!raw) return;
-    try{
-      const ai = JSON.parse(raw);
-      el.useAiToggle.checked = !!ai.useAi;
-      el.apiKeyInput.value = ai.apiKey || '';
-      el.endpointInput.value = ai.endpoint || 'https://api.openai.com/v1/responses';
-      el.modelInput.value = ai.model || 'gpt-5.4';
-    }catch{}
-  }
-
-  function startNewRun(){
-    const premise = generatePremise();
-    const base = checkpoints[premise.startRoom]();
-    state.premise = premise;
-    state.health = base.health;
-    state.maxHealth = base.maxHealth;
-    state.location = base.location;
-    state.inventory = [...base.inventory];
-    state.map = [...base.map];
-    state.alive = true;
-    state.engine = 'Local';
-    el.log.innerHTML = '';
-    state.log = [];
-    addLog(`${premise.title}\n\n${premise.opening}\n\nGoal: ${premise.goal}`, 'sys', 'New Run');
-    updateUI();
-  }
-
-  function rollDie(){ return Math.floor(Math.random()*21); }
-
-  function localTurn(action){
-    const roll = rollDie();
-    let narration = '';
-    let label = `Roll ${roll}`;
-    state.engine = 'Local';
-
-    if(roll === 0){
-      state.alive = false;
-      narration = `Roll: 0\nThe dungeon refuses your move outright.\nYou die.`;
-      addLog(narration, 'err', label);
-      updateUI();
-      return;
-    }
-
-    const a = action.toLowerCase();
-    if(a.includes('door') && (a.includes('run') || a.includes('open') || a.includes('go') || a.includes('toward') || a.includes('towards'))){
-      narration = `Roll: ${roll}\nYou commit to the door. The chamber answers with damp wood, cold iron, and the sense that something beyond it has waited too long.\nYou reach it and the world shifts in your favor enough to keep moving.`;
-      if(state.location === 'cellar_start'){
-        const nxt = checkpoints.lower_hall();
-        state.location = nxt.location;
-        state.map = [...nxt.map];
-        state.inventory = Array.from(new Set([...state.inventory, ...nxt.inventory]));
-        state.health = Math.min(state.maxHealth, Math.max(1, state.health - (roll < 6 ? 1 : 0)));
-      }
-    } else if(a.includes('listen')){
-      narration = `Roll: ${roll}\nYou still yourself and listen. Water drips somewhere ahead. Stone settles. The dungeon is not quiet so much as patient.`;
-    } else if(a.includes('inspect') || a.includes('look')){
-      narration = `Roll: ${roll}\nYou take a careful look. The stonework is old, damp at the seams, and marked by more use than abandonment would suggest.`;
-    } else {
-      narration = `Roll: ${roll}\nYou try: "${action}"\nThe dungeon accepts the intent. The move shifts your footing, your nerves, and the shape of the moment, even if the deeper consequence is still gathering.`;
-    }
-
-    addLog(narration, 'sys', label);
-    updateUI();
-  }
-
-  async function aiTurn(action){
-    state.engine = 'AI';
-    updateStatus();
-    const apiKey = el.apiKeyInput.value.trim();
-    const endpoint = el.endpointInput.value.trim();
-    const model = el.modelInput.value.trim();
-    if(!apiKey || !endpoint || !model){
-      addLog('AI is enabled, but API key, endpoint, or model is missing. Falling back to local.', 'err', 'AI');
-      localTurn(action);
-      return;
-    }
-
-    const payload = {
-      action,
-      state: {
-        title: state.premise?.title || '',
-        goal: state.premise?.goal || '',
-        location: state.location,
-        health: state.health,
-        maxHealth: state.maxHealth,
-        inventory: state.inventory,
-        recent_log: state.log.slice(-6).map(x => `${x.label}: ${x.text}`),
-        map: state.map
-      },
-      rules: {
-        die: '0-20',
-        zero: 'instant death',
-        return_json: true
+    const run = {
+      seed,
+      rngState: seed,
+      name,
+      title,
+      tone,
+      theme,
+      maxHealth: 10,
+      health: 10,
+      inventory: [{name:'Torch', desc:'A guttering torch with more faith than oil.'}],
+      facts:[
+        theme.truths[0],
+        `False comfort: ${theme.lie}`
+      ],
+      flags:{},
+      log:[],
+      moves:[],
+      turn:0,
+      dead:false,
+      discovered: Array.from({length:map.h}, () => Array(map.w).fill(false)),
+      visible: Array.from({length:map.h}, () => Array(map.w).fill(false)),
+      map,
+      player:{x:map.start.x, y:map.start.y},
+      rooms: map.rooms,
+      currentRoomId: null,
+      premise: `${theme.premise} You descend as ${title.toLowerCase()} ${name}.`,
+      labels: {
+        engine:'Suso Local',
       }
     };
+    revealAround(run, 6);
+    run.currentRoomId = findRoomAt(run, run.player.x, run.player.y)?.id ?? 0;
+    addEntry('sys', `A new run takes shape.
 
-    addLog('The dungeon is thinking...', 'ai', 'AI');
-    try{
-      const body = {
-        model,
-        instructions: 'You are the narrator and rules engine for a dark dungeon crawler. Return strict JSON only with keys: roll, narration, health, maxHealth, inventory, location, map, alive.',
-        input: JSON.stringify(payload)
-      };
+${run.premise}
 
-      const res = await fetch(endpoint, {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'Authorization':`Bearer ${apiKey}`
-        },
-        body: JSON.stringify(body)
-      });
+The local narrator is procedural now: rooms, threats, and consequences are being composed from the generated world instead of a dead fallback.`,'Opening');
+    const room = getCurrentRoom(run);
+    if (room) addEntry('sys', describeRoom(run, room, true), 'First impression');
+    return run;
+  }
 
-      const rawText = await res.text();
-      if(!res.ok) throw new Error(`HTTP ${res.status}: ${rawText.slice(0,300)}`);
-      let data = JSON.parse(rawText);
-      let text = data.output_text || data.output?.[0]?.content?.[0]?.text || '';
-      if(!text && data.choices?.[0]?.message?.content) text = data.choices[0].message.content;
-      const parsed = typeof text === 'string' ? JSON.parse(text) : text;
+  function generateDungeon(rng, theme){
+    const w = 60, h = 42;
+    const grid = Array.from({length:h},()=>Array(w).fill('#'));
+    const rooms=[];
+    let roomId=0;
 
-      state.health = parsed.health ?? state.health;
-      state.maxHealth = parsed.maxHealth ?? state.maxHealth;
-      state.inventory = parsed.inventory ?? state.inventory;
-      state.location = parsed.location ?? state.location;
-      state.map = parsed.map ?? state.map;
-      state.alive = parsed.alive ?? state.alive;
-      addLog(`Roll: ${parsed.roll}\n${parsed.narration}`, 'ai', `AI Roll ${parsed.roll}`);
-      updateUI();
-    }catch(err){
-      addLog(`AI failed: ${err.message}\nFalling back to local.`, 'err', 'AI');
-      localTurn(action);
+    for(let i=0;i<18;i++){
+      const rw = randInt(rng, 6, 11);
+      const rh = randInt(rng, 5, 9);
+      const rx = randInt(rng, 2, w-rw-3);
+      const ry = randInt(rng, 2, h-rh-3);
+      const candidate = {x:rx,y:ry,w:rw,h:rh,id:roomId++, tags:new Set([pick(rng, theme.motifs)]), name:pick(rng, theme.roomNames)};
+      if (rooms.some(r => rx < r.x+r.w+2 && rx+rw+2 > r.x && ry < r.y+r.h+2 && ry+rh+2 > r.y)) continue;
+      carveRoom(grid,candidate);
+      rooms.push(candidate);
+    }
+
+    rooms.sort((a,b)=>center(a).x - center(b).x);
+    for(let i=1;i<rooms.length;i++) connectRooms(grid, center(rooms[i-1]), center(rooms[i]), rng);
+
+    const startRoom = rooms[0] || {x:3,y:3,w:8,h:6,id:0,tags:new Set(),name:'Entry'};
+    const endRoom = rooms[rooms.length-1] || startRoom;
+    const start = center(startRoom);
+    const exit = center(endRoom);
+    grid[exit.y][exit.x] = 'S';
+
+    for(const room of rooms){
+      const c = center(room);
+      if (room.id !== startRoom.id && rng() < 0.45){
+        const itemType = pick(rng,['C','^','W','X']);
+        placeNear(grid, c.x, c.y, itemType, rng);
+      }
+      if (room.id !== startRoom.id && rng() < 0.5){
+        placeNear(grid, c.x, c.y, 'E', rng);
+      }
+      if (rng() < 0.22) placeNear(grid, c.x, c.y, 'T', rng);
+      if (rng() < 0.18) placeNear(grid, c.x, c.y, 'D', rng);
+    }
+
+    for(let i=0;i<14;i++) scatterOnFloor(grid, rng, pick(rng,['W','X','.','.','.']));
+
+    return {w,h,grid,rooms,start,exit};
+  }
+
+  function carveRoom(grid,room){
+    for(let y=room.y;y<room.y+room.h;y++) for(let x=room.x;x<room.x+room.w;x++) grid[y][x]='.';
+  }
+  function center(r){ return {x:Math.floor(r.x+r.w/2), y:Math.floor(r.y+r.h/2)}; }
+  function connectRooms(grid,a,b,rng){
+    let x=a.x, y=a.y;
+    const horizFirst = rng() < 0.5;
+    if (horizFirst){ while(x!==b.x){ grid[y][x]='.'; x += Math.sign(b.x-x);} while(y!==b.y){ grid[y][x]='.'; y += Math.sign(b.y-y);} }
+    else { while(y!==b.y){ grid[y][x]='.'; y += Math.sign(b.y-y);} while(x!==b.x){ grid[y][x]='.'; x += Math.sign(b.x-x);} }
+    grid[b.y][b.x]='.';
+  }
+  function placeNear(grid,x,y,ch,rng){
+    const opts = shuffle(rng, [[0,0],[1,0],[-1,0],[0,1],[0,-1],[2,0],[-2,0],[0,2],[0,-2]]);
+    for(const [dx,dy] of opts){
+      const nx=x+dx, ny=y+dy;
+      if(grid[ny]?.[nx] === '.') { grid[ny][nx]=ch; return true; }
+    }
+    return false;
+  }
+  function scatterOnFloor(grid,rng,ch){
+    for(let tries=0;tries<200;tries++){
+      const x=randInt(rng,1,grid[0].length-2), y=randInt(rng,1,grid.length-2);
+      if(grid[y][x] === '.') { grid[y][x]=ch; return; }
     }
   }
 
-  function applyMapTransform(){
-    const x = Math.round(state.mapOffsetX);
-    const y = Math.round(state.mapOffsetY);
-    el.mapCanvas.style.transform = `translate(${x}px, ${y}px)`;
-    el.asciiMap.style.transform = `translate(${x}px, ${y}px)`;
+  function addEntry(kind, body, meta='Turn'){
+    if(!state) return;
+    state.log.push({kind,body,meta});
+    if(state.log.length>120) state.log.shift();
   }
 
-  function clampMapOffset(){
-    const target = state.mapMode === 'tiles' ? el.mapCanvas : el.asciiMap;
-    const shellW = el.mapShell.clientWidth;
-    const shellH = el.mapShell.clientHeight;
-    const targetW = target.offsetWidth || target.width || 0;
-    const targetH = target.offsetHeight || target.height || 0;
-
-    if(targetW <= shellW){
-      state.mapOffsetX = Math.max(0, (shellW - targetW) / 2);
-    } else {
-      const minX = shellW - targetW - 12;
-      const maxX = 12;
-      state.mapOffsetX = Math.min(maxX, Math.max(minX, state.mapOffsetX));
+  function getCurrentRoom(run=state){
+    return findRoomAt(run, run.player.x, run.player.y) || nearestRoom(run, run.player.x, run.player.y);
+  }
+  function findRoomAt(run,x,y){
+    return run.rooms.find(r => x>=r.x && x<r.x+r.w && y>=r.y && y<r.y+r.h) || null;
+  }
+  function nearestRoom(run,x,y){
+    let best=null,bestD=1e9;
+    for(const r of run.rooms){ const c=center(r); const d=Math.abs(c.x-x)+Math.abs(c.y-y); if(d<bestD){bestD=d; best=r;}}; return best;
+  }
+  function roomFeatureSummary(run, room){
+    const feats = new Set();
+    for(let y=room.y;y<room.y+room.h;y++) for(let x=room.x;x<room.x+room.w;x++){
+      const c=run.map.grid[y][x]; if(['C','E','W','X','T','D','^','S'].includes(c)) feats.add(c);
     }
-
-    if(targetH <= shellH){
-      state.mapOffsetY = Math.max(0, (shellH - targetH) / 2);
-    } else {
-      const minY = shellH - targetH - 12;
-      const maxY = 12;
-      state.mapOffsetY = Math.min(maxY, Math.max(minY, state.mapOffsetY));
-    }
+    return [...feats];
+  }
+  function describeRoom(run, room, first=false){
+    const feats = roomFeatureSummary(run, room);
+    const adjectives = shuffle(rngFactory(run.seed + room.id), run.theme.vibe).slice(0,2).join(' and ');
+    let text = `${room.name} opens around you, ${adjectives}. `;
+    if (first) text += `The ${run.theme.name.toLowerCase()} announces itself through ${pick(rngFactory(run.seed+room.id+99), ['dripping echoes','cold mineral air','old dust and soot','a hush that feels arranged'])}. `;
+    if (feats.includes('W')) text += 'Water darkens part of the floor. ';
+    if (feats.includes('X')) text += 'Collapsed stone and rubble have eaten one edge of the room. ';
+    if (feats.includes('C')) text += 'A chest or hoard sits here, waiting to be trusted or punished. ';
+    if (feats.includes('E')) text += 'You feel watched before you see what does the watching. ';
+    if (feats.includes('T')) text += 'The floor carries the mean geometry of a trap. ';
+    if (feats.includes('^')) text += 'A shrine-like shape breaks the room’s rhythm. ';
+    if (feats.includes('S')) text += 'A stair or final descent marks the far side. ';
+    return text.trim();
   }
 
-  function renderMap(){
-    const rows = state.map || [];
-    const tile = state.tileScale;
-    const maxCols = rows.reduce((m, r) => Math.max(m, r.length), 0);
-
-    el.asciiMap.textContent = rows.join('');
-    el.asciiMap.style.display = state.mapMode === 'ascii' ? 'block' : 'none';
-    el.mapCanvas.style.display = state.mapMode === 'tiles' ? 'block' : 'none';
-
-    el.mapCanvas.width = Math.max(1, maxCols * tile);
-    el.mapCanvas.height = Math.max(1, rows.length * tile);
-    ctx.clearRect(0,0,el.mapCanvas.width, el.mapCanvas.height);
-
-    for(let y=0; y<rows.length; y++){
-      const row = rows[y];
-      for(let x=0; x<row.length; x++){
-        const ch = row[x];
-        if(ch === ' ') continue;
-        const key = symbolToTile[ch] || 'floor';
-        const [tx, ty] = atlasTiles[key] || atlasTiles.floor;
-        if(atlas.complete && atlas.naturalWidth){
-          ctx.drawImage(atlas, tx*TILE, ty*TILE, TILE, TILE, x*tile, y*tile, tile, tile);
-        } else {
-          ctx.fillStyle = ch === '#' ? '#584636' : ch === '@' ? '#dcb16b' : '#2a2118';
-          ctx.fillRect(x*tile, y*tile, tile, tile);
+  function revealAround(run, radius=5){
+    run.visible = Array.from({length:run.map.h}, () => Array(run.map.w).fill(false));
+    for(let y=Math.max(0,run.player.y-radius); y<=Math.min(run.map.h-1,run.player.y+radius); y++){
+      for(let x=Math.max(0,run.player.x-radius); x<=Math.min(run.map.w-1,run.player.x+radius); x++){
+        if((x-run.player.x)**2 + (y-run.player.y)**2 <= radius*radius){
+          run.visible[y][x]=true;
+          run.discovered[y][x]=true;
         }
       }
     }
-
-    requestAnimationFrame(() => {
-      clampMapOffset();
-      applyMapTransform();
-    });
   }
 
-  function setZoom(next){
-    state.tileScale = Math.max(6, Math.min(28, next));
-    renderMap();
-    updateStatus();
-  }
-
-  function setMapMode(mode){
-    state.mapMode = mode;
-    renderMap();
-    updateStatus();
-  }
-
-  document.getElementById('zoomInBtn').onclick = () => setZoom(state.tileScale + 2);
-  document.getElementById('zoomOutBtn').onclick = () => setZoom(state.tileScale - 2);
-  document.getElementById('zoomResetBtn').onclick = () => setZoom(10);
-  document.getElementById('tilesModeBtn').onclick = () => setMapMode('tiles');
-  document.getElementById('asciiModeBtn').onclick = () => setMapMode('ascii');
-
-  (() => {
-    let dragging = false;
-    let startX = 0;
-    let startY = 0;
-    let baseX = 0;
-    let baseY = 0;
-
-    const onMove = (clientX, clientY) => {
-      if(!dragging) return;
-      state.mapOffsetX = baseX + (clientX - startX);
-      state.mapOffsetY = baseY + (clientY - startY);
-      clampMapOffset();
-      applyMapTransform();
-    };
-
-    el.mapShell.addEventListener('mousedown', (e) => {
-      dragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      baseX = state.mapOffsetX;
-      baseY = state.mapOffsetY;
-      el.mapShell.classList.add('dragging');
-    });
-    window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
-    window.addEventListener('mouseup', () => {
-      dragging = false;
-      el.mapShell.classList.remove('dragging');
-    });
-
-    el.mapShell.addEventListener('touchstart', (e) => {
-      const t = e.touches[0];
-      dragging = true;
-      startX = t.clientX;
-      startY = t.clientY;
-      baseX = state.mapOffsetX;
-      baseY = state.mapOffsetY;
-      el.mapShell.classList.add('dragging');
-    }, {passive:true});
-    window.addEventListener('touchmove', (e) => {
-      if(!dragging) return;
-      const t = e.touches[0];
-      onMove(t.clientX, t.clientY);
-    }, {passive:true});
-    window.addEventListener('touchend', () => {
-      dragging = false;
-      el.mapShell.classList.remove('dragging');
-    });
-
-    window.addEventListener('resize', () => {
-      clampMapOffset();
-      applyMapTransform();
-    });
-  })();
-
-  document.getElementById('newRunBtn').onclick = startNewRun;
-  document.getElementById('rerollPremiseBtn').onclick = startNewRun;
-  document.getElementById('saveBtn').onclick = saveGame;
-  document.getElementById('loadBtn').onclick = loadGame;
-  document.getElementById('clearSaveBtn').onclick = clearSave;
-  document.getElementById('saveAiBtn').onclick = saveAiSettings;
-  document.getElementById('showKeyBtn').onclick = () => {
-    el.apiKeyInput.type = el.apiKeyInput.type === 'password' ? 'text' : 'password';
-  };
-
-  async function submitAction(){
-    if(!state.alive){
-      addLog('You are dead. Start a new run or load a save.', 'err', 'Dead');
-      return;
+  function parseIntent(text){
+    const t = text.trim().toLowerCase();
+    const moveDir = Object.keys(DIRS).find(d => new RegExp(`\\b${d}\\b`).test(t));
+    if (moveDir) return {type:'move-dir', dir:moveDir};
+    if (/\b(run|rush|sprint|head|go|move|walk)\b/.test(t)){
+      const targets = ['door','stairs','chest','water','enemy','trap','shrine','exit','opening','rubble'];
+      const target = targets.find(k => t.includes(k));
+      if (target) return {type:'move-target', target};
+      return {type:'move-random'};
     }
-    const action = el.actionInput.value.trim();
+    if (/\b(look|inspect|examine|study|check)\b/.test(t)) return {type:'inspect', target:extractTarget(t)};
+    if (/\b(listen|hear)\b/.test(t)) return {type:'listen'};
+    if (/\b(search|loot|scavenge|rummage)\b/.test(t)) return {type:'search', target:extractTarget(t)};
+    if (/\b(open|unlock|unseal)\b/.test(t)) return {type:'open', target:extractTarget(t)};
+    if (/\b(attack|hit|stab|kick|strike|fight)\b/.test(t)) return {type:'attack', target:extractTarget(t)};
+    if (/\b(rest|sleep|breathe|steady)\b/.test(t)) return {type:'rest'};
+    if (/\b(pray|fly|become|god|divine|resurrect|teleport)\b/.test(t)) return {type:'insane', raw:t};
+    if (/\b(ask|who|what|why|how)\b/.test(t)) return {type:'question', raw:t};
+    return {type:'interact', raw:t};
+  }
+  function extractTarget(t){
+    const targets=['door','stairs','chest','water','enemy','trap','shrine','rubble','wall','floor','room','exit'];
+    return targets.find(k => t.includes(k)) || null;
+  }
+
+  function roll(){ return Math.floor(Math.random()*21); }
+  function rollWithInsaneModifier(){ return Math.max(1, roll()-3); }
+
+  function resolveAction(input){
+    if(state.dead) return;
+    const action = input.trim();
     if(!action) return;
-    el.actionInput.value = '';
-    if(el.useAiToggle.checked) await aiTurn(action);
-    else localTurn(action);
+    const intent = parseIntent(action);
+    const room = getCurrentRoom();
+    const localRng = rngFactory(state.seed + state.turn * 991 + action.length * 17);
+    let baseRoll = intent.type === 'insane' ? rollWithInsaneModifier() : roll();
+    state.turn++;
+    addEntry('player', action, `Action · roll ${baseRoll}`);
+    if (baseRoll === 0) return killPlayer('The dungeon corrects the run with brutal finality. Fortune disappears under your feet.');
+
+    let result = {good:false, text:'', damage:0, heal:0, discovered:null};
+
+    switch(intent.type){
+      case 'move-dir': result = resolveMoveDir(intent.dir, baseRoll, room, localRng); break;
+      case 'move-target': result = resolveMoveTarget(intent.target, baseRoll, room, localRng); break;
+      case 'move-random': result = resolveMoveRandom(baseRoll, room, localRng); break;
+      case 'inspect': result = resolveInspect(intent.target, baseRoll, room, localRng); break;
+      case 'listen': result = resolveListen(baseRoll, room, localRng); break;
+      case 'search': result = resolveSearch(intent.target, baseRoll, room, localRng); break;
+      case 'open': result = resolveOpen(intent.target, baseRoll, room, localRng); break;
+      case 'attack': result = resolveAttack(intent.target, baseRoll, room, localRng); break;
+      case 'rest': result = resolveRest(baseRoll, room, localRng); break;
+      case 'insane': result = resolveInsane(action, baseRoll, room, localRng); break;
+      case 'question': result = resolveQuestion(action, baseRoll, room, localRng); break;
+      default: result = resolveInteract(action, baseRoll, room, localRng); break;
+    }
+
+    applyOutcome(result, baseRoll);
   }
 
-  document.getElementById('rollActionBtn').onclick = submitAction;
-  el.actionInput.addEventListener('keydown', (e) => {
-    if(e.key === 'Enter' && !e.shiftKey){
-      e.preventDefault();
-      submitAction();
-    }
-  });
+  function killPlayer(text){
+    state.dead = true;
+    addEntry('bad', text + '\n\nYou die. The run can still be saved as a relic, or replaced with a new descent.', 'Death');
+    refreshUI();
+  }
 
-  loadAiSettings();
-  startNewRun();
+  function resolveMoveDir(dir, r, room, rng){
+    const [dx,dy] = DIRS[dir];
+    const nx = state.player.x + dx, ny = state.player.y + dy;
+    const cell = state.map.grid[ny]?.[nx] ?? '#';
+    if(cell === '#'){
+      return {text:`You try ${dir}, but stone closes the thought. The wall there is absolute.`, damage:r<=3?1:0};
+    }
+    if(cell === 'D'){
+      if(r >= 11){ state.map.grid[ny][nx] = 'O'; movePlayer(nx,ny); return {good:true,text:`You shoulder through the sealed door and it grudgingly yields. The threshold groans, then accepts you.`}; }
+      return {text:`You meet a door that has not decided whether it remembers you. It stays shut for now.`, damage:r<=2?1:0};
+    }
+    if(cell === 'E'){
+      if(r >= 13){ state.map.grid[ny][nx] = '.'; movePlayer(nx,ny); addLootMaybe(rng); return {good:true,text:`You close distance before the hostile shape can. A brutal exchange ends with it broken at your feet.`}; }
+      return {text:`You push ${dir}, but the enemy there surges first and forces you back with a slash of bad intent.`, damage:r<=5?2:1};
+    }
+    if(cell === 'T'){
+      if(r <= 8){ movePlayer(nx,ny); return {text:`You step ${dir} and the floor bites. A trap answers your weight with cruel precision.`, damage:2}; }
+      movePlayer(nx,ny); return {good:true,text:`You catch the trap as it triggers and slip across it with more grace than you expected.`};
+    }
+    movePlayer(nx,ny);
+    let text = `You move ${dir}. `;
+    if(cell === 'W') text += 'Water shifts around your boots and steals the room’s warmth.';
+    else if(cell === 'X') text += 'Loose rubble grinds underfoot.';
+    else if(cell === 'S') text += 'A stair or final descent waits here, patient as a verdict.';
+    else if(cell === '^') text += 'The shrine-stone seems to notice you, though it does not move.';
+    else text += pick(rng,['The passage opens a little.','The room recomposes around your lantern.','Dust and echo trade places.']);
+    const newRoom = getCurrentRoom();
+    if(newRoom && newRoom.id !== room.id){
+      text += `\n\n${describeRoom(state, newRoom, false)}`;
+      state.currentRoomId = newRoom.id;
+    }
+    return {good:true,text};
+  }
+
+  function resolveMoveTarget(target, r, room, rng){
+    const wanted = ({door:'D',stairs:'S',chest:'C',water:'W',enemy:'E',trap:'T',shrine:'^',rubble:'X',exit:'S',opening:'O'})[target] || '.';
+    const step = nextStepToward(wanted);
+    if(!step) return {text:`You angle toward ${target}, but from here the route is not clean enough to trust.`};
+    const dir = directionName(step.x-state.player.x, step.y-state.player.y);
+    if(r <= 4 && target !== 'enemy'){
+      return {text:`You commit toward ${target}, but the room steals momentum from you before the route resolves.`, damage:1};
+    }
+    return resolveMoveDir(dir, r, room, rng);
+  }
+
+  function resolveMoveRandom(r, room, rng){
+    const dirs = shuffle(rng,Object.keys(DIRS));
+    for(const d of dirs){
+      const [dx,dy]=DIRS[d];
+      if(WALKABLE.has(state.map.grid[state.player.y+dy]?.[state.player.x+dx]) || ['D','E'].includes(state.map.grid[state.player.y+dy]?.[state.player.x+dx])){
+        return resolveMoveDir(d,r,room,rng);
+      }
+    }
+    return {text:'You try to move, but every immediate path feels wrong.'};
+  }
+
+  function resolveInspect(target, r, room, rng){
+    const nearby = nearbyFeatures();
+    let focus = target || nearby[0] || 'room';
+    let text = '';
+    if (focus === 'water') text = pick(rng,['The water is darker than the room deserves, with a skin of old blue over stone.','Ripples move where no full current should exist.']);
+    else if (focus === 'chest') text = pick(rng,['Iron-banded wood with a stubborn lid and the posture of a promise.','The chest has been touched more recently than the dust around it.']);
+    else if (focus === 'enemy') text = pick(rng,['The hostile shape carries itself like a wound still looking for a body.','Whatever watches you from here has patience, which is often worse than hunger.']);
+    else if (focus === 'trap') text = pick(rng,['The floor patterns line up too neatly to be innocent.','Pressure and geometry make a threat out of ordinary stone.']);
+    else if (focus === 'shrine') text = pick(rng,['A shrine-like structure survives here by demand rather than mercy.','The shrine keeps its own silence, and it feels curated.']);
+    else if (focus === 'door') text = pick(rng,['The door is older than the hinges admit.','The threshold carries scrape marks that make recent use hard to deny.']);
+    else text = pick(rng,['The room gives itself up in fragments: dust, angles, and the feeling of being anticipated.','You read the chamber by pressure first, detail second.']);
+    if (r >= 14){
+      const clue = generateClue(room, rng);
+      if(!state.facts.includes(clue)) state.facts.push(clue);
+      text += `\n\nA sharper read settles in: ${clue}`;
+    }
+    return {good:r>=10,text};
+  }
+
+  function resolveListen(r, room, rng){
+    const hears = [];
+    if(findNearest('E')) hears.push('a hostile presence shifting in some adjacent dark');
+    if(findNearest('W')) hears.push('water moving under or behind stone');
+    if(findNearest('S')) hears.push('a lower draft pulling toward a deeper descent');
+    if(!hears.length) hears.push(pick(rng,['your own breathing made cavernous','the soft argument of dust and old stone','nothing immediate, which is its own warning']));
+    let text = `You stand still and listen. You catch ${hears.join(', ')}.`;
+    if(r >= 15){
+      const step = nextStepToward(findNearestSymbol(['E','W','S','C']) || '.');
+      if(step) text += `\n\nInstinct suggests the pressure of the place leans ${directionName(step.x-state.player.x, step.y-state.player.y)}.`;
+    }
+    return {good:r>=10,text};
+  }
+
+  function resolveSearch(target, r, room, rng){
+    const cell = target === 'chest' ? findAdjacent('C') : findAdjacent('C') || findAdjacent('X') || findAdjacent('^');
+    if(cell?.symbol === 'C'){
+      if(r <= 4) return {text:'You fumble at the chest, make noise, and come away with splinters instead of treasure.', damage:1};
+      state.map.grid[cell.y][cell.x]='.';
+      const loot = pick(rng,[
+        {name:'Bronze Key',desc:'Worked bronze with a chapel taste to it.'},
+        {name:'Ash Vial',desc:'Black powder sealed in glass.'},
+        {name:'Bandage Roll',desc:'Clean enough to matter.'},
+        {name:'Silver Nail',desc:'Too deliberate to be mere scrap.'}
+      ]);
+      gainItem(loot);
+      return {good:true,text:`You search carefully and take the chest’s patience apart. Inside: ${loot.name}.`};
+    }
+    if(r >= 12){
+      const loot = {name:'Loose Coin',desc:'Proof that someone else once expected to leave.'};
+      gainItem(loot);
+      return {good:true,text:`Your search turns up ${loot.name.toLowerCase()} and a little confidence.`};
+    }
+    return {text:'You search the room, but it gives you only dust, hints, and a growing opinion about your persistence.'};
+  }
+
+  function resolveOpen(target, r, room, rng){
+    const cell = findAdjacent('D') || findAdjacent('C');
+    if(!cell) return {text:'You reach for a mechanism that is not quite here.'};
+    if(cell.symbol === 'D'){
+      if(r >= 10){ state.map.grid[cell.y][cell.x]='O'; return {good:true,text:'The door relents with a groan. Cold air answers from beyond.'}; }
+      return {text:'The door resists you with the confidence of old wood and older intent.'};
+    }
+    if(cell.symbol === 'C') return resolveSearch('chest', r, room, rng);
+    return {text:'Nothing nearby agrees to open.'};
+  }
+
+  function resolveAttack(target, r, room, rng){
+    const foe = findAdjacent('E') || nearestFeatureCell('E',4);
+    if(!foe) return {text:'You lash out at a threat the room does not quite provide.'};
+    if(r >= 13){
+      state.map.grid[foe.y][foe.x]='%';
+      if(Math.abs(foe.x-state.player.x)+Math.abs(foe.y-state.player.y)===1) movePlayer(foe.x,foe.y);
+      return {good:true,text:pick(rng,['You break the thing before it can become a full problem.','The strike lands clean and conviction does the rest.'])};
+    }
+    if(r <= 4) return {text:'You overcommit. The hostile answers with cruel enthusiasm.', damage:2};
+    return {text:'Steel, bone, or bad intent meet in the dark. Neither side leaves the exchange clean.', damage:1};
+  }
+
+  function resolveRest(r, room, rng){
+    if(r <= 3) return {text:'You try to settle, but the dungeon hates stillness from the living.', damage:1};
+    const heal = r >= 15 ? 2 : 1;
+    return {good:true,text:'You lower your pulse and make a little room inside yourself for breath and reason.', heal};
+  }
+
+  function resolveInsane(action, r, room, rng){
+    if(r <= 3) return {text:'You ask the dungeon for impossible mercy. It answers with gravity and contempt.', damage:2};
+    if(/fly/.test(action.toLowerCase())) return {text:'You do not fly. You do, however, learn which edges are honest when your stomach tries to leave first.', damage:r<=7?1:0};
+    if(/pray|divine|god/.test(action.toLowerCase()) && r >= 16){
+      const clue = `A pressure in the room changes when spoken to aloud.`;
+      if(!state.facts.includes(clue)) state.facts.push(clue);
+      return {good:true,text:'The prayer does not rewrite reality, but it sharpens your read of it. Something here does answer posture and voice.'};
+    }
+    return {text:'The request is too large for the physics of the run, so reality grants you only a metaphor and keeps moving.'};
+  }
+
+  function resolveQuestion(action, r, room, rng){
+    const lower = action.toLowerCase();
+    if(/who built|who made/.test(lower)) return {good:true,text:`The room cannot speak plainly, but the architecture insists on one thing: this place was built by people who trusted rites more than locks.`};
+    if(/where/.test(lower)){
+      const exit = nextStepToward('S') || nextStepToward('C') || nextStepToward('E');
+      return {text:`Suso reads the terrain and thinks the next strong answer lies ${exit ? directionName(exit.x-state.player.x, exit.y-state.player.y) : 'deeper in'} .`};
+    }
+    if(/what do i have/.test(lower)) return {good:true,text:`On you: ${state.inventory.map(i=>i.name).join(', ')}.`};
+    return {text:pick(rng,['The dungeon answers sideways, through texture and implication instead of certainty.','The best answer here is environmental: stone, pressure, and what keeps repeating.'])};
+  }
+
+  function resolveInteract(action, r, room, rng){
+    const verbs = ['test','touch','prod','lean','drag','pull','push'];
+    const used = verbs.find(v => action.toLowerCase().includes(v)) || 'try';
+    if(r >= 14) return {good:true,text:`You ${used} the situation and it yields a useful truth instead of a punishment. ${generateClue(room, rng)}`};
+    if(r <= 4) return {text:`You ${used} the wrong part of the room and it bites back with a petty consequence.`, damage:1};
+    return {text:`You ${used} the room and get a partial answer: enough to keep moving, not enough to feel safe.`};
+  }
+
+  function generateClue(room, rng){
+    return pick(rng,[
+      'The freshest disturbance in this room is lower to the ground than a person would naturally make it.',
+      'The stone here was repaired at least once with a different hand and a poorer prayer.',
+      'The room wants movement along one wall more than the others.',
+      'Recent scrape marks point toward a threshold you have not respected enough yet.',
+      `The motif of ${pick(rng, state.theme.motifs)} repeats here like a signature.`
+    ]);
+  }
+
+  function applyOutcome(result, baseRoll){
+    if(result.damage){
+      state.health = Math.max(0, state.health - result.damage);
+      if(state.health === 0) return killPlayer(result.text + '\n\nThe run gutters out under accumulated harm.');
+    }
+    if(result.heal){
+      state.health = Math.min(state.maxHealth, state.health + result.heal);
+    }
+    revealAround(state, 6);
+    addEntry(result.damage ? 'bad' : 'sys', `${result.text}\n\nResult ${baseRoll}${result.damage?` · -${result.damage} health`:''}${result.heal?` · +${result.heal} health`:''}`, result.good ? 'Success' : 'Outcome');
+    pushMoveMemory(result.text);
+    refreshUI();
+  }
+
+  function movePlayer(x,y){ state.player.x=x; state.player.y=y; }
+  function gainItem(item){ if(!state.inventory.some(i => i.name===item.name)) state.inventory.push(item); }
+  function addLootMaybe(rng){ if(rng()<0.35) gainItem({name:pick(rng,['Bone Charm','Small Tonic','Rope Loop']), desc:'Taken from a fight won too close.'}); }
+
+  function nearbyFeatures(){
+    const feats=[];
+    for(let y=state.player.y-1;y<=state.player.y+1;y++) for(let x=state.player.x-1;x<=state.player.x+1;x++){
+      const s = state.map.grid[y]?.[x]; if(['C','D','W','E','T','^','S','X'].includes(s)) feats.push(symbolName(s));
+    }
+    return [...new Set(feats)];
+  }
+  function symbolName(s){ return ({C:'chest',D:'door',W:'water',E:'enemy',T:'trap','^':'shrine',S:'stairs',X:'rubble',O:'opening'})[s] || 'room'; }
+  function findAdjacent(symbol){
+    for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]){
+      const x=state.player.x+dx,y=state.player.y+dy;
+      if(state.map.grid[y]?.[x]===symbol) return {x,y,symbol};
+    }
+    return null;
+  }
+  function nearestFeatureCell(symbol, maxD=20){
+    let best=null,b=1e9;
+    for(let y=0;y<state.map.h;y++) for(let x=0;x<state.map.w;x++) if(state.map.grid[y][x]===symbol){ const d=Math.abs(x-state.player.x)+Math.abs(y-state.player.y); if(d<b && d<=maxD){b=d;best={x,y,symbol};}}
+    return best;
+  }
+  function findNearest(targetName){
+    const symbol = ({door:'D',stairs:'S',chest:'C',water:'W',enemy:'E',trap:'T',shrine:'^',rubble:'X',exit:'S'})[targetName];
+    return symbol ? nearestFeatureCell(symbol, 999) : null;
+  }
+  function findNearestSymbol(arr){
+    let best=null,b=1e9;
+    for(const s of arr){ const hit=nearestFeatureCell(s,999); if(hit){ const d=Math.abs(hit.x-state.player.x)+Math.abs(hit.y-state.player.y); if(d<b){b=d;best=s;}} }
+    return best;
+  }
+  function nextStepToward(symbol){
+    const goalCell = nearestFeatureCell(symbol, 999);
+    if(!goalCell) return null;
+    return bfsNextStep(goalCell.x, goalCell.y);
+  }
+  function bfsNextStep(tx,ty){
+    const q=[[state.player.x,state.player.y]];
+    const came=new Map();
+    const key=(x,y)=>`${x},${y}`;
+    came.set(key(state.player.x,state.player.y), null);
+    while(q.length){
+      const [x,y]=q.shift();
+      if(x===tx && y===ty) break;
+      for(const [dx,dy] of Object.values(DIRS).slice(0,4)){
+        const nx=x+dx, ny=y+dy;
+        const c=state.map.grid[ny]?.[nx];
+        if(c==null) continue;
+        const pass = WALKABLE.has(c) || ['D','E','C','S','^','X','W','T'].includes(c);
+        if(!pass) continue;
+        const k=key(nx,ny);
+        if(came.has(k)) continue;
+        came.set(k,[x,y]);
+        q.push([nx,ny]);
+      }
+    }
+    let cur=[tx,ty], prev=came.get(key(tx,ty));
+    if(!prev) return null;
+    while(prev && !(prev[0]===state.player.x && prev[1]===state.player.y)){
+      cur=prev; prev=came.get(key(cur[0],cur[1]));
+    }
+    return {x:cur[0], y:cur[1]};
+  }
+  function directionName(dx,dy){
+    if(dx===1) return 'east'; if(dx===-1) return 'west'; if(dy===1) return 'south'; if(dy===-1) return 'north'; return 'forward';
+  }
+
+  function buildAsciiMap(){
+    const lines=[];
+    for(let y=0;y<state.map.h;y++){
+      let line='';
+      for(let x=0;x<state.map.w;x++){
+        if(state.player.x===x && state.player.y===y) line+='@';
+        else if(state.visible[y][x]) line += state.map.grid[y][x];
+        else if(state.discovered[y][x]) line += '?';
+        else line += ' ';
+      }
+      lines.push(line);
+    }
+    return lines.join('\n');
+  }
+
+  function drawMap(){
+    const w = state.map.w * tileSize;
+    const h = state.map.h * tileSize;
+    mapCanvas.width = w;
+    mapCanvas.height = h;
+    ctx.clearRect(0,0,w,h);
+    for(let y=0;y<state.map.h;y++){
+      for(let x=0;x<state.map.w;x++){
+        let symbol = state.player.x===x && state.player.y===y ? '@' : (state.visible[y][x] ? state.map.grid[y][x] : (state.discovered[y][x] ? '?' : null));
+        if(!symbol) continue;
+        drawTile(symbol, x*tileSize, y*tileSize);
+      }
+    }
+    els.asciiMap.textContent = buildAsciiMap();
+    updateMapTransform();
+  }
+  function drawTile(symbol, dx, dy){
+    const ij = TILE_INDEX[symbol] || TILE_INDEX['.'];
+    const sx = ij[0] * atlasTile, sy = ij[1] * atlasTile;
+    if(atlas.complete && atlas.naturalWidth){
+      ctx.drawImage(atlas, sx, sy, atlasTile, atlasTile, dx, dy, tileSize, tileSize);
+    } else {
+      const fills = {'#':'#544534','.':'#7d6f5e','W':'#365c78','X':'#5a4a3d','D':'#9c7340','O':'#816339','T':'#8a3629','C':'#9f7b42','@':'#f0d39d','E':'#9f3328','S':'#b2b2b2','?':'#26211c','^':'#746349','%':'#5c2b24'};
+      ctx.fillStyle = fills[symbol] || '#777';
+      ctx.fillRect(dx,dy,tileSize,tileSize);
+    }
+  }
+
+  function refreshUI(){
+    if(!state) return;
+    els.playerNameOut.textContent = `${state.name} the ${state.title}`;
+    const room = getCurrentRoom();
+    els.locationOut.textContent = room ? room.name : 'Between rooms';
+    els.healthOut.textContent = `${state.health} / ${state.maxHealth}`;
+    els.healthBar.style.width = `${(state.health/state.maxHealth)*100}%`;
+    els.inventoryList.innerHTML = state.inventory.map(i => `<div class="list-item"><strong>${escapeHtml(i.name)}</strong><div class="small">${escapeHtml(i.desc||'')}</div></div>`).join('') || '<div class="list-item">Nothing.</div>';
+    els.factsList.innerHTML = state.facts.slice(-8).map(f => `<div class="list-item">${escapeHtml(f)}</div>`).join('');
+    els.movesList.innerHTML = state.moves.slice(-6).map(m => `<div class="list-item">${escapeHtml(m)}</div>`).join('') || '<div class="list-item">Suso will summarize how it interpreted your recent actions here.</div>';
+    els.log.innerHTML = state.log.map(entry => `<div class="entry ${entry.kind}"><div class="meta">${escapeHtml(entry.meta||'Turn')}</div><div class="body">${escapeHtml(entry.body)}</div></div>`).join('');
+    els.log.scrollTop = els.log.scrollHeight;
+    els.premiseText.textContent = state.premise;
+    els.runChips.innerHTML = [state.theme.name, state.tone, `Seed ${String(state.seed).slice(-6)}`].map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('');
+    updateQuickActions();
+    drawMap();
+    saveGame();
+  }
+
+  function pushMoveMemory(text){
+    state.moves.push(`Turn ${state.turn}: ${text.replace(/\s+/g,' ').trim()}`);
+    if(state.moves.length>20) state.moves.shift();
+  }
+
+  function updateQuickActions(){
+    const opts = [
+      'move north','move south','move east','move west',
+      'inspect the room','listen carefully','search nearby','open the door',
+      'attack the enemy','move toward the stairs','move toward the chest','inspect the water'
+    ];
+    els.quickActions.innerHTML = shuffle(rngFactory(state.seed + state.turn*13), opts).slice(0,6).map(t => `<button class="secondary" data-quick="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
+    els.quickActions.querySelectorAll('button').forEach(btn => btn.onclick = () => { els.actionInput.value = btn.dataset.quick; els.actionInput.focus(); });
+  }
+
+  function saveGame(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+  function loadGame(){
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    try{
+      state = JSON.parse(raw);
+      addEntry('sys','The save stirs and accepts your return.','Loaded');
+      els.onboard.style.display='none';
+      refreshUI();
+      return true;
+    }catch(e){ console.error(e); return false; }
+  }
+  function clearSave(){ localStorage.removeItem(SAVE_KEY); }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function updateMapTransform(){
+    mapCanvas.style.display = showAscii ? 'none' : 'block';
+    els.asciiMap.style.display = showAscii ? 'block' : 'none';
+    const transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
+    mapCanvas.style.transform = transform;
+    els.asciiMap.style.transform = transform;
+    els.zoomOut.textContent = `Zoom ${mapZoom.toFixed(1)}x`;
+    els.tileModeBtn.style.color = !showAscii ? '#f5e7c9' : '';
+    els.asciiModeBtn.style.color = showAscii ? '#f5e7c9' : '';
+  }
+
+  function startNewRun(profile){
+    state = createRun(profile);
+    els.onboard.style.display='none';
+    mapZoom = 1; mapPanX = 12; mapPanY = 12; showAscii = false;
+    refreshUI();
+  }
+
+  els.actBtn.onclick = () => resolveAction(els.actionInput.value), els.actionInput.focus();
+  els.restBtn.onclick = () => resolveAction('rest and steady myself');
+  els.listenBtn.onclick = () => resolveAction('listen carefully');
+  els.searchBtn.onclick = () => resolveAction('search nearby');
+  els.saveBtn.onclick = () => { saveGame(); els.statusLine.textContent = 'Saved.'; setTimeout(()=>els.statusLine.textContent='Enter to send. Shift+Enter for newline.',1200); };
+  els.loadBtn.onclick = () => loadGame();
+  els.newRunBtn.onclick = () => { els.onboard.style.display='flex'; };
+  els.clearSaveBtn.onclick = () => { clearSave(); els.statusLine.textContent='Save cleared.'; };
+  els.startRunBtn.onclick = () => startNewRun({name:els.nameInput.value, title:els.titleInput.value, tone:els.toneInput.value});
+  els.loadFromModalBtn.onclick = () => { if(!loadGame()) startNewRun({name:els.nameInput.value, title:els.titleInput.value, tone:els.toneInput.value}); };
+  els.tileModeBtn.onclick = () => { showAscii=false; updateMapTransform(); };
+  els.asciiModeBtn.onclick = () => { showAscii=true; updateMapTransform(); };
+  els.zoomOutBtn.onclick = () => { mapZoom = Math.max(.5, +(mapZoom - .1).toFixed(1)); updateMapTransform(); };
+  els.zoomInBtn.onclick = () => { mapZoom = Math.min(4, +(mapZoom + .1).toFixed(1)); updateMapTransform(); };
+  els.zoomResetBtn.onclick = () => { mapZoom=1; mapPanX=12; mapPanY=12; updateMapTransform(); };
+  els.actionInput.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); resolveAction(els.actionInput.value); }
+  });
+  function resolveAndClear(){
+    const v = els.actionInput.value;
+    if(!v.trim()) return;
+    resolveAction(v);
+    els.actionInput.value='';
+  }
+  // override to clear after send
+  els.actBtn.onclick = resolveAndClear;
+  els.actionInput.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); resolveAndClear(); } });
+  [els.restBtn, els.listenBtn, els.searchBtn].forEach(btn => btn.addEventListener('click', ()=>els.actionInput.focus()));
+
+  els.mapStage.addEventListener('mousedown', e => {
+    drag = {x:e.clientX, y:e.clientY, px:mapPanX, py:mapPanY};
+    els.mapStage.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e => {
+    if(!drag) return;
+    mapPanX = drag.px + (e.clientX - drag.x);
+    mapPanY = drag.py + (e.clientY - drag.y);
+    updateMapTransform();
+  });
+  window.addEventListener('mouseup', () => { drag = null; els.mapStage.classList.remove('dragging'); });
+  els.mapStage.addEventListener('wheel', e => {
+    e.preventDefault();
+    mapZoom = Math.max(.5, Math.min(4, +(mapZoom + (e.deltaY < 0 ? .1 : -.1)).toFixed(1)));
+    updateMapTransform();
+  }, {passive:false});
+
+  atlas.onload = () => drawMap();
+
+  if(!loadGame()) {
+    els.onboard.style.display = 'flex';
+  }
 })();
 </script>
 </body>
