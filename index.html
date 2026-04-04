@@ -148,14 +148,14 @@ select{
   position:absolute;
   left:10px;
   top:10px;
-  z-index:5;
+  z-index:6;
   display:flex;
   flex-direction:column;
   gap:8px;
   pointer-events:auto;
 }
-.map-legend-overlay-head{display:flex;justify-content:flex-start}
 .map-legend-toggle{
+  align-self:flex-start;
   padding:7px 11px !important;
   border-radius:999px !important;
   font-size:.78rem !important;
@@ -166,7 +166,7 @@ select{
   width:min(320px, calc(100vw - 40px));
   padding:10px;
   border-radius:12px;
-  background:linear-gradient(180deg, rgba(19,14,12,.86), rgba(9,7,6,.9));
+  background:linear-gradient(180deg, rgba(19,14,12,.9), rgba(9,7,6,.94));
   border:1px solid rgba(229,178,92,.16);
   box-shadow:0 8px 18px rgba(0,0,0,.24);
   backdrop-filter: blur(2px);
@@ -525,9 +525,7 @@ select{
           <canvas id="mapCanvas"></canvas>
           <pre id="asciiMap"></pre>
           <div class="map-legend-overlay" id="mapLegendOverlay">
-            <div class="map-legend-overlay-head">
-              <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button">Show Legend</button>
-            </div>
+            <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button">Show Legend</button>
             <div class="map-legend-overlay-body" id="mapLegendOverlayBody">
               <div class="legend-chip"><span class="legend-swatch" style="background:#7c5f3a"></span> Door / structure</div>
               <div class="legend-chip"><span class="legend-swatch" style="background:#2c6f9e"></span> Water</div>
@@ -658,6 +656,52 @@ select{
   </div>
 </div>
 
+
+
+
+
+
+<div class="onboard" id="equipModal" style="display:none">
+  <div class="modal" style="max-width:760px">
+    <div class="panel-head" style="padding:18px 22px 0">
+      <h3>Equipment Choice</h3>
+      <button class="secondary" id="equipCloseBtn">Close</button>
+    </div>
+    <div class="panel-body">
+      <div class="row">
+        <div class="field">
+          <label>Currently Equipped</label>
+          <div class="list-item" id="equipCurrentCard"></div>
+        </div>
+        <div class="field">
+          <label>New Weapon</label>
+          <div class="list-item" id="equipCandidateCard"></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="equipReplaceBtn">Equip New Weapon</button>
+        <button class="secondary" id="equipKeepBtn">Keep Current</button>
+      </div>
+      <div class="small" id="equipModalHint">Pick the weapon you want to carry into the next fight.</div>
+    </div>
+  </div>
+</div>
+
+<div class="onboard" id="inventoryModal" style="display:none">
+  <div class="modal" style="max-width:760px">
+    <div class="panel-head" style="padding:18px 22px 0">
+      <h3>Inventory Action</h3>
+      <button class="secondary" id="inventoryCloseBtn">Close</button>
+    </div>
+    <div class="panel-body">
+      <div class="list-item" id="inventoryActionCard"></div>
+      <div class="btn-row" id="inventoryActionButtons"></div>
+      <div class="small" id="inventoryActionHint">Choose what to do with this item.</div>
+    </div>
+  </div>
+</div>
+
+
 <script>
 (()=>{
 const SAVE_KEY='aillumi_suso_v2_save';
@@ -750,12 +794,18 @@ const els = {
   equipKeepBtn: document.getElementById('equipKeepBtn'),
   equipCloseBtn: document.getElementById('equipCloseBtn'),
   equipModalHint: document.getElementById('equipModalHint'),
+  inventoryModal: document.getElementById('inventoryModal'),
+  inventoryCloseBtn: document.getElementById('inventoryCloseBtn'),
+  inventoryActionCard: document.getElementById('inventoryActionCard'),
+  inventoryActionButtons: document.getElementById('inventoryActionButtons'),
+  inventoryActionHint: document.getElementById('inventoryActionHint'),
 };
 
 let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false, showApiKey=false, mapLegendOpen=false;
 let turnBusy = false;
 let quickRollMode = false;
 let pendingEquipChoice = null;
+let pendingInventoryItemName = null;
 
 
 function syncTitleCardToggle(){
@@ -781,6 +831,7 @@ function syncQuickRollBtn(){
   if(!els.quickRollBtn) return;
   els.quickRollBtn.textContent = `Quick Roll: ${quickRollMode ? 'On' : 'Off'}`;
 }
+
 
 
 function syncMapLegendToggle(){
@@ -1531,6 +1582,135 @@ function maybeOfferEquipChoice(item){
     openEquipModal(item);
   }
 }
+
+function findInventoryItemByName(name){
+  return (state?.inventory || []).find(i => i.name === name) || null;
+}
+function canUseInventoryItem(item){
+  if(!item) return false;
+  const n = (item.name || '').toLowerCase();
+  return ['small tonic','oil flask','bone charm','torch','thin wire','loose stone'].includes(n);
+}
+function describeInventoryItem(item){
+  if(!item) return '<div class="small">No item selected.</div>';
+  const extra = item.kind==='weapon'
+    ? `<div class="small">Damage ${item.min}-${item.max} · Accuracy ${item.accuracy>=0?'+':''}${item.accuracy} · Crit ${item.crit>=0?'+':''}${item.crit}</div>`
+    : '';
+  return `<strong>${escapeHtml(item.name)}</strong>${item.qty&&item.qty>1?` ×${item.qty}`:''}${extra}<div class="small">${escapeHtml(item.desc||'')}</div>`;
+}
+function closeInventoryModal(){
+  pendingInventoryItemName = null;
+  if(els.inventoryModal) els.inventoryModal.style.display = 'none';
+}
+function openInventoryModal(name){
+  const item = findInventoryItemByName(name);
+  if(!item || !els.inventoryModal) return;
+  pendingInventoryItemName = name;
+  if(els.inventoryActionCard) els.inventoryActionCard.innerHTML = describeInventoryItem(item);
+  if(els.inventoryActionButtons){
+    const actions = [];
+    if(item.kind==='weapon') actions.push(`<button type="button" onclick="inventoryEquipSelected()">Equip</button>`);
+    if(canUseInventoryItem(item)) actions.push(`<button class="good" type="button" onclick="inventoryUseSelected()">Use</button>`);
+    actions.push(`<button class="secondary" type="button" onclick="closeInventoryModal()">Cancel</button>`);
+    els.inventoryActionButtons.innerHTML = actions.join('');
+  }
+  if(els.inventoryActionHint){
+    els.inventoryActionHint.textContent = item.kind==='weapon'
+      ? 'Equip this weapon from your inventory, or leave your current one in place.'
+      : 'Use this item now and apply its effect to the run.';
+  }
+  els.inventoryModal.style.display = 'flex';
+}
+function inventoryEquipSelected(){
+  if(!pendingInventoryItemName) return;
+  equipWeaponByName(pendingInventoryItemName);
+  addEntry('sys', `${pendingInventoryItemName} is now equipped.`, 'Equipment');
+  refreshUI();
+  closeInventoryModal();
+}
+function useInventoryItemByName(name){
+  const item = findInventoryItemByName(name);
+  if(!item) return false;
+  const n = (item.name || '').toLowerCase();
+  if(n === 'small tonic'){
+    const before = state.health;
+    healPlayer(18, 'You drink the Small Tonic.');
+    removeItem(item.name, 1);
+    if(state.health === before) addEntry('sys', 'You drink the Small Tonic, but you were already at full strength.', 'Inventory');
+    return true;
+  }
+  if(n === 'oil flask'){
+    state.flags.brightTorch = true;
+    revealAround(state, 8);
+    removeItem(item.name, 1);
+    addEntry('sys', 'You use the Oil Flask to feed your light. The run around you becomes easier to read.', 'Inventory');
+    return true;
+  }
+  if(n === 'bone charm'){
+    state.player.ward = (state.player.ward || 0) + 2;
+    removeItem(item.name, 1);
+    addEntry('sys', 'You grip the Bone Charm until its ward settles around you. Your next harms will be softened.', 'Inventory');
+    return true;
+  }
+  if(n === 'torch'){
+    state.flags.brightTorch = true;
+    revealAround(state, 8);
+    addEntry('sys', 'You raise the torch and the room gives up more of itself.', 'Inventory');
+    return true;
+  }
+  if(n === 'thin wire'){
+    if(nearbyEntities('hostile',2).length){
+      const foe = nearbyEntities('hostile',2)[0];
+      foe.hp = Math.max(0, foe.hp - 2);
+      removeItem(item.name, 1);
+      addEntry('sys', `You snap the Thin Wire into ${foe.name}'s space and steal 2 health from its momentum.`, 'Inventory');
+      if(foe.hp <= 0){
+        foe.alive = false;
+        state.map.grid[foe.y][foe.x] = '%';
+        addEntry('sys', `${foe.name} collapses under the improvised trap.`, 'Combat');
+      }
+      return true;
+    }
+    const trap = nearestTargetPointFor('trap', getCurrentRoom());
+    if(trap){
+      state.map.grid[trap.y][trap.x] = '.';
+      removeItem(item.name, 1);
+      addEntry('sys', 'You use the Thin Wire to spoil the trap mechanism before it can answer you.', 'Inventory');
+      return true;
+    }
+    addEntry('bad', 'There is nothing nearby for the Thin Wire to matter against.', 'Inventory');
+    return true;
+  }
+  if(n === 'loose stone'){
+    const foe = nearbyEntities('hostile',3)[0];
+    if(foe){
+      foe.hp = Math.max(0, foe.hp - 1);
+      removeItem(item.name, 1);
+      addEntry('sys', `You throw the Loose Stone and clip ${foe.name} for 1 damage.`, 'Inventory');
+      if(foe.hp <= 0){
+        foe.alive = false;
+        state.map.grid[foe.y][foe.x] = '%';
+        addEntry('sys', `${foe.name} falls from the improvised hit.`, 'Combat');
+      }
+      return true;
+    }
+    addEntry('bad', 'You weigh the Loose Stone in your hand, but there is nothing immediate to use it on.', 'Inventory');
+    return true;
+  }
+  return false;
+}
+function inventoryUseSelected(){
+  if(!pendingInventoryItemName) return;
+  const ok = useInventoryItemByName(pendingInventoryItemName);
+  refreshUI();
+  closeInventoryModal();
+  return ok;
+}
+window.openInventoryModal = openInventoryModal;
+window.closeInventoryModal = closeInventoryModal;
+window.inventoryEquipSelected = inventoryEquipSelected;
+window.inventoryUseSelected = inventoryUseSelected;
+
 function enhanceWeapon(weapon, roll){
   if(!weapon) return null;
   if(roll >= 18){
@@ -2127,6 +2307,8 @@ function roomAtmosphereLine(room, rs){
 function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
   if(!room) return null;
   if(intent?.type==='attack' || intent?.type==='defend') return null;
+  if(['open','search','inspect','listen','use','talk'].includes(intent?.type) && ['enemy','door','chest','trap','shrine','stairs','key','npc'].includes(intent?.target||'')) return null;
+  if(/(disarm|clear|force|open|unlock|pray|offer|drink|wade|climb|gather|take|throw|hide|mark|threaten|enhance|bless|temper|upgrade|descend)/i.test(rawText||'')) return null;
   const rs = ensureRoomState(room);
   const targetCtx = nearbyTargetContext(intent, 3);
   const targetKind = targetCtx?.kind || intent.target || 'room';
@@ -2745,15 +2927,15 @@ async function resolveAction(input){
   else if(intent.type==='attack') result=resolveAttack(intent, baseRoll, room, rr);
   else if(intent.type==='defend') result=resolveDefend(intent, baseRoll, room, rr);
   else {
-    result = richLocalInteraction(intent, baseRoll, room, rr, text);
-    if(!result){
-      if(intent.type==='inspect') result=resolveInspect(intent, baseRoll, room, rr);
-      else if(intent.type==='listen') result=resolveListen(intent, baseRoll, room, rr);
-      else if(intent.type==='search') result=resolveSearch(intent, baseRoll, room, rr);
-      else if(intent.type==='open') result=resolveOpen(intent, baseRoll, room, rr);
-      else if(intent.type==='talk') result=resolveTalk(intent, baseRoll, room, rr);
-      else if(intent.type==='use') result=resolveUse(intent, baseRoll, room, rr);
-      else result=resolveInteract(intent, baseRoll, room, rr);
+    if(intent.type==='inspect') result=resolveInspect(intent, baseRoll, room, rr);
+    else if(intent.type==='listen') result=resolveListen(intent, baseRoll, room, rr);
+    else if(intent.type==='search') result=resolveSearch(intent, baseRoll, room, rr);
+    else if(intent.type==='open') result=resolveOpen(intent, baseRoll, room, rr);
+    else if(intent.type==='talk') result=resolveTalk(intent, baseRoll, room, rr);
+    else if(intent.type==='use') result=resolveUse(intent, baseRoll, room, rr);
+    else {
+      result = richLocalInteraction(intent, baseRoll, room, rr, text);
+      if(!result) result=resolveInteract(intent, baseRoll, room, rr);
     }
   }
 
@@ -2963,70 +3145,42 @@ function resolveMoveRandom(r, room, rng){
 }
 
 function resolveInspect(intent, r, room, rng){
-  const target=intent.target || symbolName(state.map.grid[state.player.y][state.player.x]) || 'room';
-  let txt='';
-  if(target==='water') txt='You study the water. It reflects badly and keeps a colder memory than the rest of the room.';
-  else if(target==='chest') txt='The chest is iron-banded and suspiciously patient. Old scratches suggest other hands reached it before yours.';
-  else if(target==='door' || target==='gate') txt='The door looks deliberate, maintained by a place that should have abandoned maintenance long ago.';
-  else if(target==='shrine') txt='The shrine wears devotion and threat in equal measure. Something here listens for posture, not just prayer.';
-  else txt = describeRoom(state, room, false);
-  if(r>=15) txt += ` You also notice ${generateClue(room,rng)}.`;
-  if(r<=5) txt += ' Your caution buys detail, but not certainty.';
-  return {kind:'sys', text:txt, meta:`Inspect · ${r}`};
+  const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
+  if(target==='door') return resolveDoorInteraction('inspect', r, room, rng, nearestTargetPointFor('door', room), intent?.raw||'');
+  if(target==='chest') return resolveChestInteraction('inspect', r, room, rng, nearestTargetPointFor('chest', room), intent?.raw||'');
+  if(target==='water') return resolveWaterInteraction('inspect', r, room, rng, nearestTargetPointFor('water', room), intent?.raw||'');
+  if(target==='trap') return resolveTrapInteraction('inspect', r, room, rng, nearestTargetPointFor('trap', room), intent?.raw||'');
+  if(target==='shrine') return resolveShrineInteraction('inspect', r, room, rng, nearestTargetPointFor('shrine', room), intent?.raw||'');
+  if(target==='rubble') return resolveRubbleInteraction('inspect', r, room, rng, nearestTargetPointFor('rubble', room), intent?.raw||'');
+  if(target==='key') return resolveKeyInteraction('inspect', r, room, rng, nearestTargetPointFor('key', room), intent?.raw||'');
+  if(target==='npc') return resolveNpcInteraction('inspect', r, room, rng, nearestTargetPointFor('npc', room), intent?.raw||'');
+  if(target==='enemy') return resolveEnemyInteraction('inspect', r, room, rng, nearestTargetPointFor('enemy', room), intent?.raw||'');
+  revealAround(state,7);
+  return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
 }
 function resolveListen(intent, r, room, rng){
-  let sounds=['dripping stone','a slow scrape from beyond','settling masonry','breath that might be yours','a bell-tone too far away'];
-  if(nearbyEntities('hostile',3).length) sounds.unshift('the close patience of something alive');
-  if(nearbyEntities('npc',3).length) sounds.unshift('cloth shifting from a living figure nearby');
-  let txt=`You listen. The dungeon gives back ${pick(rng,sounds)}.`;
-  if(r>=14) txt += ` It seems strongest toward ${pick(rng,['the east corridor','the deeper rooms','a locked way','the flooded wing'])}.`;
-  return {kind:'sys', text:txt, meta:`Listen · ${r}`};
+  const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
+  if(target==='door') return resolveDoorInteraction('listen', r, room, rng, nearestTargetPointFor('door', room), intent?.raw||'');
+  if(target==='water') return resolveWaterInteraction('inspect', r, room, rng, nearestTargetPointFor('water', room), intent?.raw||'');
+  return {kind:'sys', text:`You hold still long enough for ${room.name} to admit it is not empty. ${generateClue(room,rng)}`, meta:tierMetaLabel('Listen', r)};
 }
 function resolveSearch(intent, r, room, rng){
-  const roomCells=collectRoomCells(room);
-  const foundLoot = r>=10 && rng()<0.55;
-  let txt='You search with hands, ears, and the kind of patience that saves lives.';
-  if(foundLoot){
-    const loot=pick(rng,[
-      {name:'Oil Flask', desc:'Enough oil to brighten a torch or appease a mechanism.'},
-      {name:'Bone Charm', desc:'A grave-token that seems to blunt misfortune.'},
-      {name:'Rope Loop', desc:'Short but strong, useful for hauling or bracing.'},
-      {name:'Small Tonic', desc:'A bitter restorative.'}
-    ]);
-    gainItem(loot);
-    txt += ` You come away with ${loot.name}.`;
-  } else if(r>=12 && roomFeatureSummary(state, room).includes('C')) {
-    txt += ' A chest shifts somewhere under dust, though you do not crack it yet.';
-  } else {
-    txt += ` ${generateClue(room,rng)}`;
-  }
-  if(r<=4) txt += ' The search also makes more noise than you wanted.';
-  return {kind:'sys', text:txt, meta:`Search · ${r}`};
+  const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
+  if(target==='chest') return resolveChestInteraction('inspect', r, room, rng, nearestTargetPointFor('chest', room), intent?.raw||'');
+  if(target==='trap') return resolveTrapInteraction('inspect', r, room, rng, nearestTargetPointFor('trap', room), intent?.raw||'');
+  if(target==='rubble') return resolveRubbleInteraction('gather', r, room, rng, nearestTargetPointFor('rubble', room), intent?.raw||'');
+  if(target==='water') return resolveWaterInteraction('inspect', r, room, rng, nearestTargetPointFor('water', room), intent?.raw||'');
+  if(target==='key') return resolveKeyInteraction('inspect', r, room, rng, nearestTargetPointFor('key', room), intent?.raw||'');
+  revealAround(state,7);
+  return {kind:'sys', text:`You search the area carefully and recover more of the room's intent. ${generateClue(room,rng)}`, meta:tierMetaLabel('Search', r)};
 }
 function resolveOpen(intent, r, room, rng){
-  const target=intent.target || 'door';
-  if(target==='chest'){
-    const chestCell=nearestFeatureCell('C',8);
-    if(!chestCell) return {kind:'bad', text:'No chest answers your reach from here.', meta:`Open · ${r}`};
-    state.map.grid[chestCell.y][chestCell.x]='.';
-    const loot = r>=12
-      ? pick(rng,[{name:'Iron Key', desc:'A reliable key with old authority.'},{name:'Oil Flask', desc:'Useful, flammable, welcome.'},{name:'Bright Powder', desc:'A glittering dust that wakes hidden seams.'}])
-      : pick(rng,[{name:'Small Tonic', desc:'A bitter restorative.'},{name:'Bone Charm', desc:'A grave-token.'}]);
-    gainItem(loot);
-    return {kind:'sys', text:`You force the chest and claim ${loot.name}. Dust rises like judgment around your hands.`, meta:`Open · ${r}`};
-  }
-  const doorCell=nearestFeatureCell('D',6);
-  if(!doorCell) return {kind:'bad', text:'No locked way stands close enough to answer you.', meta:`Open · ${r}`};
-  if(hasItem('Saint Key') || hasItem('Iron Key')){
-    state.map.grid[doorCell.y][doorCell.x]='O';
-    state.flags.innerGateOpen=true;
-    return {kind:'sys', text:'The key turns. Stone or timber yields, and a sealed path becomes possible.', meta:`Open · ${r}`};
-  }
-  if(r>=16){
-    state.map.grid[doorCell.y][doorCell.x]='O';
-    return {kind:'sys', text:'By leverage, luck, or stubbornness, you wrench the way open without the proper key.', meta:`Open · ${r}`};
-  }
-  return {kind:'bad', text:'You work the lock, but it refuses you. Somewhere deeper, something approves of the refusal.', meta:`Open · ${r}`};
+  const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
+  if(target==='door') return resolveDoorInteraction('open', r, room, rng, nearestTargetPointFor('door', room), intent?.raw||'');
+  if(target==='chest') return resolveChestInteraction('open', r, room, rng, nearestTargetPointFor('chest', room), intent?.raw||'');
+  if(target==='stairs') return resolveStairsInteraction('descend', r, room, rng, nearestTargetPointFor('stairs', room), intent?.raw||'');
+  if(target==='key') return resolveKeyInteraction('take', r, room, rng, nearestTargetPointFor('key', room), intent?.raw||'');
+  return {kind:'bad', text:'There is nothing obvious here to open.', meta:tierMetaLabel('Open', r)};
 }
 function resolveAttack(intent, r, room, rng){
   const foe=nearbyEntities('hostile',1)[0] || nearbyEntities('hostile',2)[0];
@@ -3278,32 +3432,74 @@ function resolveWaterInteraction(verb, r, room, rng, point, raw){
   return {kind:'sys', text:`You test the water instead of trusting it. It smells of stone, old metal, and something that sat here longer than it should have. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function resolveDoorInteraction(verb, r, room, rng, point, raw){
-  if(verb==='listen' || verb==='knock'){
-    const hasHostile=roomHostiles(room).length;
-    return {kind:'sys', text:verb==='knock' ? `Your knock moves through the chamber and comes back changed. ${hasHostile ? 'Something nearby stops pretending not to hear you.' : generateClue(room,rng)}` : `You put your ear to the door and listen. ${hasHostile ? 'Breathing or dragging shifts somewhere beyond the obvious silence.' : generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
+  const locked = !state.flags.innerGateOpen && !hasItem('Saint Key') && !hasItem('Iron Key');
+  if(verb==='listen'){
+    return {kind:'sys', text:`You listen at the door and catch the shape of space beyond it. ${generateClue(room,rng)}`, meta:tierMetaLabel('Listen', r)};
   }
-  if(verb==='force'){
-    if(r>=14 && point){ state.map.grid[point.y][point.x]='O'; return {kind:'sys', text:'You commit your weight to the door and break its argument. It opens with a violence the room will remember.', meta:tierMetaLabel('Interact', r)}; }
-    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You hit the door hard, but the only thing that yields is the room’s patience.${foe ? ` ${foe.name} answers the noise.` : ''}`, meta:tierMetaLabel('Interact', r)};
+  if(verb==='inspect'){
+    if(locked) return {kind:'sys', text:'The door is locked, but the lock is real enough to answer to a proper key or a violent argument.', meta:tierMetaLabel('Inspect', r)};
+    return {kind:'sys', text:'The door has already been made passable.', meta:tierMetaLabel('Inspect', r)};
   }
-  return resolveOpen({target:'door', raw}, r, room, rng);
+  if(verb==='open' || verb==='force'){
+    if(!point) point = nearestTargetPointFor('door', room);
+    if(!point) return {kind:'bad', text:'There is no door close enough to work on.', meta:tierMetaLabel('Open', r)};
+    if(!locked){
+      state.flags.innerGateOpen = true;
+      state.map.grid[point.y][point.x] = 'O';
+      return {kind:'sys', text:'You open the way forward. The locked geometry of the room gives way.', meta:tierMetaLabel('Open', r), pulse:{x:point.x,y:point.y,kind:'generic'}};
+    }
+    if((hasItem('Saint Key') || hasItem('Iron Key')) && r >= 6){
+      state.flags.innerGateOpen = true;
+      state.map.grid[point.y][point.x] = 'O';
+      return {kind:'sys', text:'The key turns, the lock yields, and the path opens.', meta:tierMetaLabel('Open', r), pulse:{x:point.x,y:point.y,kind:'generic'}};
+    }
+    if(verb==='force' && r >= 15){
+      state.flags.innerGateOpen = true;
+      state.map.grid[point.y][point.x] = 'O';
+      return {kind:'sys', text:'You force the door open through weight and spite. The frame complains, but yields.', meta:tierMetaLabel('Open', r), pulse:{x:point.x,y:point.y,kind:'generic'}};
+    }
+    return {kind:'bad', text:'The door stays shut. You need a key, a better angle, or more force than this.', meta:tierMetaLabel('Open', r)};
+  }
+  return {kind:'sys', text:`You study the door instead of trusting it. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
 }
 function resolveChestInteraction(verb, r, room, rng, point, raw){
-  if(verb==='gather' || verb==='take' || verb==='open' || verb==='inspect' || verb==='handle') return resolveOpen({target:'chest', raw}, r, room, rng);
-  if(verb==='force'){
-    if(r>=12 && point){ state.map.grid[point.y][point.x]='.'; addLootMaybe(rng,false); return {kind:'sys', text:'You force the chest open in the ugliest possible way. Whatever was inside is now yours, plus splinters.', meta:tierMetaLabel('Interact', r)}; }
-    return {kind:'bad', text:'You batter the chest, but it gives back noise instead of wealth.', meta:tierMetaLabel('Interact', r)};
+  if(!point) point = nearestTargetPointFor('chest', room);
+  if(!point) return {kind:'bad', text:'There is no chest close enough to work on.', meta:tierMetaLabel('Open', r)};
+  if(verb==='inspect'){
+    return {kind:'sys', text:`You inspect the chest carefully. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
   }
-  return {kind:'sys', text:`You circle the chest and read its posture before touching it. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
+  if(verb==='open' || verb==='force'){
+    if(r < 6) return {kind:'bad', text:'You fumble the chest and fail to get it open cleanly.', meta:tierMetaLabel('Open', r)};
+    state.map.grid[point.y][point.x]='.';
+    const rewards = [
+      {name:'Small Tonic', qty:1, desc:'A bitter restorative.'},
+      {name:'Oil Flask', qty:1, desc:'Enough oil for one bright use.'},
+      {name:'Loose Stone', qty:1, desc:'A fist-sized chunk of masonry that can be thrown, wedged, or used as proof of disturbance.'},
+      makeWeapon('knife', pick(rng,['plain','sharp','rusty'])),
+      makeWeapon('sword', pick(rng,['plain','sharp','gilded']))
+    ];
+    const item = pick(rng, rewards);
+    gainItem(item);
+    return {kind:'sys', text:`The chest opens with a tired complaint. Inside waits ${item.name}.`, meta:tierMetaLabel('Open', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
+  }
+  return {kind:'sys', text:`You judge the chest by its seams and weight. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
 }
 function resolveTrapInteraction(verb, r, room, rng, point, raw){
   if(!point) return {kind:'bad', text:'No trap lies close enough to command your full attention.', meta:tierMetaLabel('Interact', r)};
   if(verb==='disarm' || verb==='clear' || verb==='inspect'){
-    if(r>=14){ state.map.grid[point.y][point.x]='.'; gainItem({name:'Thin Wire', qty:1, desc:'Recovered from an old trap. Useful for improvised solutions.'}); return {kind:'sys', text:'You find the trap’s logic and insult it correctly. The mechanism dies in your hands and leaves salvage behind.', meta:tierMetaLabel('Interact', r)}; }
-    if(r<=5){ damagePlayer(1,'The trap answers your touch.'); setRunLuck('unlucky', 2, 'Jangled Fate'); return {kind:'bad', text:'You find the trap by triggering part of it. Pain teaches the lesson the room wanted taught.', meta:tierMetaLabel('Interact', r)}; }
-    return {kind:'bad', text:'You read the trap, but not deeply enough to kill it. At least now you know exactly where it waits.', meta:tierMetaLabel('Interact', r)};
+    if(r>=12){
+      state.map.grid[point.y][point.x]='.';
+      gainItem({name:'Thin Wire', qty:1, desc:'Recovered from an old trap. Useful for improvised solutions.'});
+      return {kind:'sys', text:'You find the trap’s logic and insult it correctly. The mechanism dies in your hands and leaves salvage behind.', meta:tierMetaLabel('Interact', r), pulse:{x:point.x,y:point.y,kind:'generic'}};
+    }
+    if(r<=5){
+      damagePlayer(1,'The trap answers your touch.');
+      setRunLuck('unlucky', 2, 'Jangled Fate');
+      return {kind:'bad', text:'You find the trap by triggering part of it. Pain teaches the lesson the room wanted taught.', meta:tierMetaLabel('Interact', r), pulse:{x:point.x,y:point.y,kind:'generic'}};
+    }
+    return {kind:'bad', text:'You read the trap, but not deeply enough to kill it. At least now you know exactly where it waits.', meta:tierMetaLabel('Interact', r), pulse:{x:point.x,y:point.y,kind:'generic'}};
   }
-  return {kind:'sys', text:'You give the trap your attention and, in return, it gives away the shape of its threat.', meta:tierMetaLabel('Interact', r)};
+  return {kind:'sys', text:'You give the trap your attention and, in return, it gives away the shape of its threat.', meta:tierMetaLabel('Interact', r), pulse:{x:point.x,y:point.y,kind:'generic'}};
 }
 function resolveShrineInteraction(verb, r, room, rng, point, raw){
   if(verb==='pray' || verb==='offer'){
@@ -3327,6 +3523,19 @@ function resolveShrineInteraction(verb, r, room, rng, point, raw){
     return {kind: outcome.tier==='bad' ? 'bad' : 'sys', text:`You place ${weapon.name} before the shrine. ${outcome.text}`, meta:tierMetaLabel('Interact', r)};
   }
   return {kind:'sys', text:`You study the shrine instead of trusting it. Its wear pattern suggests repeated use by desperate hands. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
+}
+
+function resolveStairsInteraction(verb, r, room, rng, point, raw){
+  if(!point) point = nearestTargetPointFor('stairs', room);
+  if(verb==='inspect'){
+    return {kind:'sys', text:`You study the stairs and the air around them. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
+  }
+  if(verb==='open' || verb==='descend' || verb==='use'){
+    if(r < 5) return {kind:'bad', text:'You hesitate at the threshold and fail to commit to the descent.', meta:tierMetaLabel('Open', r)};
+    state.flags.descended = true;
+    return {kind:'sys', text:'You descend deeper. The run answers by tightening its story around you.', meta:tierMetaLabel('Open', r)};
+  }
+  return {kind:'sys', text:'The stairs wait with the patience of a true progression point.', meta:tierMetaLabel('Inspect', r)};
 }
 function resolveKeyInteraction(verb, r, room, rng, point, raw){
   if(!point) return {kind:'bad', text:'Whatever key or relic you meant is not actually within reach.', meta:tierMetaLabel('Interact', r)};
@@ -3366,6 +3575,26 @@ function resolveEnemyInteraction(verb, r, room, rng, point, raw){
   }
   return {kind:'sys', text:`You test the enemy with posture instead of steel. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
+
+function resolveTargetedInteraction(intent, r, room, rng){
+  const raw = intent?.raw || '';
+  const target = intent?.target || inferAmbientTarget(raw, room, rng);
+  const verb = inferInteractionVerb(String(raw).toLowerCase(), target);
+  const point = nearestTargetPointFor(target, room);
+
+  if(target==='trap') return resolveTrapInteraction(verb, r, room, rng, point, raw);
+  if(target==='door') return resolveDoorInteraction(verb, r, room, rng, point, raw);
+  if(target==='chest') return resolveChestInteraction(verb, r, room, rng, point, raw);
+  if(target==='water') return resolveWaterInteraction(verb, r, room, rng, point, raw);
+  if(target==='shrine') return resolveShrineInteraction(verb, r, room, rng, point, raw);
+  if(target==='rubble') return resolveRubbleInteraction(verb, r, room, rng, point, raw);
+  if(target==='key') return resolveKeyInteraction(verb, r, room, rng, point, raw);
+  if(target==='npc') return resolveNpcInteraction(verb, r, room, rng, point, raw);
+  if(target==='enemy') return resolveEnemyInteraction(verb, r, room, rng, point, raw);
+
+  return resolveRoomInteraction(verb, r, room, rng, raw);
+}
+
 function resolveRoomInteraction(verb, r, room, rng, raw){
   if(verb==='hide'){
     if(r>=13){ state.flags.hidden=true; return {kind:'sys', text:'You make yourself smaller and let the room cover for you. For now, it does.', meta:tierMetaLabel('Interact', r)}; }
@@ -3712,7 +3941,19 @@ function refreshUI(){
   if(els.equipmentList){
     els.equipmentList.innerHTML = `<div class="list-item">${weaponSummaryHtml(equipped)}</div>`;
   }
-  els.inventoryList.innerHTML = state.inventory.map(i=>`<div class="list-item"><strong>${escapeHtml(i.name)}</strong>${i.name===equipped.name?' <span class="small">(equipped)</span>':''}${i.qty&&i.qty>1?` ×${i.qty}`:''}<div class="small">${escapeHtml(i.desc||'')}</div></div>`).join('') || '<div class="list-item">Nothing.</div>';
+  els.inventoryList.innerHTML = state.inventory.map(i=>{
+    const safeName = String(i.name).replace(/'/g, '&#39;');
+    return `<div class="list-item">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div>
+        <strong>${escapeHtml(i.name)}</strong>${i.name===equipped.name?' <span class="small">(equipped)</span>':''}${i.qty&&i.qty>1?` ×${i.qty}`:''}
+        ${i.kind==='weapon' ? `<div class="small">Damage ${i.min}-${i.max} · Accuracy ${i.accuracy>=0?'+':''}${i.accuracy} · Crit ${i.crit>=0?'+':''}${i.crit}</div>` : ''}
+        <div class="small">${escapeHtml(i.desc||'')}</div>
+      </div>
+      <button class="secondary" type="button" onclick="openInventoryModal('${safeName}')">Actions</button>
+    </div>
+  </div>`;
+  }).join('') || '<div class="list-item">Nothing.</div>';
   els.factsList.innerHTML = state.facts.slice(-10).map(f=>`<div class="list-item">${escapeHtml(f)}</div>`).join('') || '<div class="list-item">Nothing yet.</div>';
   els.questList.innerHTML = `<div class="list-item"><strong>${escapeHtml(state.quest.title)}</strong><div class="small">${state.quest.done?'Completed':'Active'}</div></div>` + state.quest.steps.map((s,i)=>`<div class="list-item quest-step"><div class="dot ${state.quest.progress[i]?'done':''}"></div><div>${escapeHtml(s)}</div></div>`).join('');
   const nearbyCtx = nearbyInteractiveContext(2).sort((a,b)=>a.d-b.d);
@@ -3991,6 +4232,7 @@ if(els.quickRollBtn){
   };
 }
 
+
 if(els.mapLegendToggleBtn){
   syncMapLegendToggle();
   els.mapLegendToggleBtn.onclick=()=>{
@@ -3998,6 +4240,8 @@ if(els.mapLegendToggleBtn){
     syncMapLegendToggle();
   };
 }
+
+if(els.inventoryCloseBtn) els.inventoryCloseBtn.onclick=()=>closeInventoryModal();
 els.actBtn.onclick=resolveAndClear;
 els.restBtn.onclick=()=>resolveAction('rest and steady myself');
 els.listenBtn.onclick=()=>resolveAction('listen carefully');
@@ -4204,6 +4448,7 @@ function narrativeFocusLine(room, rs, targetKind, rr, rawText=''){
 function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
   if(!room) return null;
   if(intent?.type==='attack' || intent?.type==='defend') return null;
+  if(['open','search','inspect','listen','use','talk'].includes(intent?.type) && ['enemy','door','chest','trap','shrine','stairs','key','npc'].includes(intent?.target||'')) return null;
   const rs = ensureRoomState(room);
   const targetCtx = nearbyTargetContext(intent, 3);
   const targetKind = targetCtx?.kind || intent.target || 'room';
@@ -4516,34 +4761,6 @@ function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
 
   return null;
 }
-/* --- end Suso v7 local-depth overrides --- */
-
-</script>
-
-<div class="onboard" id="equipModal" style="display:none">
-  <div class="modal" style="max-width:760px">
-    <div class="panel-head" style="padding:18px 22px 0">
-      <h3>Equipment Choice</h3>
-      <button class="secondary" id="equipCloseBtn">Close</button>
-    </div>
-    <div class="panel-body">
-      <div class="row">
-        <div class="field">
-          <label>Currently Equipped</label>
-          <div class="list-item" id="equipCurrentCard"></div>
-        </div>
-        <div class="field">
-          <label>New Weapon</label>
-          <div class="list-item" id="equipCandidateCard"></div>
-        </div>
-      </div>
-      <div class="btn-row">
-        <button id="equipReplaceBtn">Equip New Weapon</button>
-        <button class="secondary" id="equipKeepBtn">Keep Current</button>
-      </div>
-      <div class="small" id="equipModalHint">Pick the weapon you want to carry into the next fight.</div>
-    </div>
-  </div>
-</div>
+/* --- end Suso v7 local-depth overrides --- */</script>
 </body>
 </html>
