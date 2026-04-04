@@ -190,7 +190,7 @@ select{
     </section>
 
     <section class="panel input-panel">
-      <div class="panel-head"><h3>Speak to the dungeon</h3><div class="small" id="statusLine">Enter to send. Shift+Enter for newline.</div></div>
+      <div class="panel-head"><h3>Speak to the dungeon</h3><div class="small" id="statusLine">Enter to interact/roll. Shift+Enter for newline. Arrow keys move.</div></div>
       <div class="panel-body map-panel-body" style="display:flex;flex-direction:column;gap:12px">
         <textarea id="actionInput" placeholder="Try: move toward the chest / talk to the keeper / use tonic / combine rope with torch / attack the fiend"></textarea>
         <div class="btn-row">
@@ -397,7 +397,7 @@ function setTurnBusy(busy, msg=''){
     if(turnBusy){
       els.statusLine.textContent = msg || 'Suso is thinking...';
     } else {
-      els.statusLine.textContent = 'Enter to send. Shift+Enter for newline.';
+      els.statusLine.textContent = 'Enter to interact/roll. Shift+Enter for newline. Arrow keys move.';
     }
   }
 }
@@ -513,7 +513,7 @@ function mergeAiIntent(baseIntent, aiJson){
 }
 async function maybeInterpretIntent(playerText, baseIntent){
   const ai=state?.ai;
-  if(!ai?.enabled || !ai.apiKey || ai.mode==='local') return {intent:baseIntent, usedAI:false};
+  if(!ai?.enabled || !ai.apiKey || ai.mode==='local') return localLanguageModelIntent(playerText, baseIntent);
   const systemText = 'You are the intent interpreter for a procedural dungeon crawler. Return strict JSON only. Keep the local engine authoritative. Infer what the player is trying to do in plain language. Prioritize broad intent over literal wording: if the player says leave the room, go through the door, head deeper, move into the next chamber, or run toward the exit, treat it as travel toward the nearest believable exit. If they mention an object like chest, stairs, water, enemy, shrine, or door, target that object. Never invent impossible target objects if they are absent from state. JSON schema: {"type":"move|inspect|listen|search|open|attack|rest|talk|use|combine|interact","direction":"north|south|east|west|null","target":"exit|door|stairs|chest|water|enemy|npc|shrine|trap|rubble|key|relic|torch|tonic|rope|charm|null","travel":true/false,"explicitExit":true/false,"insane":true/false,"tone":"short phrase","reasoning":"one short sentence"}';
   const payload = { action: playerText, parsed: baseIntent, state: compactStateSnapshot() };
   try{
@@ -562,7 +562,7 @@ async function maybeAiFinalizeTurn(playerText, result, resolvedIntent){
   }finally{
     aiEnhancing=false;
     if(els.thinking) els.thinking.style.display='none';
-    setTimeout(()=>{ if(!turnBusy && els.statusLine) els.statusLine.textContent='Enter to send. Shift+Enter for newline.'; },1600);
+    setTimeout(()=>{ if(!turnBusy && els.statusLine) els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.'; },1600);
   }
 }
 
@@ -779,10 +779,89 @@ function revealAround(run,radius=6){
   }
 }
 
-function parseIntent(text){
+
+function isArrowAction(text){
+  return typeof text==='string' && text.startsWith('__arrow__:');
+}
+function arrowActionToDir(text){
+  return isArrowAction(text) ? text.split(':')[1] : null;
+}
+function nearbyInteractiveContext(dist=2){
+  const out=[];
+  const push=(kind,label,x,y)=>out.push({kind,label,x,y,d:Math.abs(x-state.player.x)+Math.abs(y-state.player.y)});
+  for(const e of state.entities||[]){
+    if(!e.alive) continue;
+    const d=Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y);
+    if(d<=dist){
+      let kind=e.type;
+      if(e.type==='enemy'||e.type==='boss') kind='enemy';
+      if(e.type==='npc') kind='npc';
+      push(kind,e.name||kind,e.x,e.y);
+    }
+  }
+  for(let y=Math.max(0,state.player.y-dist); y<=Math.min(state.map.grid.length-1,state.player.y+dist); y++){
+    for(let x=Math.max(0,state.player.x-dist); x<=Math.min(state.map.grid[0].length-1,state.player.x+dist); x++){
+      const d=Math.abs(x-state.player.x)+Math.abs(y-state.player.y);
+      if(d>dist) continue;
+      const c=state.map.grid[y][x];
+      if(c==='D') push('door','door',x,y);
+      else if(c==='C') push('chest','chest',x,y);
+      else if(c==='S') push('stairs','stairs',x,y);
+      else if(c==='W') push('water','water',x,y);
+      else if(c==='T') push('trap','trap',x,y);
+      else if(c==='^') push('shrine','shrine',x,y);
+      else if(c==='X') push('rubble','rubble',x,y);
+      else if(c==='k') push('key','key',x,y);
+      else if(c==='n') push('npc','npc',x,y);
+    }
+  }
+  out.sort((a,b)=>a.d-b.d);
+  return out;
+}
+function localLanguageModelIntent(text, baseIntent){
   const t=(text||'').toLowerCase().trim();
-  const intent={raw:text, type:'interact', direction:null, target:null, insane:false, travel:false, explicitExit:false};
+  const intent={...baseIntent};
+  const nearby=nearbyInteractiveContext(2);
+  const nearest=nearby[0]||null;
+  const labels=nearby.map(n=>n.kind);
+  if(!intent.target){
+    if(/\b(it|that|there|this|them)\b/.test(t) && nearest) intent.target=nearest.kind;
+    else if(/\b(open|unlock|unlatch|push)\b/.test(t) && labels.includes('door')) intent.target='door';
+    else if(/\b(open|loot|search|rummage|kick|pry)\b/.test(t) && labels.includes('chest')) intent.target='chest';
+    else if(/\b(drink|touch|test|wade|taste)\b/.test(t) && labels.includes('water')) intent.target='water';
+    else if(/\b(talk|ask|greet|question|bargain)\b/.test(t) && labels.includes('npc')) intent.target='npc';
+    else if(/\b(attack|fight|stab|slash|hit)\b/.test(t) && labels.includes('enemy')) intent.target='enemy';
+    else if(/\b(pray|kneel|offer|touch)\b/.test(t) && labels.includes('shrine')) intent.target='shrine';
+    else if(/\b(disarm|inspect|probe)\b/.test(t) && labels.includes('trap')) intent.target='trap';
+    else if(/\b(clear|climb|search)\b/.test(t) && labels.includes('rubble')) intent.target='rubble';
+    else if(nearest && /\b(look|inspect|check|examine|use|interact|deal with)\b/.test(t)) intent.target=nearest.kind;
+  }
+  if(intent.type==='interact'){
+    if(/\b(look|inspect|examine|study|read)\b/.test(t)) intent.type='inspect';
+    else if(/\b(listen|hear)\b/.test(t)) intent.type='listen';
+    else if(/\b(search|loot|rummage|scavenge)\b/.test(t)) intent.type='search';
+    else if(/\b(open|unlock|unlatch|push)\b/.test(t)) intent.type='open';
+    else if(/\b(attack|fight|stab|slash|hit|smash)\b/.test(t)) intent.type='attack';
+    else if(/\b(talk|ask|greet|question|bargain|speak)\b/.test(t)) intent.type='talk';
+    else if(/\b(use|drink|consume|equip|apply|touch|offer)\b/.test(t)) intent.type='use';
+  }
+  intent.travel = false;
+  intent.explicitExit = false;
+  return {intent, usedAI:false, localBrain:true, raw:{nearby:nearby.slice(0,4), source:'suso-local-language-model'}};
+}
+
+function parseIntent(text){
+  const raw=(text||'').trim();
+  const t=raw.toLowerCase();
+  const intent={raw:text, type:'interact', direction:null, target:null, insane:false, travel:false, explicitExit:false, fromArrow:false};
   if(!t){ intent.type='none'; return intent; }
+  if(isArrowAction(raw)){
+    intent.type='move';
+    intent.direction=arrowActionToDir(raw);
+    intent.travel=false;
+    intent.fromArrow=true;
+    return intent;
+  }
 
   if(/(fly|divine|god|miracle|absolute fortune|unfathomable)/.test(t)) intent.insane=true;
   if(/(talk|speak|ask|question|negotiate|chat|say to)/.test(t)) intent.type='talk';
@@ -844,8 +923,22 @@ async function resolveAction(input){
   const text=(input||'').trim(); if(!text) return;
   state.turn++;
   const parsedIntent=parseIntent(text);
-  addEntry('player', text, `Action · turn ${state.turn}`);
+  const arrowMove = !!parsedIntent.fromArrow;
+  addEntry('player', arrowMove ? `Move ${parsedIntent.direction}` : text, arrowMove ? `Arrow move · turn ${state.turn}` : `Action · turn ${state.turn}`);
   refreshUI();
+
+  if(parsedIntent.type==='move' && !arrowMove){
+    setTurnBusy(true, 'Suso reorients the rules of the run…');
+    await delay(220);
+    const nearby=nearbyInteractiveContext(2).slice(0,4).map(n=>n.kind).join(', ');
+    setTurnBusy(false);
+    addEntry('sys',
+      `Movement is on the arrow keys now. Use ← ↑ ↓ → to travel one step at a time. The text box is now for language-model style interaction: inspect, open, search, talk, attack, use, combine, pray, threaten, bargain, or describe what you do with something nearby.${nearby ? ` Nearby points of interest: ${nearby}.` : ''}`,
+      'Traversal updated'
+    );
+    refreshUI();
+    return;
+  }
 
   const aiMode=state?.ai?.enabled ? state.ai.mode : 'local';
   const thinkMsg = parsedIntent.insane
@@ -854,7 +947,7 @@ async function resolveAction(input){
         ? 'Suso is consulting your model, room state, threats, and possible outcomes…'
         : aiMode==='hybrid'
           ? 'Suso is blending local rules with model-guided intent reading…'
-          : 'Suso is reading intent, distance, threats, and room logic…');
+          : 'Suso is parsing verbs, nearby objects, tone, risk, and consequences…');
   setTurnBusy(true, thinkMsg);
   await delay(estimateThinkTime(parsedIntent) + (aiMode==='aiheavy' ? 320 : aiMode==='hybrid' ? 180 : 0));
 
@@ -864,10 +957,11 @@ async function resolveAction(input){
 
   const room=getCurrentRoom();
   const rr=rngFactory(state.seed + state.turn*97 + state.health);
-  let baseRoll=intent.insane ? rollWithInsaneModifier() : roll();
+  let baseRoll = intent.fromArrow ? null : (intent.insane ? rollWithInsaneModifier() : roll());
   if(baseRoll===0){ setTurnBusy(false); killPlayer('The dungeon rejects the turn completely. Fate drops out beneath you.'); return; }
   let result;
-  if(intent.type==='move') result=resolveMove(intent, baseRoll, room, rr);
+  if(intent.type==='move' && intent.fromArrow) result=resolveArrowTravel(intent.direction, room);
+  else if(intent.type==='move') result=resolveMove(intent, baseRoll, room, rr);
   else if(intent.type==='inspect') result=resolveInspect(intent, baseRoll, room, rr);
   else if(intent.type==='listen') result=resolveListen(intent, baseRoll, room, rr);
   else if(intent.type==='search') result=resolveSearch(intent, baseRoll, room, rr);
@@ -923,6 +1017,38 @@ function hasItem(name){ return state.inventory.some(i=>i.name.toLowerCase()===na
 function findEntityAt(x,y){ return state.entities.find(e=>e.alive && e.x===x && e.y===y) || null; }
 function nearbyEntities(type=null, dist=1){
   return state.entities.filter(e=>e.alive && (!type || e.type===type || (type==='hostile' && (e.type==='enemy'||e.type==='boss'))) && Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)<=dist);
+}
+
+
+function resolveArrowTravel(dir, room){
+  const [dx,dy]=DIRS[dir]||[0,0];
+  const nx=state.player.x+dx, ny=state.player.y+dy;
+  const cell=state.map.grid[ny]?.[nx];
+  if(cell==null || cell==='#') return {kind:'bad', text:`You test the ${dir} side, but the wall holds.`, meta:'Arrow move'};
+  const ent=findEntityAt(nx,ny);
+  if(ent){
+    if(ent.type==='npc') return {kind:'sys', text:`You stop beside ${ent.name}. This is close enough to speak or act.`, meta:'Arrow move'};
+    return {kind:'sys', text:`You close with ${ent.name}. It is now within reach, and any action on it will require a roll.`, meta:'Arrow move'};
+  }
+  if(cell==='D'){
+    const locked = !state.flags.innerGateOpen && !hasItem('Saint Key') && !hasItem('Iron Key');
+    if(locked) return {kind:'sys', text:'A locked door stops you. Use the text box to open it, force it, inspect it, or try a key.', meta:'Arrow move'};
+    state.map.grid[ny][nx]='O'; state.flags.innerGateOpen=true; movePlayer(nx,ny);
+    const newRoom=getCurrentRoom();
+    return {kind:'sys', text:`You slip through the open door and advance ${dir}. ${newRoom && newRoom.id!==room.id ? describeRoom(state,newRoom,false) : ''}`.trim(), meta:'Arrow move', entered:true};
+  }
+  movePlayer(nx,ny);
+  let txt=`You move ${dir}.`;
+  if(cell==='W') txt+=' Water darkens the floor here; if you want to drink it or test it, that will take a roll.';
+  else if(cell==='C') txt+=' A chest sits here within reach. Use the text box to inspect, pry, or open it.';
+  else if(cell==='S') txt+=' Stairs wait here. Use the text box to descend, inspect, or steady yourself before taking them.';
+  else if(cell==='T') txt+=' You spot a trap line or plate nearby. Use the text box to inspect or disarm it before committing further.';
+  else if(cell==='X') txt+=' Rubble narrows the route. Use the text box if you want to clear, search, or climb it carefully.';
+  else if(cell==='^') txt+=' A shrine stands here. Prayer, offerings, or inspection will require a roll.';
+  else if(cell==='k') txt+=' Something key-like glints here. Use the text box to claim it carefully.';
+  const newRoom=getCurrentRoom();
+  if(newRoom && newRoom.id!==room.id) txt += ' ' + describeRoom(state,newRoom,false);
+  return {kind:'sys', text:txt.trim(), meta:'Arrow move', entered:newRoom && newRoom.id!==room.id};
 }
 
 function resolveMove(intent, r, room, rng){
@@ -1508,7 +1634,7 @@ els.actBtn.onclick=resolveAndClear;
 els.restBtn.onclick=()=>resolveAction('rest and steady myself');
 els.listenBtn.onclick=()=>resolveAction('listen carefully');
 els.searchBtn.onclick=()=>resolveAction('search nearby');
-els.saveBtn.onclick=()=>{ saveGame(); els.statusLine.textContent='Saved.'; setTimeout(()=>els.statusLine.textContent='Enter to send. Shift+Enter for newline.',1200); };
+els.saveBtn.onclick=()=>{ saveGame(); els.statusLine.textContent='Saved.'; setTimeout(()=>els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.',1200); };
 els.loadBtn.onclick=()=>loadGame();
 els.newRunBtn.onclick=()=>{ els.onboard.style.display='flex'; };
 els.clearSaveBtn.onclick=()=>{ clearSave(); els.statusLine.textContent='Save cleared.'; };
@@ -1530,10 +1656,10 @@ function shouldCaptureArrowTravel(ev){
   return !turnBusy && !!state && !state.dead && els.onboard.style.display==='none';
 }
 function arrowKeyToAction(key){
-  if(key==='ArrowUp') return 'move north';
-  if(key==='ArrowDown') return 'move south';
-  if(key==='ArrowLeft') return 'move west';
-  if(key==='ArrowRight') return 'move east';
+  if(key==='ArrowUp') return '__arrow__:north';
+  if(key==='ArrowDown') return '__arrow__:south';
+  if(key==='ArrowLeft') return '__arrow__:west';
+  if(key==='ArrowRight') return '__arrow__:east';
   return null;
 }
 
@@ -1575,14 +1701,14 @@ els.showKeyBtn.onclick=()=>{
   els.apiKeyInput.type = showApiKey ? 'text' : 'password';
   els.showKeyBtn.textContent = showApiKey ? 'Hide' : 'Show';
 };
-els.saveAiBtn.onclick=()=>{ persistAiSettings(); els.statusLine.textContent='AI settings saved.'; setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to send. Shift+Enter for newline.'; },1200); };
+els.saveAiBtn.onclick=()=>{ persistAiSettings(); els.statusLine.textContent='AI settings saved.'; setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.'; },1200); };
 els.clearAiBtn.onclick=()=>{ 
   localStorage.removeItem(AI_KEY); 
   if(state) state.ai=loadAiSettings(); 
   refreshAiFields(); 
   if(state) refreshUI(); 
   els.statusLine.textContent='AI settings cleared.';
-  setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to send. Shift+Enter for newline.'; },1200);
+  setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.'; },1200);
 };
 atlas.onload=()=>{
   atlasReady = true; atlasFailed = false;
