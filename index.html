@@ -115,6 +115,9 @@ select{
 #mapCanvas,#asciiMap{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}
 #asciiMap{display:none;color:#edd6b0;background:rgba(10,7,6,.22);padding:10px;border-radius:12px;font:13px/13px "Courier New",monospace;white-space:pre}
 .dice-panel{
+  background:url('dice_tray_bg.png') center/100% 100% no-repeat;
+  border:0;
+
   position:relative;
   display:flex;
   align-items:center;
@@ -135,6 +138,75 @@ select{
   background:linear-gradient(180deg, rgba(18,13,11,.72), rgba(10,8,7,.82));
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 30px rgba(0,0,0,.22);
 }
+
+.dice-panel{
+  min-height:220px;
+  padding:22px 22px 18px;
+  position:relative;
+  overflow:hidden;
+}
+.dice-panel .dice-card{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  background:linear-gradient(180deg, rgba(29,21,17,.76), rgba(10,8,7,.86));
+  border:1px solid rgba(229,178,92,.35);
+}
+.dice-roll-history{
+  position:absolute;
+  right:22px;
+  top:22px;
+  width:118px;
+  max-height:150px;
+  overflow:auto;
+  padding:8px 10px;
+  border-radius:14px;
+  background:rgba(16,12,10,.52);
+  border:1px solid rgba(229,178,92,.16);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+.dice-roll-history .hdr{
+  font-size:.68rem;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#d7b27a;
+  margin-bottom:6px;
+}
+.dice-roll-history .item{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:.82rem;
+  color:#f0ddbf;
+  padding:3px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.dice-roll-history .item:last-child{ border-bottom:0; }
+.dice-bounce{
+  position:absolute;
+  width:74px;
+  height:74px;
+  display:grid;
+  place-items:center;
+  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
+  background:linear-gradient(180deg, rgba(239,194,122,.88), rgba(131,84,36,.92));
+  color:#fff7e9;
+  font-size:1.45rem;
+  font-weight:900;
+  letter-spacing:.02em;
+  border:1px solid rgba(255,232,184,.8);
+  text-shadow:0 2px 10px rgba(0,0,0,.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.18),
+    0 12px 20px rgba(0,0,0,.28),
+    0 0 0 1px rgba(0,0,0,.16);
+  pointer-events:none;
+  opacity:0;
+  z-index:4;
+}
+.dice-bounce.show{ opacity:1; }
+
 .dice-panel.flash-crit .dice-card{
   box-shadow:
     0 0 0 1px rgba(255,220,170,.22),
@@ -547,6 +619,8 @@ const els = {
   diceValue: document.getElementById('diceValue'),
   diceMeta: document.getElementById('diceMeta'),
   diceSub: document.getElementById('diceSub'),
+  diceBounce: document.getElementById('diceBounce'),
+  diceHistory: document.getElementById('diceHistory'),
   diceCard: document.querySelector('#dicePanel .dice-card'),
   diceHistory: document.getElementById('diceHistory'),
   nearbyList: document.getElementById('nearbyList'),
@@ -599,20 +673,68 @@ function estimateThinkTime(intent){
 }
 
 let diceAnimToken = 0;
+let diceRollHistory = [];
 function renderDiceHistory(){
   if(!els.diceHistory) return;
   const rows = rollHistory.slice(0,5).map(r=>`<div class="dice-history-item"><span class="tag">${escapeHtml(r.label||'Roll')}</span><strong>${escapeHtml(String(r.value))}</strong></div>`).join('');
   els.diceHistory.innerHTML = rows || '<div class="dice-history-item"><span class="tag">Waiting</span><strong>—</strong></div>';
 }
+
+function renderDiceHistory(){
+  if(!els.diceHistory) return;
+  const rows = diceRollHistory.slice(-6).reverse().map(r =>
+    `<div class="item"><span>${escapeHtml(r.label)}</span><strong>${escapeHtml(String(r.roll))}</strong></div>`
+  ).join('');
+  els.diceHistory.innerHTML = `<div class="hdr">Recent Rolls</div>${rows || '<div class="item"><span>No rolls yet</span><strong>—</strong></div>'}`;
+}
+function pushDiceHistory(label, roll){
+  diceRollHistory.push({label: label || 'Roll', roll});
+  if(diceRollHistory.length > 10) diceRollHistory = diceRollHistory.slice(-10);
+  renderDiceHistory();
+}
+async function animateTrayBounce(finalRoll, label){
+  if(!els.diceBounce || !els.dicePanel) return;
+  const el = els.diceBounce;
+  const box = els.dicePanel.getBoundingClientRect();
+  const pad = 28;
+  const size = 74;
+  let x = pad + Math.random() * Math.max(10, box.width - size - pad*2);
+  let y = pad + Math.random() * Math.max(10, box.height - size - pad*2);
+  let vx = (Math.random() * 12 + 8) * (Math.random() > 0.5 ? 1 : -1);
+  let vy = (Math.random() * 10 + 6) * (Math.random() > 0.5 ? 1 : -1);
+  const gravity = 0.45;
+  el.textContent = '—';
+  el.classList.add('show');
+  for(let i=0;i<26;i++){
+    x += vx;
+    y += vy;
+    vy += gravity;
+    if(x <= pad){ x = pad; vx *= -0.88; }
+    if(x >= box.width - size - pad){ x = box.width - size - pad; vx *= -0.88; }
+    if(y <= pad){ y = pad; vy *= -0.88; }
+    if(y >= box.height - size - pad){ y = box.height - size - pad; vy *= -0.84; vx *= 0.98; }
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+    el.style.transform = `rotate(${(vx+vy)*1.8}deg)`;
+    el.textContent = String(Math.floor(Math.random()*21));
+    await delay(24 + i*2);
+  }
+  el.textContent = String(finalRoll);
+  await delay(180);
+  el.classList.remove('show');
+}
+
 function clearDiceFx(){
   if(!els.dicePanel || !els.diceCard || !els.diceValue) return;
   els.dicePanel.classList.remove('flash-crit','flash-fail');
   els.diceCard.classList.remove('rolling','shake','crit','fail');
+  if(els.diceBounce) els.diceBounce.classList.remove('show');
 }
 function hideDiceOverlay(){
   diceAnimToken++;
   clearDiceFx();
 }
+
 async function animateDiceRoll(finalRoll, opts={}){
   if(finalRoll==null || !els.dicePanel || !els.diceValue || !els.diceCard) return;
   const token = ++diceAnimToken;
@@ -630,22 +752,12 @@ async function animateDiceRoll(finalRoll, opts={}){
   els.dicePanel.classList.add('show');
   els.diceCard.classList.add('rolling');
 
-  const spinCount = 12 + Math.floor(Math.random()*5);
-  for(let i=0;i<spinCount;i++){
-    if(token!==diceAnimToken) return;
-    els.diceValue.textContent = String(Math.floor(Math.random()*21));
-    if(i>spinCount-4) els.diceCard.classList.add('shake');
-    await delay(46 + i*10);
-  }
+  await animateTrayBounce(finalRoll, label);
   if(token!==diceAnimToken) return;
 
   els.diceCard.classList.remove('rolling');
   els.diceValue.textContent = String(finalRoll);
   els.diceSub.textContent = sub;
-
-  rollHistory.unshift({label, value: finalRoll});
-  rollHistory = rollHistory.slice(0,5);
-  renderDiceHistory();
 
   if(crit){
     els.dicePanel.classList.add('flash-crit');
@@ -655,11 +767,13 @@ async function animateDiceRoll(finalRoll, opts={}){
     els.diceCard.classList.add('fail');
   }
 
+  pushDiceHistory(label, finalRoll);
   await delay(940);
   if(token!==diceAnimToken) return;
   els.diceCard.classList.remove('rolling','shake','crit','fail');
   els.dicePanel.classList.remove('flash-crit','flash-fail');
 }
+
 
 function aiModeLabel(ai){
   if(!ai || !ai.enabled || ai.mode==='local') return 'Local Only';
@@ -2927,6 +3041,7 @@ function persistAiSettings(){
   localStorage.setItem(AI_KEY, JSON.stringify(ai));
   if(state) state.ai=ai;
   refreshAiFields();
+renderDiceHistory();
 renderDiceHistory();
 }
 function refreshAiFields(){
