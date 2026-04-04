@@ -1941,7 +1941,7 @@ function bfsStepEntity(sx,sy,tx,ty){
   while(prev && !(prev[0]===sx && prev[1]===sy)){ cur=prev; prev=came.get(key(cur[0],cur[1])); }
   return {x:cur[0], y:cur[1]};
 }
-function movePlayer(x,y){ state.player.x=x; state.player.y=y; }
+function movePlayer(x,y){ state.player.x=x; state.player.y=y; centerMapOnPlayer(); }
 function pushMoveMemory(text){ state.moves.push(`Turn ${state.turn}: ${text}`); if(state.moves.length>22) state.moves.shift(); }
 function updateQuestProgress(result){
   if(state.flags.questKeyFound) state.quest.progress[0]=true;
@@ -2153,7 +2153,15 @@ function refreshUI(){
   els.log.scrollTop = els.log.scrollHeight;
   els.premiseText.textContent=state.premise;
   els.runChips.innerHTML=[state.theme.name,state.tone,`Risk: ${state.risk}`,`Seed ${String(state.seed).slice(-6)}`].map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('');
-  updateQuickActions(); drawMap(); saveGame();
+  const posKey = `${state.player.x},${state.player.y}`;
+  if(lastFollowPos !== posKey){
+    lastFollowPos = posKey;
+    centerMapOnPlayer();
+  }
+  updateQuickActions();
+  drawMap();
+  updateMapTransform();
+  saveGame();
   els.enhancerState.textContent = state.ai.enabled ? 'On' : 'Off';
   els.toggleEnhanceBtn.textContent = state.ai.enabled ? 'Disable' : 'Enable';
 }
