@@ -1336,7 +1336,214 @@ function resolveInteract(intent, r, room, rng){
       : 'You try to force a miracle. The dungeon answers with physics and bruises.',
       meta:`Insane Request · ${r}`};
   }
-  return {kind:'sys', text:`Suso reads your intent as a rough interaction with ${intent.target || 'the room'} and answers it through the world instead of a dead fallback. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+
+  const raw=(intent.raw||'').toLowerCase();
+  const target=intent.target || inferAmbientTarget(raw, room, rng);
+  const verb=inferInteractionVerb(raw, target);
+  const targetPoint=nearestTargetPointFor(target, room);
+
+  if(target==='rubble') return resolveRubbleInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='water') return resolveWaterInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='door') return resolveDoorInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='chest') return resolveChestInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='trap') return resolveTrapInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='shrine') return resolveShrineInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='key') return resolveKeyInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='npc') return resolveNpcInteraction(verb, r, room, rng, targetPoint, raw);
+  if(target==='enemy') return resolveEnemyInteraction(verb, r, room, rng, targetPoint, raw);
+  return resolveRoomInteraction(verb, r, room, rng, raw);
+}
+function inferAmbientTarget(raw, room, rng){
+  const nearby=nearbyInteractiveContext(2);
+  if(nearby.length) return nearby[0].kind;
+  const features=roomFeatureSummary(state, room);
+  if(features.includes('X')) return 'rubble';
+  if(features.includes('W')) return 'water';
+  if(features.includes('D')) return 'door';
+  if(features.includes('C')) return 'chest';
+  if(features.includes('T')) return 'trap';
+  if(features.includes('^')) return 'shrine';
+  if(features.includes('k')) return 'key';
+  if(features.includes('n')) return 'npc';
+  if(features.includes('E')) return 'enemy';
+  return 'room';
+}
+function inferInteractionVerb(raw, target){
+  if(/(climb|scale|scramble over|scramble up)/.test(raw)) return 'climb';
+  if(/(gather|collect|pocket|take|pick up|scoop)/.test(raw)) return 'gather';
+  if(/(clear|move|shift|drag|pull aside|pry apart)/.test(raw)) return 'clear';
+  if(/(block|jam|wedge|brace|barricade)/.test(raw)) return 'brace';
+  if(/(drink|taste|sip)/.test(raw)) return 'drink';
+  if(/(wade|step into|cross)/.test(raw)) return 'wade';
+  if(/(knock|bang|pound)/.test(raw)) return 'knock';
+  if(/(listen|press an ear|hear)/.test(raw)) return 'listen';
+  if(/(force|shove|heave|push hard|kick in)/.test(raw)) return 'force';
+  if(/(open|lift|pry|unlatch)/.test(raw)) return 'open';
+  if(/(disarm|cut|spoil|jam)/.test(raw)) return 'disarm';
+  if(/(pray|kneel|offer|anoint)/.test(raw)) return 'pray';
+  if(/(steal|palm|snatch|grab)/.test(raw)) return 'take';
+  if(/(hide|duck|cover)/.test(raw)) return 'hide';
+  if(/(mark|scratch|chalk|note)/.test(raw)) return 'mark';
+  if(/(search|inspect|examine|study|look)/.test(raw)) return 'inspect';
+  if(/(throw|toss)/.test(raw)) return 'throw';
+  if(/(threaten|intimidate|warn)/.test(raw)) return 'threaten';
+  if(/(feed|give|offer)/.test(raw)) return 'offer';
+  return target==='room' ? 'inspect' : 'handle';
+}
+function nearestTargetPointFor(target, room){
+  const symbolMap={door:'D', chest:'C', water:'W', trap:'T', shrine:'^', rubble:'X', key:'k', stairs:'S'};
+  if(symbolMap[target]) return nearestFeatureCell(symbolMap[target], 6) || nearestFeatureCell(symbolMap[target], 20);
+  if(target==='npc'){
+    const npc=nearbyEntities('npc',6)[0];
+    if(npc) return {x:npc.x,y:npc.y,entity:npc};
+  }
+  if(target==='enemy'){
+    const foe=nearbyEntities('hostile',6)[0];
+    if(foe) return {x:foe.x,y:foe.y,entity:foe};
+  }
+  return {x:state.player.x,y:state.player.y};
+}
+function maybeRevealHiddenNear(point, rng){
+  if(!point) return null;
+  const around=shuffle(rng,[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]);
+  for(const [dx,dy] of around){
+    const x=point.x+dx,y=point.y+dy,c=state.map.grid[y]?.[x];
+    if(c==='#'){
+      state.map.grid[y][x]='O';
+      return {x,y};
+    }
+  }
+  return null;
+}
+function roomHostiles(room){
+  return state.entities.filter(e=>e.alive && (e.type==='enemy'||e.type==='boss') && findRoomAt(state,e.x,e.y)?.id===room.id);
+}
+function attractNearbyHostile(room){
+  const foe=roomHostiles(room).find(e=>Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)>1);
+  if(!foe) return null;
+  const step=bfsStepEntity(foe.x,foe.y,state.player.x,state.player.y);
+  if(step){ foe.x=step.x; foe.y=step.y; return foe; }
+  return null;
+}
+function resolveRubbleInteraction(verb, r, room, rng, point, raw){
+  if(verb==='climb'){
+    if(r>=15){ revealAround(state,8); const secret=maybeRevealHiddenNear(point,rng); return {kind:'sys', text:`You climb the rubble carefully and gain the room's higher angle. From up there the geometry makes more sense. ${secret ? 'A hidden opening reveals itself where the wall should have remained solid.' : generateClue(room,rng)}`, meta:`Interact · ${r}`}; }
+    if(r>=9){ revealAround(state,7); return {kind:'sys', text:`You scramble up the rubble and back down with scraped palms but better sightlines. ${generateClue(room,rng)}`, meta:`Interact · ${r}`}; }
+    damagePlayer(1,'The rubble shifts under you.');
+    return {kind:'bad', text:'You try to climb the rubble, but loose stone rolls under your weight and punishes the attempt.', meta:`Interact · ${r}`};
+  }
+  if(verb==='gather'){
+    gainItem({name:'Loose Stone', qty:r>=14?2:1, desc:'A fist-sized chunk of masonry that can be thrown, wedged, or used as proof of disturbance.'});
+    if(r>=12 && point){ state.map.grid[point.y][point.x]='.'; }
+    return {kind:'sys', text:r>=12 ? 'You pocket useful rubble and, in the process, strip away enough debris to slightly change the room’s footing.' : 'You gather a few sharp pieces of rubble into your pockets. They are ugly, but usable.', meta:`Interact · ${r}`};
+  }
+  if(verb==='clear' || verb==='brace'){
+    if(!point) return {kind:'bad', text:'There is no meaningful pile of rubble close enough to change.', meta:`Interact · ${r}`};
+    if(r>=13){ state.map.grid[point.y][point.x]='.'; const secret=maybeRevealHiddenNear(point,rng); return {kind:'sys', text:`You shift the rubble into a different story. The obstruction opens. ${secret ? 'Behind it, a hidden gap or service opening is exposed.' : 'The room now has a clearer line through it.'}`, meta:`Interact · ${r}`}; }
+    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You move stone, but not enough of it. The noise carries.${foe ? ` ${foe.name} responds from deeper in the room.` : ''}`, meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:`You work at the rubble long enough to learn its character: broken recently in one place, old everywhere else. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+}
+function resolveWaterInteraction(verb, r, room, rng, point, raw){
+  if(verb==='drink'){
+    if(r>=16){ healPlayer(1,'The water was cleaner than it looked, or your body was kinder than expected.'); return {kind:'sys', text:'You drink cautiously. The water is cold, metallic, and survivable. At the bottom of the pooled stone you notice something deliberately sunk there.', meta:`Interact · ${r}`}; }
+    if(r>=9){ return {kind:'bad', text:'You drink and immediately regret it. The taste is wrong, but not ruinous. The pool ripples wider than it should and tells the room you are here.', meta:`Interact · ${r}`}; }
+    damagePlayer(1,'The water turns your stomach.');
+    return {kind:'bad', text:'You drink the water and your body rejects the decision. The sound of it travels.', meta:`Interact · ${r}`};
+  }
+  if(verb==='wade'){
+    if(r>=13){ if(point){ state.player.x=point.x; state.player.y=point.y; } revealAround(state,8); return {kind:'sys', text:'You wade through the cold water instead of around it and find a line of safer stones hidden beneath the surface.', meta:`Interact · ${r}`}; }
+    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You enter the water and the splash gives you away.${foe ? ` ${foe.name} shifts closer, hunting the sound.` : ''}`, meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:`You test the water instead of trusting it. It smells of stone, old metal, and something that sat here longer than it should have. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+}
+function resolveDoorInteraction(verb, r, room, rng, point, raw){
+  if(verb==='listen' || verb==='knock'){
+    const hasHostile=roomHostiles(room).length;
+    return {kind:'sys', text:verb==='knock' ? `Your knock moves through the chamber and comes back changed. ${hasHostile ? 'Something nearby stops pretending not to hear you.' : generateClue(room,rng)}` : `You put your ear to the door and listen. ${hasHostile ? 'Breathing or dragging shifts somewhere beyond the obvious silence.' : generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  }
+  if(verb==='force'){
+    if(r>=14 && point){ state.map.grid[point.y][point.x]='O'; return {kind:'sys', text:'You commit your weight to the door and break its argument. It opens with a violence the room will remember.', meta:`Interact · ${r}`}; }
+    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You hit the door hard, but the only thing that yields is the room’s patience.${foe ? ` ${foe.name} answers the noise.` : ''}`, meta:`Interact · ${r}`};
+  }
+  return resolveOpen({target:'door', raw}, r, room, rng);
+}
+function resolveChestInteraction(verb, r, room, rng, point, raw){
+  if(verb==='gather' || verb==='take' || verb==='open' || verb==='inspect' || verb==='handle') return resolveOpen({target:'chest', raw}, r, room, rng);
+  if(verb==='force'){
+    if(r>=12 && point){ state.map.grid[point.y][point.x]='.'; addLootMaybe(rng,false); return {kind:'sys', text:'You force the chest open in the ugliest possible way. Whatever was inside is now yours, plus splinters.', meta:`Interact · ${r}`}; }
+    return {kind:'bad', text:'You batter the chest, but it gives back noise instead of wealth.', meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:`You circle the chest and read its posture before touching it. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+}
+function resolveTrapInteraction(verb, r, room, rng, point, raw){
+  if(!point) return {kind:'bad', text:'No trap lies close enough to command your full attention.', meta:`Interact · ${r}`};
+  if(verb==='disarm' || verb==='clear' || verb==='inspect'){
+    if(r>=14){ state.map.grid[point.y][point.x]='.'; gainItem({name:'Thin Wire', qty:1, desc:'Recovered from an old trap. Useful for improvised solutions.'}); return {kind:'sys', text:'You find the trap’s logic and insult it correctly. The mechanism dies in your hands and leaves salvage behind.', meta:`Interact · ${r}`}; }
+    if(r<=5){ damagePlayer(1,'The trap answers your touch.'); return {kind:'bad', text:'You find the trap by triggering part of it. Pain teaches the lesson the room wanted taught.', meta:`Interact · ${r}`}; }
+    return {kind:'bad', text:'You read the trap, but not deeply enough to kill it. At least now you know exactly where it waits.', meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:'You give the trap your attention and, in return, it gives away the shape of its threat.', meta:`Interact · ${r}`};
+}
+function resolveShrineInteraction(verb, r, room, rng, point, raw){
+  if(verb==='pray' || verb==='offer'){
+    if(r>=15){ state.flags.usedShrine=true; state.player.ward+=1; healPlayer(1,'The shrine gives back a hard mercy.'); addFactOnce('The shrine responds to sincere offerings, but only once without a price.'); return {kind:'sys', text:'You offer something real to the shrine and it answers. The room does not brighten, but it stops leaning against you quite so hard.', meta:`Interact · ${r}`}; }
+    return {kind:'bad', text:'You try to pray, but whatever listens here prefers conviction to performance. The shrine remains stone.', meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:`You study the shrine instead of trusting it. Its wear pattern suggests repeated use by desperate hands. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+}
+function resolveKeyInteraction(verb, r, room, rng, point, raw){
+  if(!point) return {kind:'bad', text:'Whatever key or relic you meant is not actually within reach.', meta:`Interact · ${r}`};
+  if(verb==='take' || verb==='gather' || verb==='handle' || verb==='inspect'){
+    if(r>=8){ state.map.grid[point.y][point.x]='.'; state.flags.questKeyFound=true; gainItem({name:'Iron Key', qty:1, desc:'A severe key from deeper in the run. It feels more ceremonial than domestic.'}); return {kind:'sys', text:'You take the key and immediately feel the run reorder itself around that decision.', meta:`Interact · ${r}`}; }
+    return {kind:'bad', text:'You reach for the key and think better of exposing yourself for a cleaner grab. The room keeps it for the moment.', meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:`You study the key from where you stand. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+}
+function resolveNpcInteraction(verb, r, room, rng, point, raw){
+  if(verb==='threaten'){
+    const npc=(point&&point.entity) || nearbyEntities('npc',2)[0];
+    if(!npc) return {kind:'bad', text:'You square yourself against an absence.', meta:`Interact · ${r}`};
+    npc.dialogIndex=(npc.dialogIndex||0)+1;
+    return {kind:r>=12?'sys':'bad', text:r>=12 ? `${npc.name} does not flinch, but they do stop withholding. "Fine," they say, and give you the shortest route they know.` : `${npc.name} watches your threat fail to become leverage. You learn nothing except how calm they are.`, meta:`Interact · ${r}`};
+  }
+  if(verb==='offer'){
+    const npc=(point&&point.entity) || nearbyEntities('npc',2)[0];
+    if(!npc) return {kind:'bad', text:'There is no one here to receive the offer.', meta:`Interact · ${r}`};
+    if(hasItem('Loose Stone')){ removeItem('Loose Stone'); gainItem({name:'Bone Charm', qty:1, desc:'A small ward traded for an unlikely kindness.'}); return {kind:'sys', text:`You offer up something small and material. ${npc.name} trades you a bone charm and a look that says the exchange mattered.`, meta:`Interact · ${r}`}; }
+    return {kind:'sys', text:`You offer words or posture, but nothing tangible changes hands. ${npc.name} remembers the attempt anyway.`, meta:`Interact · ${r}`};
+  }
+  return resolveTalk({raw, target:'npc'}, r, room, rng);
+}
+function resolveEnemyInteraction(verb, r, room, rng, point, raw){
+  if(verb==='hide'){
+    if(r>=13){ addFactOnce('A hostile lost your exact position for a moment.'); return {kind:'sys', text:'You break line and let the room swallow you for a second. The hostile has to hunt instead of simply knowing.', meta:`Interact · ${r}`}; }
+    return {kind:'bad', text:'You try to hide from something already reading your shape. It keeps you in mind.', meta:`Interact · ${r}`};
+  }
+  if(verb==='throw'){
+    if(!hasItem('Loose Stone')) return {kind:'bad', text:'You reach for a throwable that is not in your pockets.', meta:`Interact · ${r}`};
+    removeItem('Loose Stone');
+    const foe=roomHostiles(room)[0];
+    if(!foe) return {kind:'bad', text:'You throw the stone into a room that offers no moving target.', meta:`Interact · ${r}`};
+    if(r>=12){ foe.hp-=1; return {kind:'sys', text:`You throw a loose stone hard enough to make ${foe.name} answer with pain instead of confidence.`, meta:`Interact · ${r}`}; }
+    return {kind:'bad', text:'The thrown stone buys noise and a moment, but not control.', meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:`You test the enemy with posture instead of steel. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+}
+function resolveRoomInteraction(verb, r, room, rng, raw){
+  if(verb==='hide'){
+    if(r>=13){ state.flags.hidden=true; return {kind:'sys', text:'You make yourself smaller and let the room cover for you. For now, it does.', meta:`Interact · ${r}`}; }
+    return {kind:'bad', text:'You try to hide in a room that has already noticed you.', meta:`Interact · ${r}`};
+  }
+  if(verb==='mark'){
+    addFactOnce(`You marked ${room.name}.`);
+    return {kind:'sys', text:`You leave a deliberate mark in ${room.name}. Later, if you circle back, you will know the room knew you first.`, meta:`Interact · ${r}`};
+  }
+  if(verb==='inspect'){
+    revealAround(state,7);
+    return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  }
+  return {kind:'sys', text:`You do something small but real to the room, and the room changes by a degree. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
 }
 function generateClue(room, rng){
   return pick(rng,[
