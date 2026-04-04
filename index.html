@@ -110,29 +110,88 @@ select{
 #mapCanvas,#asciiMap{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}
 #asciiMap{display:none;color:#edd6b0;background:rgba(10,7,6,.22);padding:10px;border-radius:12px;font:13px/13px "Courier New",monospace;white-space:pre}
 .dice-overlay{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  pointer-events:none; opacity:0; transition:opacity .16s ease; z-index:10;
-  background:radial-gradient(circle at 50% 50%, rgba(0,0,0,.08), rgba(0,0,0,.28) 42%, rgba(0,0,0,.02) 72%);
+  position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center;
+  pointer-events:none; opacity:1; transition:opacity .18s ease; z-index:10;
+  padding-bottom:12%;
+  background:none;
 }
 .dice-overlay.show{ opacity:1; }
+.dice-overlay.flash-crit .dice-card{
+  box-shadow:
+    0 0 0 1px rgba(255,220,170,.22),
+    0 0 28px rgba(255,215,120,.45),
+    0 0 80px rgba(255,176,64,.28),
+    0 18px 48px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(255,255,255,.05);
+}
+.dice-overlay.flash-fail .dice-card{
+  box-shadow:
+    0 0 0 1px rgba(255,120,120,.18),
+    0 0 26px rgba(180,36,36,.42),
+    0 0 72px rgba(120,0,0,.25),
+    0 18px 48px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(255,255,255,.03);
+}
 .dice-card{
-  min-width:120px; padding:14px 16px; border-radius:18px;
+  min-width:132px; padding:16px 18px; border-radius:20px;
   border:1px solid rgba(229,178,92,.42);
-  background:linear-gradient(180deg, rgba(29,21,17,.74), rgba(10,8,7,.82));
+  background:linear-gradient(180deg, rgba(29,21,17,.76), rgba(10,8,7,.86));
   box-shadow:0 18px 48px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.03);
   display:flex; flex-direction:column; align-items:center; gap:6px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(5px);
+  transform: translateY(0) scale(1);
 }
+.dice-card.rolling{ animation:diceCardFloat .72s ease-in-out infinite; }
+.dice-card.shake{ animation:diceShake .55s ease; }
+.dice-card.crit{ animation:diceCritPulse .7s ease; }
+.dice-card.fail{ animation:diceFailPulse .7s ease; }
 .dice-d20{
-  width:76px; height:76px; display:grid; place-items:center;
+  width:82px; height:82px; display:grid; place-items:center;
   clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
-  background:linear-gradient(180deg, rgba(229,178,92,.22), rgba(114,74,30,.34));
-  border:1px solid rgba(229,178,92,.65);
-  color:#fff6df; font-size:1.55rem; font-weight:900; letter-spacing:.03em;
+  background:linear-gradient(180deg, rgba(229,178,92,.24), rgba(114,74,30,.36));
+  border:1px solid rgba(229,178,92,.72);
+  color:#fff6df; font-size:1.65rem; font-weight:900; letter-spacing:.03em;
   text-shadow:0 2px 10px rgba(0,0,0,.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 0 0 1px rgba(0,0,0,.18),
+    0 8px 24px rgba(0,0,0,.26);
+}
+.dice-overlay.flash-crit .dice-d20{
+  border-color:rgba(255,223,138,.95);
+  background:linear-gradient(180deg, rgba(255,228,156,.34), rgba(179,120,36,.44));
+}
+.dice-overlay.flash-fail .dice-d20{
+  border-color:rgba(229,100,100,.72);
+  background:linear-gradient(180deg, rgba(160,52,52,.34), rgba(78,14,14,.48));
 }
 .dice-meta{ font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
-.dice-sub{ font-size:.88rem; color:var(--ink); text-align:center; max-width:180px; line-height:1.2; }
+.dice-sub{ font-size:.88rem; color:var(--ink); text-align:center; max-width:190px; line-height:1.2; }
+
+@keyframes diceCardFloat{
+  0%{ transform:translateY(0) scale(1); }
+  50%{ transform:translateY(-3px) scale(1.02); }
+  100%{ transform:translateY(0) scale(1); }
+}
+@keyframes diceShake{
+  0%{ transform:translateX(0) rotate(0deg); }
+  16%{ transform:translateX(-7px) rotate(-3deg); }
+  32%{ transform:translateX(6px) rotate(2.5deg); }
+  48%{ transform:translateX(-5px) rotate(-2deg); }
+  64%{ transform:translateX(4px) rotate(1.5deg); }
+  80%{ transform:translateX(-2px) rotate(-1deg); }
+  100%{ transform:translateX(0) rotate(0deg); }
+}
+@keyframes diceCritPulse{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(1.07); }
+  100%{ transform:scale(1); }
+}
+@keyframes diceFailPulse{
+  0%{ transform:scale(1); filter:saturate(1); }
+  40%{ transform:scale(.97); filter:saturate(1.25); }
+  100%{ transform:scale(1); filter:saturate(1); }
+}
 .map-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:.9rem;color:var(--muted)}
 .map-legend span{display:flex;align-items:center;gap:8px}
 .swatch{width:14px;height:14px;border-radius:4px;background:#666;border:1px solid rgba(255,255,255,.15)}
@@ -252,7 +311,7 @@ select{
             <div class="dice-card">
               <div class="dice-meta" id="diceMeta">0–20 die</div>
               <div class="dice-d20" id="diceValue">—</div>
-              <div class="dice-sub" id="diceSub">Awaiting the turn.</div>
+              <div class="dice-sub" id="diceSub">Previous roll stays here.</div>
             </div>
           </div>
         </div>
@@ -359,6 +418,8 @@ atlas.src='dungeon_tiles_atlas_32.png';
 const mapCanvas=document.getElementById('mapCanvas');
 const ctx=mapCanvas.getContext('2d');
 const tileSize=10, atlasTile=32;
+let mapPulse = null;
+let pulseRaf = 0;
 
 const els = {
   onboard: document.getElementById('onboard'),
@@ -403,6 +464,7 @@ const els = {
   diceValue: document.getElementById('diceValue'),
   diceMeta: document.getElementById('diceMeta'),
   diceSub: document.getElementById('diceSub'),
+  diceCard: document.querySelector('#diceOverlay .dice-card'),
   nearbyList: document.getElementById('nearbyList'),
   movesList: document.getElementById('movesList'),
   enhancerState: document.getElementById('enhancerState'),
@@ -453,33 +515,58 @@ function estimateThinkTime(intent){
 }
 
 let diceAnimToken = 0;
+function clearDiceFx(){
+  if(!els.diceOverlay || !els.diceCard || !els.diceValue) return;
+  els.diceOverlay.classList.remove('flash-crit','flash-fail');
+  els.diceCard.classList.remove('rolling','shake','crit','fail');
+}
 function hideDiceOverlay(){
-  if(els.diceOverlay) els.diceOverlay.classList.remove('show');
+  diceAnimToken++;
+  clearDiceFx();
 }
 async function animateDiceRoll(finalRoll, opts={}){
-  if(finalRoll==null || !els.diceOverlay || !els.diceValue) return;
+  if(finalRoll==null || !els.diceOverlay || !els.diceValue || !els.diceCard) return;
   const token = ++diceAnimToken;
   const insane = !!opts.insane;
   const label = opts.label || (insane ? 'Insane request roll' : '0–20 die');
   const sub = opts.sub || (finalRoll===0 ? 'Absolute collapse.' : `Result ${finalRoll}`);
+  const crit = finalRoll===20;
+  const fail = finalRoll===0 || finalRoll===1;
+
+  clearDiceFx();
   els.diceMeta.textContent = label;
   els.diceSub.textContent = 'Rolling…';
   els.diceOverlay.classList.add('show');
-  const spinCount = 8 + Math.floor(Math.random()*4);
+  els.diceCard.classList.add('rolling');
+
+  const spinCount = 12 + Math.floor(Math.random()*5);
   for(let i=0;i<spinCount;i++){
     if(token!==diceAnimToken) return;
     els.diceValue.textContent = String(Math.floor(Math.random()*21));
-    await delay(55 + i*8);
+    if(i>spinCount-4) els.diceCard.classList.add('shake');
+    await delay(46 + i*10);
   }
   if(token!==diceAnimToken) return;
+
+  els.diceCard.classList.remove('rolling');
   els.diceValue.textContent = String(finalRoll);
   els.diceSub.textContent = sub;
-  await delay(620);
+
+  if(crit){
+    els.diceOverlay.classList.add('flash-crit');
+    els.diceCard.classList.add('crit');
+  }else if(fail){
+    els.diceOverlay.classList.add('flash-fail');
+    els.diceCard.classList.add('fail');
+  }
+
+  await delay(940);
   if(token!==diceAnimToken) return;
-  els.diceOverlay.classList.remove('show');
+  clearDiceFx();
 }
 
-function aiModeLabel(ai){
+function aiModeLabel(ai)
+{
   if(!ai || !ai.enabled || ai.mode==='local') return 'Local Only';
   return ai.mode==='aiheavy' ? 'AI Heavy' : 'Hybrid AI';
 }
@@ -651,6 +738,7 @@ async function maybeAiPrimaryOutcome(playerText, intent, baseRoll, room){
 }
 function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
   let changed=false;
+  let pulse=null;
   const kind = (aiJson.kind==='good'||aiJson.kind==='bad') ? aiJson.kind : 'sys';
   const meta = aiJson.meta || `${intent.type[0].toUpperCase()+intent.type.slice(1)} · ${baseRoll}`;
   let narration = (aiJson.narration || '').trim();
@@ -684,6 +772,7 @@ function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
       e.alive=false;
       if(state.map.grid[e.y]?.[e.x]==='E') state.map.grid[e.y][e.x]='.';
       narration += ` ${e.name} goes down hard.`;
+      pulse = pulse || {x:e.x,y:e.y,kind:'enemy'};
       changed=true;
     }
   }
@@ -692,6 +781,7 @@ function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
       const e=findNamedEntity(d?.name,6);
       if(!e) continue;
       e.hp = Math.max(0, e.hp - Math.max(1, Math.min(4, Number(d.amount)||1)));
+      pulse = pulse || {x:e.x,y:e.y,kind:'enemy'};
       if(e.hp<=0){
         e.alive=false;
         if(state.map.grid[e.y]?.[e.x]==='E') state.map.grid[e.y][e.x]='.';
@@ -703,7 +793,7 @@ function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
   if(aiJson.move_player_to && validNearbyCoord(aiJson.move_player_to.x, aiJson.move_player_to.y, 4)){
     const x=Math.trunc(aiJson.move_player_to.x), y=Math.trunc(aiJson.move_player_to.y);
     if(canStandOnTile(state.map.grid[y][x])){
-      movePlayer(x,y); changed=true;
+      movePlayer(x,y); pulse = pulse || {x,y,kind:'generic'}; changed=true;
     }
   }
   if(Array.isArray(aiJson.set_tiles)){
@@ -712,6 +802,7 @@ function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
       const t=String(st.tile||'.');
       if(!['.','O','D','W','X','T','^','k'].includes(t)) continue;
       state.map.grid[Math.trunc(st.y)][Math.trunc(st.x)] = t;
+      pulse = pulse || {x:Math.trunc(st.x), y:Math.trunc(st.y), kind:(t==='k'||t==='C')?'loot':'generic'};
       changed=true;
     }
   }
@@ -732,7 +823,7 @@ function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
         ? ' The room does not keep the sound to itself.'
         : ' Something somewhere could have heard that.';
   }
-  return {kind, text:narration, meta, usedAiPrimary:true, changed};
+  return {kind, text:narration, meta, usedAiPrimary:true, changed, pulse};
 }
 
 async function maybeAiFinalizeTurn(playerText, result, resolvedIntent){
@@ -1782,6 +1873,7 @@ function addLootMaybe(rng,boss=false){
 }
 function applyOutcome(result, baseRoll){
   addEntry(result.kind==='bad'?'bad':'sys', result.text, result.meta || `Roll ${baseRoll}`);
+  if(result?.pulse) queueMapPulse(result.pulse.x, result.pulse.y, result.pulse.kind||'generic');
 }
 function afterPlayerTurn(rng){
   const hostiles = state.entities.filter(e=>e.alive && (e.type==='enemy'||e.type==='boss'));
@@ -1893,8 +1985,63 @@ function drawMap(){
       drawTile(symbol, x*tileSize, y*tileSize);
     }
   }
+  drawPulseFx();
   els.asciiMap.textContent=buildAsciiMap();
   updateMapTransform();
+}
+
+function drawPulseFx(){
+  if(!mapPulse || !ctx || !state) return;
+  const now=performance.now();
+  if(now>=mapPulse.until){ mapPulse=null; return; }
+  const t=1-((mapPulse.until-now)/mapPulse.duration);
+  const px=mapPulse.x*tileSize, py=mapPulse.y*tileSize;
+  const cx=px + tileSize/2, cy=py + tileSize/2;
+  const r = 4 + t*12;
+  ctx.save();
+  const palette = mapPulse.kind==='enemy'
+    ? ['rgba(255,90,90,0.55)','rgba(255,90,90,0.08)']
+    : mapPulse.kind==='loot'
+      ? ['rgba(255,210,110,0.55)','rgba(255,210,110,0.08)']
+      : ['rgba(255,236,170,0.45)','rgba(255,236,170,0.07)'];
+  const grad = ctx.createRadialGradient(cx,cy,1,cx,cy,r);
+  grad.addColorStop(0,palette[0]);
+  grad.addColorStop(1,palette[1]);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = palette[0].replace('0.55','0.85').replace('0.45','0.75');
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.arc(cx,cy,Math.max(4,r-2),0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+}
+function queueMapPulse(x,y,kind='generic'){
+  if(x==null || y==null) return;
+  mapPulse = {x,y,kind,duration:520,until:performance.now()+520};
+  if(pulseRaf) cancelAnimationFrame(pulseRaf);
+  const tick=()=>{
+    drawMap();
+    if(mapPulse && performance.now()<mapPulse.until) pulseRaf=requestAnimationFrame(tick);
+    else { pulseRaf=0; drawMap(); }
+  };
+  pulseRaf=requestAnimationFrame(tick);
+}
+function inferPulseFromIntent(intent){
+  if(!intent) return null;
+  const target = (intent.target||'').toLowerCase();
+  const enemy = target && findNamedEntity(target,8);
+  if(enemy) return {x:enemy.x,y:enemy.y,kind:'enemy'};
+  const byKind = nearbyInteractiveContext(6).find(n =>
+    (target && (n.kind===target || n.label.toLowerCase()===target)) ||
+    (intent.type==='attack' && n.kind==='enemy') ||
+    (intent.type==='open' && (n.kind==='door' || n.kind==='chest')) ||
+    (intent.type==='inspect' && !!n.kind)
+  );
+  if(byKind) return {x:byKind.x,y:byKind.y,kind: byKind.kind==='enemy' ? 'enemy' : (byKind.kind==='chest' || byKind.kind==='key' ? 'loot' : 'generic')};
+  return {x:state.player.x,y:state.player.y,kind:'generic'};
 }
 function drawTile(symbol,dx,dy){
   const fills={
@@ -1961,6 +2108,7 @@ function drawTile(symbol,dx,dy){
   }
 }
 function refreshUI(){
+  if(els.diceOverlay) els.diceOverlay.classList.add('show');
   if(!state) return;
   els.playerNameOut.textContent=`${state.name} the ${state.title}`;
   const room=getCurrentRoom();
