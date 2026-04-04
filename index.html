@@ -165,7 +165,13 @@ select{
   border-color:rgba(229,100,100,.72);
   background:linear-gradient(180deg, rgba(160,52,52,.34), rgba(78,14,14,.48));
 }
-.dice-meta{ font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+.dice-meta{
+  font-size:.76rem; color:#f2d7a3; text-transform:uppercase; letter-spacing:.12em;
+  font-weight:800; text-align:center;
+  padding:2px 8px; border-radius:999px;
+  background:linear-gradient(180deg, rgba(111,74,27,.28), rgba(39,24,10,.18));
+  border:1px solid rgba(229,178,92,.24);
+}
 .dice-sub{ font-size:.88rem; color:var(--ink); text-align:center; max-width:190px; line-height:1.2; }
 
 @keyframes diceCardFloat{
@@ -528,7 +534,8 @@ async function animateDiceRoll(finalRoll, opts={}){
   if(finalRoll==null || !els.diceOverlay || !els.diceValue || !els.diceCard) return;
   const token = ++diceAnimToken;
   const insane = !!opts.insane;
-  const label = opts.label || (insane ? 'Insane request roll' : '0–20 die');
+  const actionLabel = opts.actionLabel || opts.kind || opts.type || '';
+  const label = opts.label || actionLabel || (insane ? 'Insane Request' : 'Roll');
   const sub = opts.sub || (finalRoll===0 ? 'Absolute collapse.' : `Result ${finalRoll}`);
   const crit = finalRoll===20;
   const fail = finalRoll===0 || finalRoll===1;
@@ -536,6 +543,7 @@ async function animateDiceRoll(finalRoll, opts={}){
   clearDiceFx();
   els.diceMeta.textContent = label;
   els.diceSub.textContent = 'Rolling…';
+  els.diceValue.textContent = '—';
   els.diceOverlay.classList.add('show');
   els.diceCard.classList.add('rolling');
 
@@ -562,11 +570,11 @@ async function animateDiceRoll(finalRoll, opts={}){
 
   await delay(940);
   if(token!==diceAnimToken) return;
-  clearDiceFx();
+  els.diceCard.classList.remove('rolling','shake','crit','fail');
+  els.diceOverlay.classList.remove('flash-crit','flash-fail');
 }
 
-function aiModeLabel(ai)
-{
+function aiModeLabel(ai){
   if(!ai || !ai.enabled || ai.mode==='local') return 'Local Only';
   return ai.mode==='aiheavy' ? 'AI Heavy' : 'Hybrid AI';
 }
