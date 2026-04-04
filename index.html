@@ -389,6 +389,21 @@ function setTurnBusy(busy, msg=''){
 }
 
 
+function delay(ms){
+  const t = Number(ms)||0;
+  return new Promise(resolve => setTimeout(resolve, Math.max(0, t)));
+}
+
+function estimateThinkTime(intent){
+  let ms = 180;
+  if(intent?.travel) ms += 180;
+  if(intent?.insane) ms += 260;
+  if(intent?.type === 'talk') ms += 120;
+  if(intent?.type === 'combine' || intent?.type === 'use') ms += 90;
+  return ms;
+}
+
+
 function aiModeLabel(ai){
   if(!ai || !ai.enabled || ai.mode==='local') return 'Local Only';
   return ai.mode==='aiheavy' ? 'AI Heavy' : 'Hybrid AI';
