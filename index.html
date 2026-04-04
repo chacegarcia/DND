@@ -45,6 +45,10 @@ body{
 .panel-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0))}
 .panel-body{padding:16px;min-height:0}
 .scroll-body{overflow:auto;min-height:0}
+.panel-body::-webkit-scrollbar,.left::-webkit-scrollbar,.right::-webkit-scrollbar{width:10px;height:10px}
+.panel-body::-webkit-scrollbar-thumb,.left::-webkit-scrollbar-thumb,.right::-webkit-scrollbar-thumb{background:rgba(229,178,92,.24);border-radius:999px}
+.panel-body::-webkit-scrollbar-track,.left::-webkit-scrollbar-track,.right::-webkit-scrollbar-track{background:rgba(0,0,0,.14)}
+.map-panel-body{max-height:none !important;overflow:visible !important}
 h1,h2,h3{margin:0}
 .title-card{padding:18px}
 .subtitle{color:var(--muted);line-height:1.45;margin-top:8px}
@@ -117,8 +121,12 @@ select{
 #thinking{display:none;color:#f5d8a6}
 .center > .panel{min-height:0}
 .input-panel{flex:0 0 auto}
-.left,.right{overflow:hidden}
-.left .panel,.right .panel{min-height:0}
+.left,.right{overflow-y:auto;overflow-x:hidden;min-height:0;padding-right:6px;scrollbar-gutter:stable}
+.left .panel,.right .panel{min-height:0;flex:0 0 auto}
+.left .panel .panel-body,.right .panel .panel-body{overflow-y:auto;overflow-x:hidden;max-height:42vh;scrollbar-gutter:stable}
+.left .panel .panel-body.listcol,.right .panel .panel-body.listcol{max-height:28vh}
+.left .panel .panel-body.ai-box,.right .panel .panel-body.ai-box{max-height:none}
+.left,.right{align-self:stretch}
 
 @media (max-width:1240px){
   .app{grid-template-columns:1fr;height:auto;min-height:100vh;overflow:visible}
@@ -180,7 +188,7 @@ select{
 
     <section class="panel input-panel">
       <div class="panel-head"><h3>Speak to the dungeon</h3><div class="small" id="statusLine">Enter to send. Shift+Enter for newline.</div></div>
-      <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel-body map-panel-body" style="display:flex;flex-direction:column;gap:12px">
         <textarea id="actionInput" placeholder="Try: move toward the chest / talk to the keeper / use tonic / combine rope with torch / attack the fiend"></textarea>
         <div class="btn-row">
           <button id="actBtn">Roll Action</button>
