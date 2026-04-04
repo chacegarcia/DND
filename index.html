@@ -207,6 +207,30 @@ select{
 }
 .dice-bounce.show{ opacity:1; }
 
+
+.dice-panel{
+  background-color:transparent !important;
+}
+.dice-panel::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(circle at 50% 55%, rgba(255,210,150,.04), rgba(0,0,0,0) 48%);
+}
+.dice-panel .dice-card{
+  background:linear-gradient(180deg, rgba(18,13,11,.42), rgba(8,6,5,.58)) !important;
+  border:1px solid rgba(229,178,92,.24) !important;
+  box-shadow:0 10px 28px rgba(0,0,0,.22), inset 0 0 0 1px rgba(255,255,255,.02) !important;
+  backdrop-filter: blur(2px);
+}
+.dice-bounce.crit{
+  filter: drop-shadow(0 0 10px rgba(255,226,132,.55)) drop-shadow(0 0 24px rgba(255,180,52,.35));
+}
+.dice-bounce.fail{
+  filter: drop-shadow(0 0 8px rgba(255,92,92,.48)) drop-shadow(0 0 20px rgba(140,18,18,.28));
+}
+
 .dice-panel.flash-crit .dice-card{
   box-shadow:
     0 0 0 1px rgba(255,220,170,.22),
@@ -368,6 +392,79 @@ select{
   .center{min-height:auto}
   .map-stage{height:420px}
 }
+
+/* v2 dice tray cleanup */
+.dice-panel{
+  background:url('dice_tray_bg.png') center/contain no-repeat !important;
+  background-color:transparent !important;
+  min-height:220px !important;
+  padding:0 !important;
+  margin-top:10px;
+  overflow:hidden !important;
+  border:none !important;
+  box-shadow:none !important;
+}
+.dice-panel::before{ display:none !important; }
+.dice-panel .dice-card{
+  position:absolute !important;
+  left:16px !important;
+  bottom:14px !important;
+  top:auto !important;
+  transform:none !important;
+  min-width:140px;
+  gap:4px !important;
+  padding:10px 12px !important;
+  background:rgba(12,9,8,.18) !important;
+  border:1px solid rgba(229,178,92,.18) !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  z-index:6 !important;
+}
+.dice-meta{
+  font-size:.66rem !important;
+  padding:0 !important;
+  background:none !important;
+  border:none !important;
+  color:#f0d6aa !important;
+  text-align:left !important;
+}
+.dice-d20{
+  width:58px !important;
+  height:58px !important;
+  font-size:1.2rem !important;
+}
+.dice-sub{
+  max-width:150px !important;
+  font-size:.78rem !important;
+  text-align:left !important;
+}
+.dice-roll-history{
+  right:16px !important;
+  top:14px !important;
+  width:110px !important;
+  max-height:132px !important;
+  padding:6px 8px !important;
+  background:rgba(12,9,8,.16) !important;
+  border:1px solid rgba(229,178,92,.12) !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  z-index:6 !important;
+}
+.dice-roll-history .hdr{
+  font-size:.62rem !important;
+  margin-bottom:4px !important;
+}
+.dice-roll-history .item{
+  font-size:.76rem !important;
+  padding:2px 0 !important;
+}
+.dice-bounce{
+  z-index:5 !important;
+  opacity:0;
+  transition:opacity .06s linear;
+}
+.dice-bounce.show{ opacity:1 !important; }
+
 </style>
 </head>
 <body>
@@ -692,37 +789,76 @@ function pushDiceHistory(label, roll){
   if(diceRollHistory.length > 10) diceRollHistory = diceRollHistory.slice(-10);
   renderDiceHistory();
 }
+
+
 async function animateTrayBounce(finalRoll, label){
   if(!els.diceBounce || !els.dicePanel) return;
   const el = els.diceBounce;
   const box = els.dicePanel.getBoundingClientRect();
-  const pad = 28;
+  const pad = 18;
   const size = 74;
-  let x = pad + Math.random() * Math.max(10, box.width - size - pad*2);
-  let y = pad + Math.random() * Math.max(10, box.height - size - pad*2);
-  let vx = (Math.random() * 12 + 8) * (Math.random() > 0.5 ? 1 : -1);
-  let vy = (Math.random() * 10 + 6) * (Math.random() > 0.5 ? 1 : -1);
-  const gravity = 0.45;
+  const maxX = Math.max(pad+1, box.width - size - pad);
+  const maxY = Math.max(pad+1, box.height - size - pad);
+  let x = Math.min(maxX, Math.max(pad, pad + Math.random() * Math.max(8, box.width - size - pad*2)));
+  let y = Math.min(maxY, Math.max(pad, pad + Math.random() * Math.max(8, box.height - size - pad*2)));
+  let vx = (Math.random() * 10 + 7) * (Math.random() > 0.5 ? 1 : -1);
+  let vy = (Math.random() * 8 + 5) * (Math.random() > 0.5 ? 1 : -1);
+  const gravity = 0.38;
+  const crit = finalRoll===20;
+  const fail = finalRoll===0 || finalRoll===1;
+
+  el.classList.remove('crit','fail');
+  if(crit) el.classList.add('crit');
+  else if(fail) el.classList.add('fail');
+
   el.textContent = '—';
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.style.transform = 'rotate(0deg) scale(1)';
   el.classList.add('show');
-  for(let i=0;i<26;i++){
+
+  for(let i=0;i<42;i++){
+    let hitX = false;
+    let hitY = false;
+
     x += vx;
     y += vy;
     vy += gravity;
-    if(x <= pad){ x = pad; vx *= -0.88; }
-    if(x >= box.width - size - pad){ x = box.width - size - pad; vx *= -0.88; }
-    if(y <= pad){ y = pad; vy *= -0.88; }
-    if(y >= box.height - size - pad){ y = box.height - size - pad; vy *= -0.84; vx *= 0.98; }
+
+    if(x <= pad){ x = pad; vx = Math.abs(vx) * 0.9; hitX = true; }
+    if(x >= maxX){ x = maxX; vx = -Math.abs(vx) * 0.9; hitX = true; }
+    if(y <= pad){ y = pad; vy = Math.abs(vy) * 0.85; hitY = true; }
+    if(y >= maxY){
+      y = maxY;
+      vy = -Math.abs(vy) * 0.78;
+      vx *= 0.98;
+      hitY = true;
+    }
+
+    const scaleX = hitY ? 1.14 : hitX ? .92 : 1;
+    const scaleY = hitY ? .88 : hitX ? 1.08 : 1;
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
-    el.style.transform = `rotate(${(vx+vy)*1.8}deg)`;
+    el.style.transform = `rotate(${(vx+vy)*1.6}deg) scale(${scaleX},${scaleY})`;
+    el.style.filter = crit
+      ? 'drop-shadow(0 0 10px rgba(255,226,132,.55)) drop-shadow(0 0 24px rgba(255,180,52,.35)) brightness(1.08)'
+      : fail
+        ? 'drop-shadow(0 0 8px rgba(255,92,92,.48)) drop-shadow(0 0 20px rgba(140,18,18,.28)) brightness(1.06)'
+        : (hitX || hitY)
+          ? 'brightness(1.2)'
+          : 'none';
     el.textContent = String(Math.floor(Math.random()*21));
-    await delay(24 + i*2);
+    await delay(hitX || hitY ? 28 : 22);
   }
+
   el.textContent = String(finalRoll);
+  el.style.transform = 'rotate(0deg) scale(1,1)';
   await delay(180);
-  el.classList.remove('show');
+  el.classList.remove('show','crit','fail');
+  el.style.filter = 'none';
 }
+
+
 
 function clearDiceFx(){
   if(!els.dicePanel || !els.diceCard || !els.diceValue) return;
