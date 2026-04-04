@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aillumi's Dungeon — Suso Engine v2</title>
+<title>Aillumi's Dungeon — Suso Engine v3 Hybrid</title>
 <style>
 :root{
   --bg:#120f0d;
@@ -234,20 +234,30 @@ select{
     </section>
 
     <section class="panel">
-      <div class="panel-head"><h3>Optional LLM Enhancer</h3><span class="badge" id="enhancerState">Off</span></div>
+      <div class="panel-head"><h3>AI Control / Hybrid Modes</h3><span class="badge" id="enhancerState">Local Only</span></div>
       <div class="panel-body ai-box">
         <div class="toggle-line">
-          <span class="small">Keep local logic authoritative, let a model embellish prose and dialogue.</span>
-          <button class="secondary" id="toggleEnhanceBtn">Enable</button>
+          <span class="small">Let your model help interpret intent, dialogue, and narration while Suso keeps world-state authoritative.</span>
+          <button class="secondary" id="toggleEnhanceBtn">Enable AI</button>
         </div>
-        <input type="text" id="apiKeyInput" placeholder="Paste API key" />
+        <label class="small" for="aiModeSelect">AI Control Mode</label>
+        <select id="aiModeSelect">
+          <option value="local">Local Only</option>
+          <option value="hybrid">Hybrid AI</option>
+          <option value="aiheavy">AI Heavy</option>
+        </select>
+        <div class="small" id="aiModeHint">Local Only keeps Suso fully in charge.</div>
+        <div class="btn-row">
+          <input type="password" id="apiKeyInput" placeholder="Paste API key" />
+          <button class="secondary" id="showKeyBtn" type="button">Show</button>
+        </div>
         <input type="text" id="endpointInput" placeholder="Endpoint" value="https://api.openai.com/v1/responses" />
-        <input type="text" id="modelInput" placeholder="Model" value="gpt-5.4" />
+        <input type="text" id="modelInput" placeholder="Model" value="gpt-5.4-mini" />
         <div class="btn-row">
           <button class="secondary" id="saveAiBtn">Save AI Settings</button>
           <button class="secondary" id="clearAiBtn">Clear AI Settings</button>
         </div>
-        <div class="footer-note">If the request fails, the local Suso engine keeps running. This enhancer never decides damage, loot, movement, or quest state.</div>
+        <div class="footer-note">Local Suso still decides damage, loot, movement, combat, quests, and save-state. Hybrid AI interprets natural-language intent better; AI Heavy also rewrites most turn narration and dialogue.</div>
       </div>
     </section>
   </aside>
@@ -255,9 +265,9 @@ select{
 
 <div class="onboard" id="onboard">
   <div class="modal">
-    <div class="panel-head"><h2>Begin a fresh descent</h2><span class="badge">Suso v2</span></div>
+    <div class="panel-head"><h2>Begin a fresh descent</h2><span class="badge">Suso v3 Hybrid</span></div>
     <div class="panel-body">
-      <div class="small">This build adds smarter map generation, combat, item use and combine, NPCs, dialogue, local quest generation, and optional LLM prose enhancement layered on top of the local brain.</div>
+      <div class="small">This build adds smarter map generation, combat, item use and combine, NPCs, dialogue, local quest generation, and hybrid AI modes where your model can interpret intent and write richer narration while Suso keeps the world-state coherent.</div>
       <div class="row">
         <div class="field">
           <label>What’s your name?</label>
@@ -348,7 +358,10 @@ const els = {
   movesList: document.getElementById('movesList'),
   enhancerState: document.getElementById('enhancerState'),
   toggleEnhanceBtn: document.getElementById('toggleEnhanceBtn'),
+  aiModeSelect: document.getElementById('aiModeSelect'),
+  aiModeHint: document.getElementById('aiModeHint'),
   apiKeyInput: document.getElementById('apiKeyInput'),
+  showKeyBtn: document.getElementById('showKeyBtn'),
   endpointInput: document.getElementById('endpointInput'),
   modelInput: document.getElementById('modelInput'),
   saveAiBtn: document.getElementById('saveAiBtn'),
@@ -356,7 +369,7 @@ const els = {
   thinking: document.getElementById('thinking'),
 };
 
-let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false;
+let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false, showApiKey=false;
 let turnBusy = false;
 
 function setTurnBusy(busy, msg=''){
@@ -372,6 +385,153 @@ function setTurnBusy(busy, msg=''){
     } else {
       els.statusLine.textContent = 'Enter to send. Shift+Enter for newline.';
     }
+  }
+}
+
+
+function aiModeLabel(ai){
+  if(!ai || !ai.enabled || ai.mode==='local') return 'Local Only';
+  return ai.mode==='aiheavy' ? 'AI Heavy' : 'Hybrid AI';
+}
+function aiModeHint(mode){
+  return mode==='aiheavy'
+    ? 'AI Heavy lets your model interpret intent first and write most narration, while Suso still validates world-state.'
+    : mode==='hybrid'
+      ? 'Hybrid AI lets your model interpret intent and enrich narration while Suso enforces rules and map state.'
+      : 'Local Only keeps Suso fully in charge.';
+}
+function compactStateSnapshot(){
+  const room=getCurrentRoom();
+  return {
+    turn: state.turn,
+    health: state.health,
+    maxHealth: state.maxHealth,
+    theme: state.theme?.name,
+    tone: state.tone,
+    risk: state.risk,
+    room: room ? {
+      name: room.name,
+      tags: Array.from(room.tags||[]),
+      features: roomFeatureSummary(state, room).map(symbolName)
+    } : null,
+    nearbyHostiles: nearbyEntities('hostile', 7).map(e=>({name:e.name,hp:e.hp,dist:Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)})).slice(0,4),
+    nearbyNpcs: nearbyEntities('npc', 7).map(e=>e.name).slice(0,4),
+    inventory: state.inventory.map(i=>`${i.name}${(i.qty||1)>1?` x${i.qty}`:''}`).slice(0,10),
+    quest: state.quest ? {title:state.quest.title, steps:state.quest.steps, progress:state.quest.progress} : null,
+    recentMoves: state.moves.slice(-6),
+    recentFacts: state.facts.slice(-6)
+  };
+}
+function extractLlmText(data){
+  if(!data) return '';
+  if(typeof data.output_text==='string' && data.output_text.trim()) return data.output_text.trim();
+  const c=data.choices?.[0]?.message?.content;
+  if(typeof c==='string') return c.trim();
+  if(Array.isArray(c)) return c.map(p=>p?.text||p?.content||'').join('\n').trim();
+  const out = data.output?.flatMap?.(item=>item?.content||[])?.map?.(part=>part?.text||'')?.join?.('\n');
+  return (out||'').trim();
+}
+async function callConfiguredLLM(systemText, payload){
+  const ai=state?.ai;
+  if(!ai?.enabled || !ai.apiKey || ai.mode==='local') return null;
+  const endpoint=(ai.endpoint||'').trim();
+  if(!endpoint) return null;
+  let body;
+  if(endpoint.includes('/responses')){
+    body={
+      model: ai.model || 'gpt-5.4-mini',
+      instructions: systemText,
+      input: JSON.stringify(payload)
+    };
+  }else{
+    body={
+      model: ai.model || 'gpt-5.4-mini',
+      messages:[
+        {role:'system', content: systemText},
+        {role:'user', content: JSON.stringify(payload)}
+      ]
+    };
+  }
+  const res = await fetch(endpoint,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':`Bearer ${ai.apiKey}`
+    },
+    body:JSON.stringify(body)
+  });
+  if(!res.ok){
+    const raw = await res.text().catch(()=> '');
+    throw new Error(`LLM ${res.status}${raw?`: ${raw.slice(0,220)}`:''}`);
+  }
+  const data=await res.json();
+  return {data, text: extractLlmText(data)};
+}
+function mergeAiIntent(baseIntent, aiJson){
+  if(!aiJson || typeof aiJson!=='object') return baseIntent;
+  const next={...baseIntent};
+  const allowedTypes=new Set(['move','inspect','listen','search','open','attack','rest','talk','use','combine','interact']);
+  if(typeof aiJson.type==='string' && allowedTypes.has(aiJson.type)) next.type=aiJson.type;
+  if(typeof aiJson.direction==='string' && DIRS[aiJson.direction]) next.direction=aiJson.direction;
+  if(typeof aiJson.target==='string' && aiJson.target.trim()) next.target=aiJson.target.trim().toLowerCase();
+  if(typeof aiJson.insane==='boolean') next.insane=aiJson.insane;
+  if(typeof aiJson.travel==='boolean') next.travel=aiJson.travel;
+  if(typeof aiJson.tone==='string') next.aiTone=aiJson.tone.trim();
+  if(typeof aiJson.reasoning==='string') next.aiReasoning=aiJson.reasoning.trim();
+  return next;
+}
+async function maybeInterpretIntent(playerText, baseIntent){
+  const ai=state?.ai;
+  if(!ai?.enabled || !ai.apiKey || ai.mode==='local') return {intent:baseIntent, usedAI:false};
+  const systemText = 'You are the intent interpreter for a procedural dungeon crawler. Return strict JSON only. Keep the local engine authoritative. Infer what the player is trying to do in plain language. Never invent impossible target objects if they are absent from state. JSON schema: {"type":"move|inspect|listen|search|open|attack|rest|talk|use|combine|interact","direction":"north|south|east|west|null","target":"short noun or null","travel":true/false,"insane":true/false,"tone":"short phrase","reasoning":"one short sentence"}';
+  const payload = { action: playerText, parsed: baseIntent, state: compactStateSnapshot() };
+  try{
+    const rsp = await callConfiguredLLM(systemText, payload);
+    const raw = rsp?.text || '';
+    if(!raw) return {intent:baseIntent, usedAI:false};
+    const aiJson = JSON.parse(raw);
+    return {intent: mergeAiIntent(baseIntent, aiJson), usedAI:true, raw: aiJson};
+  }catch(err){
+    console.error(err);
+    els.statusLine.textContent = 'AI interpretation failed. Suso local kept the turn.';
+    return {intent:baseIntent, usedAI:false, error:err};
+  }
+}
+async function maybeAiFinalizeTurn(playerText, result, resolvedIntent){
+  const ai=state?.ai;
+  if(!ai?.enabled || !ai.apiKey || ai.mode==='local' || aiEnhancing) return;
+  aiEnhancing=true;
+  if(els.thinking) els.thinking.style.display='inline-flex';
+  els.statusLine.textContent = ai.mode==='aiheavy' ? 'AI is taking over the response layer…' : 'Hybrid AI is enriching the turn…';
+  try{
+    const room=getCurrentRoom();
+    const systemText = ai.mode==='aiheavy'
+      ? 'You are the response layer for a procedural dungeon crawler. Respect the resolved facts exactly. Do not change damage, loot, map state, positions, room facts, or quest progression. Write vivid, responsive narration in 2-6 sentences. You may include one short line of implied thought or atmosphere. Return plain text only.'
+      : 'You are polishing the narration of a procedural dungeon crawler. Respect the resolved facts exactly. Do not change mechanics, map state, damage, loot, or quest progression. Write vivid, responsive narration in 2-5 sentences. Return plain text only.';
+    const payload = {
+      playerAction: playerText,
+      resolvedIntent: resolvedIntent,
+      resultMeta: result.meta,
+      localNarration: result.text,
+      state: compactStateSnapshot(),
+      room: room ? {name: room.name, tags: Array.from(room.tags||[])} : null
+    };
+    const rsp = await callConfiguredLLM(systemText, payload);
+    const out = rsp?.text || '';
+    if(out){
+      for(let i=state.log.length-1;i>=0;i--){
+        if(state.log[i].body===result.text){ state.log[i].body=out.trim(); break; }
+      }
+      refreshUI();
+      els.statusLine.textContent = ai.mode==='aiheavy' ? 'AI Heavy handled the response.' : 'Hybrid AI enhanced the response.';
+    }
+  }catch(err){
+    console.error(err);
+    els.statusLine.textContent='AI response layer failed. Local Suso kept the turn.';
+  }finally{
+    aiEnhancing=false;
+    if(els.thinking) els.thinking.style.display='none';
+    setTimeout(()=>{ if(!turnBusy && els.statusLine) els.statusLine.textContent='Enter to send. Shift+Enter for newline.'; },1600);
   }
 }
 
@@ -471,7 +631,7 @@ function createRun(profile={}){
   addEntry('sys', `A new run takes shape.\n\n${run.premise}\n\nQuest: ${run.quest.title}`, 'Opening');
   const room=getCurrentRoom(run);
   if(room) addEntry('sys', describeRoom(run, room, true), 'First impression');
-  addEntry('sys', `Suso v2 is live: smarter rooms, combat, NPC dialogue, quest logic, item use, and combine rules are now part of the local engine.`, 'Engine');
+  addEntry('sys', `Suso v3 Hybrid is live: smarter rooms, combat, NPC dialogue, quest logic, item use, combine rules, and optional AI interpretation now layer on top of the local engine.`, 'Engine');
   return run;
 }
 
@@ -608,22 +768,35 @@ function parseIntent(text){
   return intent;
 }
 function extractTarget(t){
-  const names=['door','stairs','chest','water','enemy','fiend','npc','keeper','shrine','trap','rubble','key','relic','boss','gate','torch','tonic','rope','oil','charm'];
+  const names=['door','exit','stairs','stair','chest','water','enemy','fiend','npc','keeper','shrine','trap','rubble','key','relic','boss','gate','torch','tonic','rope','oil','charm','altar','hall','room','passage'];
   return names.find(n => t.includes(n)) || null;
 }
 function roll(){ return Math.floor(Math.random()*21); }
 function rollWithInsaneModifier(){ return Math.max(1, roll()-3); }
 
 async function resolveAction(input){
-  if(!state || state.dead) return;
+  if(!state || state.dead || turnBusy) return;
   const text=(input||'').trim(); if(!text) return;
   state.turn++;
-  const intent=parseIntent(text);
-  pushMoveMemory(`${intent.type}${intent.target?` → ${intent.target}`:''}${intent.direction?` ${intent.direction}`:''}${intent.insane?' [insane]':''}${intent.travel?' [travel]':''}`);
+  const parsedIntent=parseIntent(text);
   addEntry('player', text, `Action · turn ${state.turn}`);
   refreshUI();
-  setTurnBusy(true, intent.insane ? 'Suso is entertaining a dangerous impossibility…' : 'Suso is reading intent, distance, threats, and room logic…');
-  await delay(estimateThinkTime(intent));
+
+  const aiMode=state?.ai?.enabled ? state.ai.mode : 'local';
+  const thinkMsg = parsedIntent.insane
+    ? 'Suso is entertaining a dangerous impossibility…'
+    : (aiMode==='aiheavy'
+        ? 'Suso is consulting your model, room state, threats, and possible outcomes…'
+        : aiMode==='hybrid'
+          ? 'Suso is blending local rules with model-guided intent reading…'
+          : 'Suso is reading intent, distance, threats, and room logic…');
+  setTurnBusy(true, thinkMsg);
+  await delay(estimateThinkTime(parsedIntent) + (aiMode==='aiheavy' ? 320 : aiMode==='hybrid' ? 180 : 0));
+
+  const interpreted = await maybeInterpretIntent(text, parsedIntent);
+  const intent = interpreted.intent || parsedIntent;
+  pushMoveMemory(`${intent.type}${intent.target?` → ${intent.target}`:''}${intent.direction?` ${intent.direction}`:''}${intent.insane?' [insane]':''}${intent.travel?' [travel]':''}${interpreted.usedAI?' [ai]':''}`);
+
   const room=getCurrentRoom();
   const rr=rngFactory(state.seed + state.turn*97 + state.health);
   let baseRoll=intent.insane ? rollWithInsaneModifier() : roll();
@@ -641,13 +814,17 @@ async function resolveAction(input){
   else if(intent.type==='combine') result=resolveCombine(intent, baseRoll, room, rr);
   else result=resolveInteract(intent, baseRoll, room, rr);
 
+  if(interpreted.usedAI && intent.aiReasoning){
+    result.text += `\n\nSuso reads your intent as: ${intent.aiReasoning}`;
+  }
+
   applyOutcome(result, baseRoll);
   afterPlayerTurn(rr);
   revealAround(state,6);
   updateQuestProgress(result);
   refreshUI();
   setTurnBusy(false);
-  maybeEnhanceLastEntry(text, result).catch(console.error);
+  maybeAiFinalizeTurn(text, result, intent).catch(console.error);
 }
 
 function killPlayer(text){
@@ -1123,7 +1300,7 @@ function refreshUI(){
   els.locationOut.textContent=room ? room.name : 'Between rooms';
   els.healthOut.textContent=`${state.health} / ${state.maxHealth}`;
   els.healthBar.style.width=`${(state.health/state.maxHealth)*100}%`;
-  els.engineBadge.textContent = state.ai.enabled ? 'Suso + LLM' : 'Suso Local';
+  els.engineBadge.textContent = state.ai.enabled ? `Suso + ${aiModeLabel(state.ai)}` : 'Suso Local';
   els.inventoryList.innerHTML = state.inventory.map(i=>`<div class="list-item"><strong>${escapeHtml(i.name)}</strong>${i.qty&&i.qty>1?` ×${i.qty}`:''}<div class="small">${escapeHtml(i.desc||'')}</div></div>`).join('') || '<div class="list-item">Nothing.</div>';
   els.factsList.innerHTML = state.facts.slice(-10).map(f=>`<div class="list-item">${escapeHtml(f)}</div>`).join('') || '<div class="list-item">Nothing yet.</div>';
   els.questList.innerHTML = `<div class="list-item"><strong>${escapeHtml(state.quest.title)}</strong><div class="small">${state.quest.done?'Completed':'Active'}</div></div>` + state.quest.steps.map((s,i)=>`<div class="list-item quest-step"><div class="dot ${state.quest.progress[i]?'done':''}"></div><div>${escapeHtml(s)}</div></div>`).join('');
@@ -1168,13 +1345,19 @@ function clearSave(){ localStorage.removeItem(SAVE_KEY); }
 
 function loadAiSettings(){
   try{
-    return Object.assign({enabled:false, apiKey:'', endpoint:'https://api.openai.com/v1/responses', model:'gpt-5.4'}, JSON.parse(localStorage.getItem(AI_KEY)||'{}'));
+    return Object.assign({enabled:false, mode:'local', apiKey:'', endpoint:'https://api.openai.com/v1/responses', model:'gpt-5.4-mini'}, JSON.parse(localStorage.getItem(AI_KEY)||'{}'));
   }catch{
-    return {enabled:false, apiKey:'', endpoint:'https://api.openai.com/v1/responses', model:'gpt-5.4'};
+    return {enabled:false, mode:'local', apiKey:'', endpoint:'https://api.openai.com/v1/responses', model:'gpt-5.4-mini'};
   }
 }
 function persistAiSettings(){
-  const ai={enabled:state?.ai?.enabled||false, apiKey:els.apiKeyInput.value.trim(), endpoint:els.endpointInput.value.trim(), model:els.modelInput.value.trim()};
+  const ai={
+    enabled: state?.ai?.enabled || false,
+    mode: els.aiModeSelect.value || 'local',
+    apiKey: els.apiKeyInput.value.trim(),
+    endpoint: els.endpointInput.value.trim(),
+    model: els.modelInput.value.trim() || 'gpt-5.4-mini'
+  };
   localStorage.setItem(AI_KEY, JSON.stringify(ai));
   if(state) state.ai=ai;
   refreshAiFields();
@@ -1183,48 +1366,11 @@ function refreshAiFields(){
   const ai=(state&&state.ai)||loadAiSettings();
   els.apiKeyInput.value=ai.apiKey||'';
   els.endpointInput.value=ai.endpoint||'https://api.openai.com/v1/responses';
-  els.modelInput.value=ai.model||'gpt-5.4';
-  els.enhancerState.textContent=ai.enabled?'On':'Off';
-  els.toggleEnhanceBtn.textContent=ai.enabled?'Disable':'Enable';
-}
-
-async function maybeEnhanceLastEntry(playerText, result){
-  if(!state?.ai?.enabled || !state.ai.apiKey || aiEnhancing) return;
-  aiEnhancing=true; els.thinking.style.display='inline'; els.statusLine.textContent='Local turn resolved. Enhancing prose…';
-  try{
-    const room=getCurrentRoom();
-    const prompt = {
-      action: playerText,
-      resultMeta: result.meta,
-      room: room ? room.name : 'unknown',
-      theme: state.theme.name,
-      tone: state.tone,
-      narration: result.text
-    };
-    let body;
-    const endpoint=state.ai.endpoint;
-    if(endpoint.includes('/responses')){
-      body={model:state.ai.model,instructions:'Rewrite the dungeon narration in the same facts, no new mechanics, no state changes, 2-5 vivid sentences max.',input:JSON.stringify(prompt)};
-    } else {
-      body={model:state.ai.model,messages:[{role:'system',content:'Rewrite the dungeon narration in the same facts, no new mechanics, no state changes, 2-5 vivid sentences max.'},{role:'user',content:JSON.stringify(prompt)}]};
-    }
-    const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${state.ai.apiKey}`},body:JSON.stringify(body)});
-    if(!res.ok) throw new Error(`LLM ${res.status}`);
-    const data=await res.json();
-    const out=data.output_text || data.choices?.[0]?.message?.content || '';
-    if(out){
-      for(let i=state.log.length-1;i>=0;i--){
-        if(state.log[i].body===result.text){ state.log[i].body=out.trim(); break; }
-      }
-      refreshUI();
-    }
-    els.statusLine.textContent='Enhanced.';
-  }catch(err){
-    console.error(err);
-    els.statusLine.textContent='LLM enhancer failed. Local Suso kept the turn.';
-  }finally{
-    aiEnhancing=false; els.thinking.style.display='none'; setTimeout(()=>els.statusLine.textContent='Enter to send. Shift+Enter for newline.',1600);
-  }
+  els.modelInput.value=ai.model||'gpt-5.4-mini';
+  els.aiModeSelect.value=ai.mode||'local';
+  els.enhancerState.textContent=aiModeLabel(ai);
+  els.toggleEnhanceBtn.textContent=ai.enabled?'Disable AI':'Enable AI';
+  if(els.aiModeHint) els.aiModeHint.textContent=aiModeHint(ai.enabled ? (ai.mode||'local') : 'local');
 }
 
 function updateMapTransform(){
@@ -1265,10 +1411,39 @@ window.addEventListener('mousemove', e=>{ if(!drag) return; mapPanX=drag.px + (e
 window.addEventListener('mouseup', ()=>{ drag=null; els.mapStage.classList.remove('dragging'); });
 els.mapStage.addEventListener('wheel', e=>{ e.preventDefault(); mapZoom=Math.max(.5,Math.min(4, +(mapZoom + (e.deltaY<0?.1:-.1)).toFixed(1))); updateMapTransform(); }, {passive:false});
 els.toggleEnhanceBtn.onclick=()=>{ 
-  const ai=state ? state.ai : loadAiSettings(); ai.enabled=!ai.enabled; if(state) state.ai=ai; localStorage.setItem(AI_KEY, JSON.stringify({...ai, apiKey:els.apiKeyInput.value.trim(), endpoint:els.endpointInput.value.trim(), model:els.modelInput.value.trim()})); refreshAiFields(); if(state) refreshUI();
+  const ai=state ? {...state.ai} : loadAiSettings();
+  ai.enabled=!ai.enabled;
+  ai.mode = els.aiModeSelect.value || ai.mode || 'local';
+  ai.apiKey = els.apiKeyInput.value.trim();
+  ai.endpoint = els.endpointInput.value.trim();
+  ai.model = els.modelInput.value.trim() || 'gpt-5.4-mini';
+  if(state) state.ai=ai;
+  localStorage.setItem(AI_KEY, JSON.stringify(ai));
+  refreshAiFields();
+  if(state) refreshUI();
 };
-els.saveAiBtn.onclick=()=>{ persistAiSettings(); els.statusLine.textContent='AI settings saved.'; };
-els.clearAiBtn.onclick=()=>{ localStorage.removeItem(AI_KEY); if(state) state.ai=loadAiSettings(); refreshAiFields(); if(state) refreshUI(); };
+els.aiModeSelect.onchange=()=>{ 
+  const ai=state ? {...state.ai} : loadAiSettings();
+  ai.mode=els.aiModeSelect.value || 'local';
+  if(state) state.ai=ai;
+  localStorage.setItem(AI_KEY, JSON.stringify({...ai, apiKey:els.apiKeyInput.value.trim(), endpoint:els.endpointInput.value.trim(), model:els.modelInput.value.trim()||'gpt-5.4-mini'}));
+  refreshAiFields();
+  if(state) refreshUI();
+};
+els.showKeyBtn.onclick=()=>{ 
+  showApiKey=!showApiKey; 
+  els.apiKeyInput.type = showApiKey ? 'text' : 'password';
+  els.showKeyBtn.textContent = showApiKey ? 'Hide' : 'Show';
+};
+els.saveAiBtn.onclick=()=>{ persistAiSettings(); els.statusLine.textContent='AI settings saved.'; setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to send. Shift+Enter for newline.'; },1200); };
+els.clearAiBtn.onclick=()=>{ 
+  localStorage.removeItem(AI_KEY); 
+  if(state) state.ai=loadAiSettings(); 
+  refreshAiFields(); 
+  if(state) refreshUI(); 
+  els.statusLine.textContent='AI settings cleared.';
+  setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to send. Shift+Enter for newline.'; },1200);
+};
 atlas.onload=()=>{ if(state) drawMap(); };
 
 refreshAiFields();
