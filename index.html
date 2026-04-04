@@ -109,14 +109,17 @@ select{
 .map-stage.dragging{cursor:grabbing}
 #mapCanvas,#asciiMap{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}
 #asciiMap{display:none;color:#edd6b0;background:rgba(10,7,6,.22);padding:10px;border-radius:12px;font:13px/13px "Courier New",monospace;white-space:pre}
-.dice-overlay{
-  position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center;
-  pointer-events:none; opacity:1; transition:opacity .18s ease; z-index:10;
-  padding-bottom:12%;
-  background:none;
+.dice-panel{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-top:12px;
+  min-height:132px;
+  padding:8px 0 2px;
 }
-.dice-overlay.show{ opacity:1; }
-.dice-overlay.flash-crit .dice-card{
+.dice-panel.show{ opacity:1; }
+.dice-panel.flash-crit .dice-card{
   box-shadow:
     0 0 0 1px rgba(255,220,170,.22),
     0 0 28px rgba(255,215,120,.45),
@@ -124,7 +127,7 @@ select{
     0 18px 48px rgba(0,0,0,.42),
     inset 0 0 0 1px rgba(255,255,255,.05);
 }
-.dice-overlay.flash-fail .dice-card{
+.dice-panel.flash-fail .dice-card{
   box-shadow:
     0 0 0 1px rgba(255,120,120,.18),
     0 0 26px rgba(180,36,36,.42),
@@ -140,6 +143,7 @@ select{
   display:flex; flex-direction:column; align-items:center; gap:6px;
   backdrop-filter: blur(5px);
   transform: translateY(0) scale(1);
+  margin:0 auto;
 }
 .dice-card.rolling{ animation:diceCardFloat .72s ease-in-out infinite; }
 .dice-card.shake{ animation:diceShake .55s ease; }
@@ -157,11 +161,11 @@ select{
     0 0 0 1px rgba(0,0,0,.18),
     0 8px 24px rgba(0,0,0,.26);
 }
-.dice-overlay.flash-crit .dice-d20{
+.dice-panel.flash-crit .dice-d20{
   border-color:rgba(255,223,138,.95);
   background:linear-gradient(180deg, rgba(255,228,156,.34), rgba(179,120,36,.44));
 }
-.dice-overlay.flash-fail .dice-d20{
+.dice-panel.flash-fail .dice-d20{
   border-color:rgba(229,100,100,.72);
   background:linear-gradient(180deg, rgba(160,52,52,.34), rgba(78,14,14,.48));
 }
@@ -313,12 +317,12 @@ select{
         <div class="map-stage" id="mapStage">
           <canvas id="mapCanvas"></canvas>
           <pre id="asciiMap"></pre>
-          <div class="dice-overlay" id="diceOverlay" aria-hidden="true">
-            <div class="dice-card">
-              <div class="dice-meta" id="diceMeta">0–20 die</div>
-              <div class="dice-d20" id="diceValue">—</div>
-              <div class="dice-sub" id="diceSub">Previous roll stays here.</div>
-            </div>
+        </div>
+        <div class="dice-panel" id="dicePanel" aria-hidden="false">
+          <div class="dice-card">
+            <div class="dice-meta" id="diceMeta">0–20 die</div>
+            <div class="dice-d20" id="diceValue">—</div>
+            <div class="dice-sub" id="diceSub">Previous roll stays here.</div>
           </div>
         </div>
         <div class="map-legend">
@@ -466,7 +470,7 @@ const els = {
   zoomInBtn: document.getElementById('zoomInBtn'),
   zoomOut: document.getElementById('zoomOut'),
   atlasStatus: document.getElementById('atlasStatus'),
-  diceOverlay: document.getElementById('diceOverlay'),
+  dicePanel: document.getElementById('dicePanel'),
   diceValue: document.getElementById('diceValue'),
   diceMeta: document.getElementById('diceMeta'),
   diceSub: document.getElementById('diceSub'),
@@ -522,8 +526,8 @@ function estimateThinkTime(intent){
 
 let diceAnimToken = 0;
 function clearDiceFx(){
-  if(!els.diceOverlay || !els.diceCard || !els.diceValue) return;
-  els.diceOverlay.classList.remove('flash-crit','flash-fail');
+  if(!els.dicePanel || !els.diceCard || !els.diceValue) return;
+  els.dicePanel.classList.remove('flash-crit','flash-fail');
   els.diceCard.classList.remove('rolling','shake','crit','fail');
 }
 function hideDiceOverlay(){
@@ -531,7 +535,7 @@ function hideDiceOverlay(){
   clearDiceFx();
 }
 async function animateDiceRoll(finalRoll, opts={}){
-  if(finalRoll==null || !els.diceOverlay || !els.diceValue || !els.diceCard) return;
+  if(finalRoll==null || !els.dicePanel || !els.diceValue || !els.diceCard) return;
   const token = ++diceAnimToken;
   const insane = !!opts.insane;
   const actionLabel = opts.actionLabel || opts.kind || opts.type || '';
@@ -544,7 +548,7 @@ async function animateDiceRoll(finalRoll, opts={}){
   els.diceMeta.textContent = label;
   els.diceSub.textContent = 'Rolling…';
   els.diceValue.textContent = '—';
-  els.diceOverlay.classList.add('show');
+  els.dicePanel.classList.add('show');
   els.diceCard.classList.add('rolling');
 
   const spinCount = 12 + Math.floor(Math.random()*5);
@@ -561,17 +565,17 @@ async function animateDiceRoll(finalRoll, opts={}){
   els.diceSub.textContent = sub;
 
   if(crit){
-    els.diceOverlay.classList.add('flash-crit');
+    els.dicePanel.classList.add('flash-crit');
     els.diceCard.classList.add('crit');
   }else if(fail){
-    els.diceOverlay.classList.add('flash-fail');
+    els.dicePanel.classList.add('flash-fail');
     els.diceCard.classList.add('fail');
   }
 
   await delay(940);
   if(token!==diceAnimToken) return;
   els.diceCard.classList.remove('rolling','shake','crit','fail');
-  els.diceOverlay.classList.remove('flash-crit','flash-fail');
+  els.dicePanel.classList.remove('flash-crit','flash-fail');
 }
 
 function aiModeLabel(ai){
@@ -2689,7 +2693,7 @@ function drawTile(symbol,dx,dy){
   }
 }
 function refreshUI(){
-  if(els.diceOverlay) els.diceOverlay.classList.add('show');
+  if(els.dicePanel) els.dicePanel.classList.add('show');
   if(!state) return;
   els.playerNameOut.textContent=`${state.name} the ${state.title}`;
   const room=getCurrentRoom();
