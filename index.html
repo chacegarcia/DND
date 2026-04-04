@@ -289,7 +289,7 @@ select{
           <button class="secondary" id="searchBtn">Search</button>
           <span class="small" id="thinking">Suso + the model are shaping this turn…</span>
         </div>
-        <div class="quick-actions" id="quickActions"></div>
+        <div class="small">Context actions update based on what is around you.</div><div class="quick-actions" id="quickActions"></div>
       </div>
     </section>
   </main>
@@ -2127,10 +2127,12 @@ function refreshUI(){
   els.inventoryList.innerHTML = state.inventory.map(i=>`<div class="list-item"><strong>${escapeHtml(i.name)}</strong>${i.qty&&i.qty>1?` ×${i.qty}`:''}<div class="small">${escapeHtml(i.desc||'')}</div></div>`).join('') || '<div class="list-item">Nothing.</div>';
   els.factsList.innerHTML = state.facts.slice(-10).map(f=>`<div class="list-item">${escapeHtml(f)}</div>`).join('') || '<div class="list-item">Nothing yet.</div>';
   els.questList.innerHTML = `<div class="list-item"><strong>${escapeHtml(state.quest.title)}</strong><div class="small">${state.quest.done?'Completed':'Active'}</div></div>` + state.quest.steps.map((s,i)=>`<div class="list-item quest-step"><div class="dot ${state.quest.progress[i]?'done':''}"></div><div>${escapeHtml(s)}</div></div>`).join('');
+  const nearbyCtx = nearbyInteractiveContext(2).sort((a,b)=>a.d-b.d);
   const hostiles=nearbyEntities('hostile',6).map(e=>`${e.name} · HP ${e.hp}`);
   const npcs=nearbyEntities('npc',6).map(e=>`${e.name} · willing to talk`);
   const features=roomFeatureSummary(state, room).map(s=>symbolName(s));
-  els.nearbyList.innerHTML = [...hostiles,...npcs,...features].slice(0,10).map(t=>`<div class="list-item">${escapeHtml(t)}</div>`).join('') || '<div class="list-item">Only stone, air, and your choices.</div>';
+  const nearbyReadable = nearbyCtx.map(n=>`${n.label || n.kind} · ${n.d<=1?'within reach':`nearby (${n.d})`}`);
+  els.nearbyList.innerHTML = [...nearbyReadable,...hostiles,...npcs,...features].slice(0,10).map(t=>`<div class="list-item">${escapeHtml(t)}</div>`).join('') || '<div class="list-item">Only stone, air, and your choices.</div>';
   els.movesList.innerHTML = state.moves.slice(-8).map(m=>`<div class="list-item">${escapeHtml(m)}</div>`).join('') || '<div class="list-item">Suso will summarize recent intent here.</div>';
   els.log.innerHTML = state.log.map((entry, idx)=>`<div class="entry ${entry.kind}" data-entry="${idx}"><div class="meta">${escapeHtml(entry.meta||'Turn')}</div><div class="body">${escapeHtml(entry.body)}</div></div>`).join('');
   els.log.scrollTop = els.log.scrollHeight;
@@ -2140,15 +2142,85 @@ function refreshUI(){
   els.enhancerState.textContent = state.ai.enabled ? 'On' : 'Off';
   els.toggleEnhanceBtn.textContent = state.ai.enabled ? 'Disable' : 'Enable';
 }
+function contextActionPool(){
+  const rr=rngFactory(state.seed + state.turn*31 + state.player.x*17 + state.player.y*29);
+  const pool=[];
+  const seen = new Set();
+  const add=(label, text=label, priority=0)=>{
+    const key=(text||label).toLowerCase();
+    if(seen.has(key)) return;
+    seen.add(key);
+    pool.push({label, text, priority, r:rr()});
+  };
+
+  const nearby = nearbyInteractiveContext(2).sort((a,b)=>a.d-b.d);
+  nearby.forEach(n=>{
+    const who = n.label || n.kind;
+    if(n.kind==='enemy'){
+      add(`Inspect ${who}`, `inspect ${who}`, 10);
+      add(`Attack ${who}`, `attack ${who}`, 10);
+      add(`Threaten ${who}`, `threaten ${who}`, 7);
+    }else if(n.kind==='npc'){
+      add(`Talk to ${who}`, `talk to ${who}`, 10);
+      add(`Ask about this place`, `ask ${who} about this place`, 8);
+      add(`Trade with ${who}`, `trade with ${who}`, 6);
+    }else if(n.kind==='door'){
+      add('Inspect the door', 'inspect the door', 10);
+      add('Open the door', 'open the door', 10);
+      add('Listen at the door', 'listen at the door', 8);
+      add('Force the door', 'force the door', 6);
+    }else if(n.kind==='chest'){
+      add('Inspect the chest', 'inspect the chest', 10);
+      add('Open the chest', 'open the chest', 10);
+      add('Force the chest', 'force the chest', 7);
+    }else if(n.kind==='stairs'){
+      add('Inspect the stairs', 'inspect the stairs', 8);
+      add('Descend the stairs', 'descend the stairs', 10);
+    }else if(n.kind==='water'){
+      add('Inspect the water', 'inspect the water', 9);
+      add('Drink the water', 'drink the water', 6);
+      add('Wade into the water', 'wade into the water', 7);
+    }else if(n.kind==='rubble'){
+      add('Climb the rubble', 'climb the rubble', 8);
+      add('Gather rubble', 'gather rubble in my pockets', 7);
+      add('Clear the rubble', 'clear the rubble', 7);
+    }else if(n.kind==='trap'){
+      add('Inspect the trap', 'inspect the trap', 9);
+      add('Disarm the trap', 'disarm the trap', 9);
+      add('Probe the floor', 'probe the floor near the trap', 6);
+    }else if(n.kind==='shrine'){
+      add('Inspect the shrine', 'inspect the shrine', 8);
+      add('Pray at the shrine', 'pray at the shrine', 9);
+      add('Offer something', 'offer something at the shrine', 6);
+    }else if(n.kind==='key'){
+      add('Take the key', 'take the key', 10);
+      add('Inspect the key', 'inspect the key', 8);
+    }else if(n.kind==='corpse'){
+      add('Inspect the corpse', 'inspect the corpse', 8);
+      add('Search the corpse', 'search the corpse', 9);
+    }else if(n.kind==='opening'){
+      add('Inspect the opening', 'inspect the opening', 8);
+      add('Enter the opening', 'enter the opening', 7);
+      add('Listen beyond the opening', 'listen beyond the opening', 6);
+    }
+  });
+
+  add('Inspect the room', 'inspect the room', 3);
+  add('Search nearby', 'search nearby', 4);
+  add('Listen carefully', 'listen carefully', 4);
+
+  if(state.inventory.some(i=>/key/i.test(i.name))) add('Use a key here', 'use a key here', 5);
+  if(state.inventory.some(i=>/torch|lantern/i.test(i.name))) add('Light your torch', 'use torch', 3);
+  if(state.inventory.length>=2) add('Combine items', `combine ${state.inventory[0].name.toLowerCase()} with ${state.inventory[1].name.toLowerCase()}`, 1);
+
+  return pool.sort((a,b)=> b.priority-a.priority || a.r-b.r).slice(0,8);
+}
 function updateQuickActions(){
-  const opts=[
-    'move north','move south','move east','move west',
-    'move toward the chest','move toward the stairs','move toward the keeper','move toward the key',
-    'inspect the room','search nearby','listen carefully','open the chest','open the door',
-    'talk to the keeper','attack the enemy','use tonic','use torch','combine rope loop with bone charm'
-  ];
-  const rr=rngFactory(state.seed + state.turn*31);
-  els.quickActions.innerHTML = shuffle(rr, opts).slice(0,6).map(t=>`<button class="secondary" data-quick="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
+  const opts = contextActionPool();
+  els.quickActions.innerHTML = opts.map(o=>`<button class="secondary" data-quick="${escapeHtml(o.text)}" title="${escapeHtml(o.text)}">${escapeHtml(o.label)}</button>`).join('');
+  if(!opts.length){
+    els.quickActions.innerHTML = '<button class="secondary" data-quick="inspect the room">Inspect the room</button><button class="secondary" data-quick="listen carefully">Listen carefully</button>';
+  }
   els.quickActions.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{ els.actionInput.value=btn.dataset.quick; els.actionInput.focus(); });
 }
 
