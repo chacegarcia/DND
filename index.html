@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aillumi's Dungeon — Suso Engine v6 Hybrid</title>
+<title>Aillumi's Dungeon — Suso Engine v8 Smarter JS Worldsim</title>
 <style>
 :root{
   --bg:#120f0d;
@@ -1071,20 +1071,24 @@ function roomFeatureSummary(run,room){
   return [...feats];
 }
 function describeRoom(run, room, first=false){
-  const feats=roomFeatureSummary(run, room);
-  const rr=rngFactory(run.seed + room.id*17 + run.turn);
-  const vibes = shuffle(rr, run.theme.motifs).slice(0,2).join(' and ');
-  let text = `${room.name} opens around you, thick with ${vibes}. `;
-  if(first) text += `The ${run.theme.name.toLowerCase()} announces itself through ${pick(rr,['dripping echoes','cold mineral air','old dust and soot','a hush that feels arranged'])}. `;
-  if(feats.includes('W')) text += 'Water darkens part of the floor. ';
-  if(feats.includes('X')) text += 'Collapsed stone and rubble spoil one edge. ';
-  if(feats.includes('C')) text += 'Something hoarded waits here. ';
-  if(feats.includes('E')) text += 'There is a pulse of danger in the room. ';
-  if(feats.includes('n')) text += 'A living figure has somehow endured here. ';
-  if(feats.includes('^')) text += 'A shrine-like structure interrupts the room. ';
-  if(feats.includes('k')) text += 'A key or relic glints somewhere inside. ';
-  if(feats.includes('S')) text += 'A final stair or gate marks the far side. ';
-  return text.trim();
+  const rr = rngFactory(run.seed + room.id*73 + (first?1:9));
+  const rs = ensureRoomState(room, run);
+  const openers = first
+    ? [
+        `You enter ${room.name} and the place immediately feels more deliberate than abandoned.`,
+        `${room.name} receives you like it expected a witness rather than a guest.`,
+        `The first thing ${room.name} gives you is not danger but posture.`
+      ]
+    : [
+        `${room.name} settles around you again.`,
+        `Seen a second time, ${room.name} looks less random and more chosen.`,
+        `Returning your attention to ${room.name} makes its older logic more visible.`
+      ];
+  const features = roomFeatureSummary(run, room).map(roomFeatureLabel);
+  const featureText = features.length ? `Nearby, there is ${features.slice(0,3).join(', ')}.` : '';
+  const atmosphere = [rs.sounds[0], rs.smells[0], rs.surfaces[0]].filter(Boolean).join(', ');
+  const factEcho = rs.facts.length ? `You already know that ${rs.facts[rs.facts.length-1]}.` : '';
+  return `${pick(rr, openers)} ${atmosphere ? `The room answers with ${atmosphere}.` : ''} ${featureText} ${factEcho}`.replace(/\s+/g,' ').trim();
 }
 
 function roomFeatureLabel(sym){
@@ -1117,8 +1121,15 @@ function ensureRoomState(room, run=state){
     id: room.id,
     title: room.name,
     inspected: false,
+    revealLevel: 0,
     hiddenDetailFound: false,
     hiddenDetail: makeRoomHiddenDetail(run, room, feats),
+    deeperDetail: pick(rr, [
+      'the room was built to be read in layers, not taken at face value',
+      'someone revised the truth here after the original builders were gone',
+      'what looks practical here was once ceremonial, then made practical again out of fear',
+      'the room remembers more than the people who passed through it'
+    ]),
     facts: [],
     sounds: shuffle(rr, [
       'a distant knock that travels badly through stone',
@@ -1137,58 +1148,78 @@ function ensureRoomState(room, run=state){
   };
   const add = (kind, label, extra={}) => {
     rs.interactables[kind] = Object.assign({
-      kind, label, inspected:false, changed:false,
+      kind,
+      label,
+      inspected:false,
+      changed:false,
+      revealLevel:0,
+      discovered:false,
+      exhausted:false,
+      history:[],
       hiddenHint: pick(rr, [
         `${label} feels like it belongs to an older version of the room`,
         `there is more to ${label} than its first shape suggests`,
         `${label} carries evidence of a second story beneath the obvious one`
+      ]),
+      hiddenText: pick(rr, [
+        `${label} has been altered by hands with a different purpose than the builders`,
+        `${label} shows one age in its surface and another in its wear`,
+        `${label} was meant to be found by someone paying attention, not someone hurrying`
       ])
     }, extra);
   };
   if(feats.includes('D')) add('door','the door',{
     hiddenText: pick(rr, ['someone scratched a warning near the hinge', 'the frame has been marked by repeated use', 'the lock side shows cleaner wear than the boards']),
+    deeperText: pick(rr, ['the grain around the latch is darkened by old hands and newer fear', 'the door has been opened more often than the room beyond should allow', 'someone once trusted this door enough to stand with their back to it']),
     opened:false
   });
   if(feats.includes('C')) add('chest','the chest',{
     hiddenText: pick(rr, ['the lid has been touched more recently than the room', 'the iron banding was repaired with mismatched rivets', 'there are pry marks older than the dust']),
+    deeperText: pick(rr, ['the chest was hidden in plain sight because the room itself was meant to distract from it', 'the lock was replaced without changing the age of the wood around it', 'whatever was kept here mattered less than who was meant to find it']),
     looted:false
   });
   if(feats.includes('W')) add('water','the water',{
     hiddenText: pick(rr, ['the surface is still except for one wrong ripple', 'a metallic taste hangs in the air above it', 'silt gathers around something not quite natural']),
+    deeperText: pick(rr, ['the water keeps shape longer than water should', 'something beneath it disturbs the surface only after you stop looking directly at it', 'the pool reflects the room correctly but the light incorrectly']),
     tested:false
   });
   if(feats.includes('X')) add('rubble','the rubble',{
     hiddenText: pick(rr, ['small stones have shifted more recently than the larger ones', 'the break line suggests outward force', 'there is a pocket of cleaner space beneath one slab']),
+    deeperText: pick(rr, ['the collapse happened in layers, and one layer does not belong to the others', 'someone searched this rubble before you and did not finish', 'what broke here tried to get out, not in']),
     cleared:false
   });
   if(feats.includes('T')) add('trap','the trap',{
     hiddenText: pick(rr, ['the danger is in the approach rather than the center', 'the floor is fractionally too regular here', 'something meant to be stepped around was meant to be found late']),
+    deeperText: pick(rr, ['the trap protects fear more than treasure', 'it was reset by hands that knew exactly where not to step', 'its maker expected familiarity to become carelessness']),
     disarmed:false
   });
   if(feats.includes('^')) add('shrine','the shrine',{
     hiddenText: pick(rr, ['the offering marks are newer than the stone', 'someone approached it with fear rather than devotion', 'what was prayed for here was survival, not grace']),
+    deeperText: pick(rr, ['the shrine was not abandoned; it was repurposed by desperation', 'faith lingered here longest in the scratches left by fingernails and coins', 'someone asked this shrine for permission instead of blessing']),
     blessed:false
   });
   if(feats.includes('k')) add('key','the key',{
     hiddenText: pick(rr, ['it was placed to be found by the right kind of desperate person', 'the metal catches light too eagerly for this room', 'it matters more than its size suggests']),
+    deeperText: pick(rr, ['the key belongs to a lock that was feared, not merely used', 'it was left where someone could choose to notice it, not stumble upon it', 'the key looks ordinary only if you refuse to think about who would leave it here']),
     taken:false
   });
   if(feats.includes('S')) add('stairs','the stairs',{
     hiddenText: pick(rr, ['descent here feels chosen, not merely architectural', 'the last few steps are worn differently from the first', 'something heavy passed this way more than once']),
+    deeperText: pick(rr, ['the stairs were used in haste often enough to leave a rhythm in them', 'going down here feels less like travel and more like consent', 'the deepest wear lies where hesitation would naturally happen']),
     descended:false
   });
   if(feats.includes('n')) add('npc','the survivor',{
-    hiddenText: pick(rr, ['they have been deciding whether to speak first', 'their silence looks practiced rather than fearful', 'they know more about this room than they want to say']),
+    hiddenText: pick(rr, ['their caution was learned here, not brought in from outside', 'they are reading you almost as carefully as the room', 'they know one truth they wish they did not']),
+    deeperText: pick(rr, ['they are deciding whether you are more dangerous than what lives deeper in the dungeon', 'they are not guarding themselves from you alone but from what hearing you might cause', 'they have already lied to survive here and will do it again if needed']),
     talked:false
+  });
+  if(feats.includes('E')) add('enemy','the lurking threat',{
+    hiddenText: pick(rr, ['it waits where the room naturally wants your attention elsewhere', 'it knows the shape of this room better than you do', 'it moves like something that learned patience from stone']),
+    deeperText: pick(rr, ['it is using the room as part of its body language', 'it expects the room to assist it', 'it has survived here by choosing the wrong-looking angle every time']),
+    blooded:false
   });
   run.roomState[room.id] = rs;
   return rs;
-}
-function addRoomFact(room, fact){
-  if(!room || !fact) return;
-  const rs = ensureRoomState(room);
-  if(!rs.facts.includes(fact)) rs.facts.push(fact);
-  addFactOnce(`${room.name}: ${fact}`);
 }
 function nearbyTargetContext(intent, maxDist=3){
   const target = (intent?.target||'').toLowerCase();
@@ -1202,6 +1233,77 @@ function nearbyTargetContext(intent, maxDist=3){
   if(intent?.type==='open') return nearby.find(n=>n.kind==='door' || n.kind==='chest') || null;
   return nearby[0] || null;
 }
+function rememberObjectAction(obj, verb){
+  if(!obj) return;
+  obj.history = obj.history || [];
+  if(verb) obj.history.push(verb);
+  if(obj.history.length>8) obj.history = obj.history.slice(-8);
+}
+function deepenObjectReveal(room, rs, obj){
+  if(!obj) return {text:'', fact:''};
+  obj.revealLevel = (obj.revealLevel||0) + 1;
+  obj.inspected = true;
+  let text = '';
+  let fact = '';
+  if(obj.revealLevel===1){
+    text = obj.hiddenText || obj.hiddenHint || '';
+    fact = `${obj.label} revealed that ${text}`;
+  }else if(obj.revealLevel===2){
+    text = obj.deeperText || obj.hiddenHint || '';
+    fact = `${obj.label} suggested that ${text}`;
+  }else{
+    text = obj.hiddenHint || obj.deeperText || obj.hiddenText || '';
+    fact = `${obj.label} now feels exhausted of easy secrets, but still carries ${text}`;
+  }
+  if(fact) addRoomFact(room, fact);
+  return {text, fact};
+}
+function deepenRoomReveal(room, rs){
+  rs.revealLevel = (rs.revealLevel||0) + 1;
+  let text = '';
+  if(rs.revealLevel===1){
+    rs.hiddenDetailFound = true;
+    text = rs.hiddenDetail;
+  }else if(rs.revealLevel===2){
+    text = rs.deeperDetail || rs.hiddenDetail;
+  }else{
+    text = pick(rngFactory(state.seed + room.id*911 + rs.revealLevel), [
+      `the room's earlier truths still point back toward ${rs.hiddenDetail}`,
+      `the place keeps circling the same quiet message: ${rs.hiddenDetail}`,
+      `you do not find a new secret so much as a deeper angle on the old one`
+    ]);
+  }
+  if(text) addRoomFact(room, text);
+  return text;
+}
+function narrationFocusFromIntent(intent, targetKind, rawText=''){
+  const raw = (rawText||'').toLowerCase();
+  if(/smell|scent|odor/.test(raw)) return 'smell';
+  if(/sound|listen|hear/.test(raw) || intent.type==='listen') return 'sound';
+  if(/touch|feel|finger|hand/.test(raw)) return 'touch';
+  if(intent.type==='talk') return 'face';
+  if(intent.type==='attack') return 'motion';
+  if(targetKind==='water') return 'reflection';
+  if(targetKind==='rubble') return 'texture';
+  if(targetKind==='door') return 'seam';
+  if(targetKind==='shrine') return 'posture';
+  return 'detail';
+}
+function descriptiveLead(room, rs, focus){
+  const leads = {
+    smell: `The room answers first through ${rs.smells.join(' and ')}.`,
+    sound: `Holding still long enough changes what the room sounds like.`,
+    touch: `Your hands learn faster than your eyes here.`,
+    face: `The first answer comes from posture rather than words.`,
+    motion: `The room changes as soon as violence enters it.`,
+    reflection: `What matters about the water is not its surface but what the surface refuses to do.`,
+    texture: `Broken things tell on themselves through their edges.`,
+    seam: `The truth of the door lives in its edges, not its center.`,
+    posture: `Shrines judge posture before belief.`,
+    detail: `Attention pays for itself here.`
+  };
+  return leads[focus] || leads.detail;
+}
 function roomAtmosphereLine(room, rs){
   const mood = [rs.sounds[0], rs.smells[0], rs.surfaces[0]].filter(Boolean);
   return mood.length ? `The room answers with ${mood.join(', ')}.` : '';
@@ -1214,126 +1316,137 @@ function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
   const obj = rs.interactables[targetKind] || null;
   const pulse = targetCtx ? {x:targetCtx.x, y:targetCtx.y, kind: targetKind==='enemy' ? 'enemy' : (targetKind==='chest' || targetKind==='key' ? 'loot' : 'generic')} : {x:state.player.x,y:state.player.y,kind:'generic'};
   const outcomeKind = baseRoll>=15 ? 'good' : baseRoll<=6 ? 'bad' : 'sys';
-  const atm = roomAtmosphereLine(room, rs);
-  const lines = [];
+  const focus = narrationFocusFromIntent(intent, targetKind, rawText);
+  const lines = [descriptiveLead(room, rs, focus)];
   let changed = false;
+  const metaLabel = `${(intent.type||'Interact').replace(/^./,m=>m.toUpperCase())} · ${baseRoll}`;
+  const raw = (rawText||'').toLowerCase();
+  const practical = /careful|quiet|slow|carefully|gently|steadily/.test(raw);
+  const brutal = /smash|kick|force|rip|tear|shove|one punch|one-punch/.test(raw);
 
-  const revealObj = ()=>{
-    if(obj && !obj.inspected){
-      obj.inspected = true;
-      if(obj.hiddenText) addRoomFact(room, `${obj.label} revealed that ${obj.hiddenText}`);
-      changed = true;
-    }
+  rememberObjectAction(obj, intent.type);
+  const deepenObj = ()=> deepenObjectReveal(room, rs, obj);
+  const deepenRoom = ()=> deepenRoomReveal(room, rs);
+  const sayAtmosphere = ()=>{
+    const line = roomAtmosphereLine(room, rs);
+    if(line) lines.push(line);
   };
-  const revealRoom = ()=>{
-    if(!rs.hiddenDetailFound){
-      rs.hiddenDetailFound = true;
-      addRoomFact(room, rs.hiddenDetail);
-      changed = true;
-    }
+  const rewardItem = (item)=>{
+    gainItem(item);
+    changed = true;
   };
 
   if(intent.type==='inspect'){
-    if(targetKind==='door' && obj){
-      revealObj();
-      lines.push(`You study the door instead of merely looking at it. ${obj.hiddenText}.`);
-      if(baseRoll>=14 && !state.flags.innerGateOpen && (hasItem('Iron Key') || hasItem('Saint Key'))){
-        lines.push('The lock shape answers to a key you already carry.');
+    if(obj){
+      const reveal = deepenObj();
+      if(targetKind==='door'){
+        lines.push(`You study the door like a problem someone else left unfinished. ${reveal.text}`);
+        if(baseRoll>=14 && (hasItem('Iron Key') || hasItem('Saint Key'))) lines.push('Something in the lock profile answers to a key already on your person.');
+      }else if(targetKind==='rubble'){
+        lines.push(`You crouch over the rubble and read the collapse through its edges. ${reveal.text}`);
+        if(baseRoll>=13 && !hasItem('Loose Stone')){
+          rewardItem({name:'Loose Stone', qty:1, desc:'A useful shard lifted from the collapse.'});
+          lines.push('One clean piece frees itself well enough to keep.');
+        }
+      }else if(targetKind==='water'){
+        lines.push(`You watch the water until it stops pretending to be scenery. ${reveal.text}`);
+        if(baseRoll>=14) lines.push('There is a second rhythm in the surface, faint but not imagined.');
+      }else if(targetKind==='chest'){
+        lines.push(`The chest gives up detail grudgingly. ${reveal.text}`);
+      }else if(targetKind==='trap'){
+        lines.push(`The trap resolves only because you agreed to look slowly. ${reveal.text}`);
+      }else if(targetKind==='shrine'){
+        lines.push(`You give the shrine the kind of attention fear deserves. ${reveal.text}`);
+      }else if(targetKind==='npc'){
+        const npc = nearbyEntities('npc',3)[0];
+        lines.push(`${npc ? npc.name : 'The survivor'} notices that you are reading them back. ${reveal.text}`);
+      }else if(targetKind==='enemy'){
+        const enemy = nearbyEntities('hostile',3)[0];
+        lines.push(`You study ${enemy ? enemy.name : 'the threat'} instead of merely tracking it. ${reveal.text}`);
+      }else{
+        lines.push(`You focus on ${obj.label}. ${reveal.text}`);
       }
-    }else if(targetKind==='rubble' && obj){
-      revealObj();
-      lines.push(`You crouch at the rubble and follow the break line with your fingertips. ${obj.hiddenText}.`);
-      if(baseRoll>=13 && !hasItem('Loose Stone')){
-        gainItem({name:'Loose Stone', qty:1, desc:'A fist-sized shard broken free from the collapse.'});
-        lines.push('One useful stone comes loose cleanly enough to pocket.');
-        changed = true;
-      }
-    }else if(targetKind==='water' && obj){
-      revealObj();
-      lines.push(`You watch the water until it stops pretending to be ordinary. ${obj.hiddenText}.`);
-      if(baseRoll>=14) lines.push('You catch the suggestion of a shape beneath the surface before it can be called imagination.');
-    }else if(targetKind==='chest' && obj){
-      revealObj();
-      lines.push(`The chest tells on itself under close attention. ${obj.hiddenText}.`);
-    }else if(targetKind==='trap' && obj){
-      revealObj();
-      lines.push(`The trap resolves out of the floor only because you made yourself look slowly. ${obj.hiddenText}.`);
-    }else if(targetKind==='shrine' && obj){
-      revealObj();
-      lines.push(`You give the shrine the kind of attention fear deserves. ${obj.hiddenText}.`);
-    }else if(targetKind==='npc' && obj){
-      revealObj();
-      lines.push(`You read the survivor before they decide whether to read you back. ${obj.hiddenText}.`);
-    }else if(targetCtx){
-      lines.push(`You focus on ${targetCtx.label || targetCtx.kind}. It gives up detail a hurried person would have missed.`);
-      revealRoom();
     }else{
-      revealRoom();
-      lines.push(`You let your attention spread through ${room.name}. ${rs.hiddenDetail}.`);
+      lines.push(`You let your attention spread through ${room.name}. ${deepenRoom()}`);
     }
-  } else if(intent.type==='search'){
+    if(baseRoll<=5) lines.push('You learn something real, but not enough to make it comfortable.');
+    sayAtmosphere();
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='search'){
     if(targetKind==='corpse'){
-      lines.push('You search the body with the practical cruelty the dungeon teaches quickly.');
+      lines.push('You search the body with practical urgency rather than reverence.');
       if(baseRoll>=10 && !hasItem('Thin Wire')){
-        gainItem({name:'Thin Wire', qty:1, desc:'Useful for traps, bindings, or improvised mechanisms.'});
-        lines.push('A length of thin wire survives in a pocket that did not.');
-        changed = true;
+        rewardItem({name:'Thin Wire', qty:1, desc:'Thin salvaged wire useful for traps or bindings.'});
+        lines.push('A coil of thin wire survives in a pocket that did not.');
+      }else{
+        lines.push('The corpse gives up less than the smell around it promises.');
       }
-    } else if(targetKind==='rubble' && obj){
-      lines.push('You work your hands into the rubble and feel for order inside collapse.');
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='rubble' && obj){
+      const reveal = deepenObj();
+      lines.push('You work your hands into the rubble and search for pattern inside collapse.');
       if(baseRoll>=11 && !obj.cleared){
         obj.cleared = true;
-        if(targetCtx){
-          state.map.grid[targetCtx.y][targetCtx.x]='.';
-          lines.push('Clearing it opens a usable patch of ground and changes the room.');
-        } else {
-          lines.push('You clear a useful path through the worst of it.');
-        }
+        if(targetCtx) state.map.grid[targetCtx.y][targetCtx.x]='.';
+        lines.push('Clearing it changes the room physically, not just in your head.');
         changed = true;
+      }else if(baseRoll>=8){
+        lines.push(reveal.text);
       }else{
-        lines.push('You find dust, broken edges, and just enough pattern to know this collapse had a cause.');
+        lines.push('You come away with dust, scraped skin, and a better sense of what failed here.');
       }
-    } else if(targetKind==='chest' && obj){
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='chest' && obj){
       if(obj.looted){
         lines.push('The chest has already surrendered what it was going to surrender.');
       }else if(baseRoll>=12){
-        obj.looted = true;
         const loot = pick(rr, [
           {name:'Lamp Hook', desc:'A hooked iron piece useful for levering or hanging weight.'},
           {name:'Saint Thread', desc:'A waxed cord once tied around a relic.'},
           {name:'Mire Salt', desc:'A pinch of coarse salt packed against corruption.'}
         ]);
-        gainItem({...loot, qty:1});
+        obj.looted = true;
+        rewardItem({...loot, qty:1});
         lines.push(`You search the chest thoroughly enough to find ${loot.name}.`);
-        changed = true;
       }else{
-        lines.push('You turn up splinters, dust, and the feeling that you searched too quickly.');
+        lines.push('You find splinters, dust, and evidence that someone else once searched faster than you are now.');
       }
-    } else {
-      lines.push(`You search the immediate space rather than the whole world. ${pick(rr, [
-        'It answers with dust and a single clue.',
-        'The room gives up a detail instead of a prize.',
-        'You find evidence of use, not comfort.'
-      ])}`);
-      revealRoom();
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
     }
-  } else if(intent.type==='open'){
+    lines.push(`You search the immediate space instead of the whole world. ${deepenRoom()}`);
+    sayAtmosphere();
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='open'){
     if(targetKind==='door' && targetCtx){
+      const reveal = obj ? deepenObj() : {text:''};
       if(state.flags.innerGateOpen || state.map.grid[targetCtx.y][targetCtx.x]==='O'){
-        lines.push('The way is already open.');
+        lines.push('The way is already open enough to accept you.');
       }else if(hasItem('Iron Key') || hasItem('Saint Key') || baseRoll>=14){
         state.flags.innerGateOpen = true;
         state.map.grid[targetCtx.y][targetCtx.x]='O';
         if(obj) obj.opened = true;
-        lines.push('The door yields, not because it is kind, but because something about your timing was right.');
+        lines.push(practical
+          ? 'You open the door without giving it more noise than necessary.'
+          : 'The door yields with the weary complaint of something that expected to matter longer.');
         changed = true;
       }else{
-        lines.push('The door refuses you and teaches you where the resistance really is.');
-        revealObj();
+        lines.push(`The door refuses you. ${reveal.text || 'Its resistance teaches you where the real problem is.'}`);
       }
-    } else if(targetKind==='chest' && obj){
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='chest' && obj){
       if(obj.looted){
-        lines.push('The chest is open enough already. There is no second generosity in it.');
+        lines.push('The chest is already spent.');
       }else if(baseRoll>=11){
         obj.looted = true;
         const loot = pick(rr, [
@@ -1341,98 +1454,173 @@ function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
           {name:'Tallow Stub', desc:'Poor light, but honest light.'},
           {name:'Bone Charm', desc:'A ward carved against being followed.'}
         ]);
-        gainItem({...loot, qty:1});
+        rewardItem({...loot, qty:1});
         if(loot.name==='Iron Key') state.flags.questKeyFound = true;
         lines.push(`The chest opens with a tired complaint. Inside waits ${loot.name}.`);
-        changed = true;
       }else{
-        lines.push('The lid shifts, then catches. Something in the chest prefers delay.');
+        lines.push('The lid shifts, then catches. Something about the chest prefers delay.');
       }
-    } else {
-      return null;
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
     }
-  } else if(intent.type==='talk'){
+    return null;
+  }
+
+  if(intent.type==='talk'){
     const npc = nearbyEntities('npc',3)[0];
     if(npc){
-      const npcObj = rs.interactables['npc'];
-      if(npcObj) npcObj.talked = true;
-      revealObj();
-      lines.push(`${npc.name} studies you before the first answer arrives. "${pick(rr, [
-        'Do not trust the first kindness this place offers.',
-        'If something speaks first, let it hear a lie.',
-        'The rooms remember what gets said in them.'
-      ])}"`);
+      const reveal = obj ? deepenObj() : {text:''};
+      lines.push(`${npc.name} studies you before the first answer arrives.`);
       if(baseRoll>=12){
-        lines.push(`After a pause, ${npc.name} gives you something real: ${npc.clue || pick(rr, state.theme.truths)}`);
-        addRoomFact(room, `${npc.name} warned you to distrust the obvious shape of the place`);
+        const clue = npc.clue || pick(rr, state.theme.truths);
+        lines.push(`"${pick(rr, [
+          'Do not trust the first kindness this place offers.',
+          'If something speaks first, let it hear a lie.',
+          'The rooms remember what gets said in them.',
+          'The obvious path is the one the dungeon prepared for you.'
+        ])}"`);
+        lines.push(`Then, quieter: "${clue}"`);
+        addRoomFact(room, `${npc.name} gave you a warning that felt practiced`);
         changed = true;
+      }else{
+        lines.push(`"${pick(rr, [
+          'Ask a smaller question if you want a truer answer.',
+          'You are loud for someone still alive.',
+          'The room is listening harder than I am.'
+        ])}"`);
       }
-    } else {
-      lines.push('You speak into the room and the room proves it was listening, even if nothing human answers.');
-      revealRoom();
+      if(reveal.text && baseRoll>=10) lines.push(reveal.text);
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
     }
-  } else if(intent.type==='attack'){
+    lines.push('You speak into the room and the room proves it was listening, even if nothing human answers.');
+    lines.push(deepenRoom());
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='attack'){
     const enemy = nearbyEntities('hostile',3)[0];
     if(enemy){
-      const exactWild = /one punch|one-punch|instantly kill|kill outright/.test((rawText||'').toLowerCase());
+      const exactWild = /one punch|one-punch|instantly kill|kill outright|split.*in half/.test(raw);
       if(exactWild && baseRoll>=18){
         enemy.alive = false;
         if(state.map.grid[enemy.y]?.[enemy.x]==='E') state.map.grid[enemy.y][enemy.x]='.';
         lines.push(`You commit to the absurd version of the strike and, against good judgment, it works. ${enemy.name} drops as if the room forgot to hold it up.`);
         changed = true;
       }else if(baseRoll>=13){
-        enemy.hp -= 2;
+        enemy.hp -= brutal ? 3 : 2;
         lines.push(`Your attack lands cleanly enough to change the room. ${enemy.name} gives ground under it.`);
         if(enemy.hp<=0){
           enemy.alive = false;
           if(state.map.grid[enemy.y]?.[enemy.x]==='E') state.map.grid[enemy.y][enemy.x]='.';
           lines.push(`${enemy.name} folds into the floor and stays there.`);
+          addRoomFact(room, `${enemy.name} died here`);
+        }else{
+          lines.push(`${enemy.name} is still in it, but no longer on its own terms.`);
         }
         changed = true;
       }else{
         lines.push(`You go for ${enemy.name}, but the room makes your angle worse than your courage.`);
+        const reveal = obj ? deepenObj() : null;
+        if(reveal?.text) lines.push(reveal.text);
       }
-    } else {
-      return null;
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse:{x:enemy.x,y:enemy.y,kind:'enemy'}};
     }
-  } else if(intent.type==='use'){
+    return null;
+  }
+
+  if(intent.type==='use'){
     if(targetKind==='water' && obj){
+      const reveal = deepenObj();
       if(baseRoll>=12){
-        lines.push('You test the water carefully enough to learn without fully trusting it.');
         obj.tested = true;
+        lines.push('You test the water carefully enough to learn from it without surrendering to it.');
+        lines.push(reveal.text);
         addRoomFact(room, 'the water can be touched safely for a moment, but not trusted');
         changed = true;
       }else{
         lines.push('The water answers your touch with a cold that feels too deliberate.');
       }
-    } else if(targetKind==='shrine' && obj){
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='shrine' && obj){
+      const reveal = deepenObj();
       if(baseRoll>=12 && !obj.blessed){
         obj.blessed = true;
         state.player.ward += 1;
         lines.push('The shrine does not forgive the room, but it does place a thin ward over you.');
+        lines.push(reveal.text);
         changed = true;
       }else{
         lines.push('Whatever grace lives here has already been thinned by repetition.');
       }
-    } else {
-      lines.push('You use what you have against what is here and get back a smaller, stranger truth.');
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
     }
-  } else if(intent.type==='listen'){
-    lines.push(`You hold still long enough for ${room.name} to admit it is not empty. ${rs.sounds.join(' and ')}.`);
-    if(baseRoll>=13){
-      revealRoom();
-      lines.push(`Under that, there is another note: ${rs.hiddenDetail}.`);
+    if(targetKind==='door' && /wedge|brace|jam/.test(raw) && hasItem('Loose Stone')){
+      lines.push('You set the loose stone where the door will have to argue with it later.');
+      addRoomFact(room, 'the door has been roughly wedged');
+      changed = true;
+      return {kind:'sys', text:lines.join(' '), meta:`Use · ${baseRoll}`, changed, pulse};
     }
-  } else if(intent.type==='interact'){
-    revealRoom();
-    lines.push(`You do something the room did not script for you, and it answers honestly enough to matter. ${rs.hiddenDetail}.`);
-  } else {
-    return null;
+    lines.push('You use what you have against what is here and get back a smaller, stranger truth.');
+    lines.push(deepenRoom());
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
   }
 
-  if(atm) lines.push(atm);
-  const meta = `${intent.type[0].toUpperCase()+intent.type.slice(1)} · ${baseRoll}`;
-  return {kind: outcomeKind, text: lines.join(' '), meta, changed, pulse};
+  if(intent.type==='listen'){
+    lines.push(`You hold still long enough for ${room.name} to admit it is not empty.`);
+    lines.push(`${rs.sounds.join(' and ')}.`);
+    if(baseRoll>=13){
+      lines.push(pick(rr, [
+        'The strongest note seems to come from deeper in.',
+        'Something on the far side of the room is listening back.',
+        'The room gives you the sense of a patient mechanism rather than a random ruin.'
+      ]));
+      addRoomFact(room, 'the room carries sound in a deliberate way');
+      changed = true;
+    }
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='interact'){
+    if(targetKind==='rubble' && /gather|pocket|collect|take/.test(raw)){
+      const reveal = obj ? deepenObj() : {text:''};
+      if(baseRoll>=8){
+        rewardItem({name:'Loose Stone', qty:1 + (baseRoll>=15 ? 1 : 0), desc:'Broken masonry useful as a wedge or distraction.'});
+        lines.push('You gather the most useful pieces of rubble rather than every worthless fragment.');
+        if(reveal.text) lines.push(reveal.text);
+      }else{
+        lines.push('You pocket stone, dust, and the sense that this collapse has already been searched once.');
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+    }
+    if(targetKind==='rubble' && /climb/.test(raw)){
+      const reveal = obj ? deepenObj() : {text:''};
+      lines.push('You climb the rubble carefully enough to borrow its height without marrying its instability.');
+      if(baseRoll>=11){
+        addRoomFact(room, 'the rubble offers a higher angle over the room');
+        lines.push('From up there, the room looks arranged rather than ruined.');
+        if(reveal.text) lines.push(reveal.text);
+        changed = true;
+      }else{
+        lines.push('The rubble shifts just enough to remind you that height is never free.');
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+    }
+    if(obj){
+      const reveal = deepenObj();
+      lines.push(`You choose a direct way of dealing with ${obj.label} rather than a tidy one. ${reveal.text}`);
+      if(baseRoll>=14 && targetKind==='rubble' && targetCtx){
+        state.map.grid[targetCtx.y][targetCtx.x]='.';
+        lines.push('Your interference changes the shape of the room in a way future turns will have to respect.');
+        changed = true;
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+    }
+    lines.push(`Suso answers the exact shape of what you said rather than flattening it into a generic verb. ${deepenRoom()}`);
+    return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+  }
+
+  return null;
 }
 function revealAround(run,radius=6){
   run.visible = Array.from({length:run.map.h},()=>Array(run.map.w).fill(false));
@@ -2915,227 +3103,311 @@ function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
   const obj = rs.interactables[targetKind] || null;
   const pulse = targetCtx ? {x:targetCtx.x, y:targetCtx.y, kind: targetKind==='enemy' ? 'enemy' : (targetKind==='chest' || targetKind==='key' ? 'loot' : 'generic')} : {x:state.player.x,y:state.player.y,kind:'generic'};
   const outcomeKind = baseRoll>=15 ? 'good' : baseRoll<=6 ? 'bad' : 'sys';
-  const lines = [];
-  const style = interactionFlavor(rawText);
+  const focus = narrationFocusFromIntent(intent, targetKind, rawText);
+  const lines = [descriptiveLead(room, rs, focus)];
   let changed = false;
+  const metaLabel = `${(intent.type||'Interact').replace(/^./,m=>m.toUpperCase())} · ${baseRoll}`;
+  const raw = (rawText||'').toLowerCase();
+  const practical = /careful|quiet|slow|carefully|gently|steadily/.test(raw);
+  const brutal = /smash|kick|force|rip|tear|shove|one punch|one-punch/.test(raw);
 
-  const revealObj = ()=>{
-    if(obj){
-      obj.inspected = true;
-      const det = layeredObjectReveal(room, rs, obj, rr);
-      changed = true;
-      return det;
-    }
-    return null;
+  rememberObjectAction(obj, intent.type);
+  const deepenObj = ()=> deepenObjectReveal(room, rs, obj);
+  const deepenRoom = ()=> deepenRoomReveal(room, rs);
+  const sayAtmosphere = ()=>{
+    const line = roomAtmosphereLine(room, rs);
+    if(line) lines.push(line);
   };
-  const revealRoom = ()=>{
-    if(!rs.hiddenDetailFound){
-      rs.hiddenDetailFound = true;
-      addRoomFact(room, rs.hiddenDetail);
-      changed = true;
-    }
-    return rs.hiddenDetail;
+  const rewardItem = (item)=>{
+    gainItem(item);
+    changed = true;
   };
-
-  lines.push(narrativeFocusLine(room, rs, targetKind, rr, rawText));
 
   if(intent.type==='inspect'){
-    if(targetKind==='door' && obj){
-      lines.push('You study the door as a document instead of merely treating it as an obstacle.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-      if(baseRoll>=14 && !state.flags.innerGateOpen && (hasItem('Iron Key') || hasItem('Saint Key'))) lines.push('The lock shape quietly answers to a key you already carry.');
-    }else if(targetKind==='rubble' && obj){
-      lines.push('You trace the break line through the rubble with your fingertips instead of your impatience.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-      if(baseRoll>=13 && !hasItem('Loose Stone')){
-        gainItem({name:'Loose Stone', qty:1, desc:'A fist-sized shard broken free from the collapse.'});
-        lines.push('One useful shard comes loose cleanly enough to pocket.');
-        changed = true;
-      }
-    }else if(targetKind==='water' && obj){
-      lines.push('You watch the water until it stops pretending to be ordinary.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-      if(baseRoll>=14) lines.push('For a blink, the surface gives you the suggestion of a shape rather than a reflection.');
-    }else if(targetKind==='chest' && obj){
-      lines.push('You read the chest by its scars before you touch the latch.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-    }else if(targetKind==='trap' && obj){
-      lines.push('You let the floor resolve into intention instead of random stone.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-    }else if(targetKind==='shrine' && obj){
-      lines.push('You inspect the shrine with the kind of attention that respects both faith and fraud.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-    }else if(targetKind==='enemy'){
-      const e = targetCtx && findEntityAt(targetCtx.x, targetCtx.y);
-      if(e) lines.push(`You study ${e.name} for tells instead of legend. It carries itself like something that learned patience before hunger.`);
-      if(baseRoll>=13) lines.push('You catch a weakness in its rhythm: once it commits, it commits hard.');
-    }else{
-      lines.push(describeRoom(state, room, false));
-      const d=revealRoom(); if(d) lines.push(d + '.');
-    }
-  }else if(intent.type==='search'){
-    if(targetKind==='corpse'){
-      lines.push('You search the dead with the honesty that the living rarely earn.');
-      if(baseRoll>=11){
-        const item = pick(rr, [
-          {name:'Bone Needle', qty:1, desc:'Crude but sharp enough to matter.'},
-          {name:'Thin Wire', qty:1, desc:'Useful for traps, locks, or spite.'},
-          {name:'Old Coin', qty:1, desc:'Stamped with a face worn smooth by years.'}
-        ]);
-        gainItem(item);
-        lines.push(`The body yields ${item.name}.`);
-        changed = true;
-      }else lines.push('The body tells you more about its end than it gives you in valuables.');
-      revealRoom();
-    }else if(targetKind==='rubble' && obj){
-      lines.push('You search the rubble by weight, gap, and silence.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-      if(baseRoll>=12){
-        gainItem({name:'Loose Stone', qty:1, desc:'A stone worth keeping for leverage or throwing.'});
-        lines.push('You come away with a useful stone and the certainty that something once hid beneath this collapse.');
-        changed = true;
-      }
-    }else{
-      lines.push('You search with hands, ears, and the patience that keeps people alive underground.');
-      if(baseRoll>=12){
-        const loot=pick(rr,[
-          {name:'Oil Flask', desc:'Enough oil to brighten a torch or appease a mechanism.'},
-          {name:'Bone Charm', desc:'A grave-token that seems to blunt misfortune.'},
-          {name:'Rope Loop', desc:'Short but strong, useful for hauling or bracing.'},
-          {name:'Small Tonic', desc:'A bitter restorative.'}
-        ]);
-        gainItem(loot);
-        lines.push(`The room reluctantly gives you ${loot.name}.`);
-        changed = true;
-      }else{
-        const d=revealRoom(); if(d) lines.push(d + '.');
-      }
-    }
-  }else if(intent.type==='open'){
-    if(targetKind==='door' && obj){
-      lines.push(style.forceful ? 'You put your weight into the door and dare it to remain only a barrier.' : 'You work the door like it might answer to manners before force.');
-      if(baseRoll>=11 || hasItem('Iron Key') || hasItem('Saint Key')){
-        obj.opened = true;
-        if(targetCtx) state.map.grid[targetCtx.y][targetCtx.x] = 'O';
-        state.flags.innerGateOpen = true;
-        lines.push('The seal gives way, and the room beyond leaks colder air into this one.');
-        changed = true;
-      }else{
-        const d=revealObj(); if(d) lines.push(d + '.');
-      }
-    }else if(targetKind==='chest' && obj){
-      lines.push(style.forceful ? 'You attack the chest like a grudge with hinges.' : 'You test the chest with more attention than trust.');
-      if(baseRoll>=12){
-        obj.looted = true;
-        const item = pick(rr,[
-          {name:'Iron Key', qty:1, desc:'A rust-dark key with stubborn teeth.'},
-          {name:'Saint Key', qty:1, desc:'A pale key etched with a warding line.'},
-          {name:'Small Tonic', qty:1, desc:'A bitter restorative.'}
-        ]);
-        gainItem(item);
-        lines.push(`It opens with a complaint and yields ${item.name}.`);
-        changed = true;
-      }else{
-        const d=revealObj(); if(d) lines.push(d + '.');
-      }
-    }else return null;
-  }else if(intent.type==='talk'){
-    const npc = nearbyEntities('npc',3)[0];
-    if(npc){
-      lines.push(`You address ${npc.name} as though the room might be listening harder than they are.`);
-      if(style.deceptive) lines.push('You are already thinking about the lie you might need before the truth becomes expensive.');
-      if(baseRoll>=13){
-        const clue = pick(rr, [
-          'They tell you not to trust the first silence after any bell.',
-          'They whisper that one of the doors here was meant to keep something in, not keep you out.',
-          'They insist the room changes character after anyone prays in it.'
-        ]);
-        lines.push(clue);
-        addRoomFact(room, clue);
-        changed = true;
-      }else if(baseRoll<=5){
-        lines.push('They answer cautiously, giving you posture before substance.');
-      }else{
-        lines.push('You get enough tone to know fear lives here longer than people do.');
-      }
-    }else{
-      lines.push('Your voice enters the room and comes back changed by stone.');
-      const d=revealRoom(); if(d) lines.push(d + '.');
-    }
-  }else if(intent.type==='attack'){
-    if(targetKind==='enemy'){
-      const e = nearbyEntities('hostile',3)[0];
-      if(e){
-        lines.push(style.forceful ? `You go at ${e.name} like strength is a verdict.` : `You commit to violence before ${e.name} can choose the distance.`);
-        if(baseRoll>=15){
-          e.hp -= 2;
-          lines.push(`The hit lands hard enough to change the room's confidence. ${e.name} reels.`);
-          if(e.hp<=0){ e.alive=false; lines.push(`${e.name} folds out of the fight and does not rise.`); changed = true; }
-        }else if(baseRoll>=9){
-          e.hp -= 1;
-          lines.push(`You hurt ${e.name}, but not so completely that it stops mattering.`);
-          if(e.hp<=0){ e.alive=false; lines.push(`${e.name} finally gives out.`); changed = true; }
-        }else{
-          lines.push(`You force a reaction but not control. ${e.name} learns your reach while you learn its impatience.`);
+    if(obj){
+      const reveal = deepenObj();
+      if(targetKind==='door'){
+        lines.push(`You study the door like a problem someone else left unfinished. ${reveal.text}`);
+        if(baseRoll>=14 && (hasItem('Iron Key') || hasItem('Saint Key'))) lines.push('Something in the lock profile answers to a key already on your person.');
+      }else if(targetKind==='rubble'){
+        lines.push(`You crouch over the rubble and read the collapse through its edges. ${reveal.text}`);
+        if(baseRoll>=13 && !hasItem('Loose Stone')){
+          rewardItem({name:'Loose Stone', qty:1, desc:'A useful shard lifted from the collapse.'});
+          lines.push('One clean piece frees itself well enough to keep.');
         }
-      }else return null;
-    }else{
-      lines.push('You throw force into the room, and the room throws consequence back.');
-      const d=revealRoom(); if(d) lines.push(d + '.');
-    }
-  }else if(intent.type==='use'){
-    if(targetKind==='water' && obj){
-      lines.push(style.reverent ? 'You treat the water like an answer before it has earned that faith.' : 'You test the water with more nerve than certainty.');
-      if(baseRoll>=12){
-        lines.push('It does not harm you immediately, which is not the same as trust.');
-        const d=revealObj(); if(d) lines.push(d + '.');
+      }else if(targetKind==='water'){
+        lines.push(`You watch the water until it stops pretending to be scenery. ${reveal.text}`);
+        if(baseRoll>=14) lines.push('There is a second rhythm in the surface, faint but not imagined.');
+      }else if(targetKind==='chest'){
+        lines.push(`The chest gives up detail grudgingly. ${reveal.text}`);
+      }else if(targetKind==='trap'){
+        lines.push(`The trap resolves only because you agreed to look slowly. ${reveal.text}`);
+      }else if(targetKind==='shrine'){
+        lines.push(`You give the shrine the kind of attention fear deserves. ${reveal.text}`);
+      }else if(targetKind==='npc'){
+        const npc = nearbyEntities('npc',3)[0];
+        lines.push(`${npc ? npc.name : 'The survivor'} notices that you are reading them back. ${reveal.text}`);
+      }else if(targetKind==='enemy'){
+        const enemy = nearbyEntities('hostile',3)[0];
+        lines.push(`You study ${enemy ? enemy.name : 'the threat'} instead of merely tracking it. ${reveal.text}`);
       }else{
-        damagePlayer(1, 'The water leaves your body unconvinced.');
-        lines.push('Your mouth and stomach disagree with the choice almost at once.');
-      }
-    }else if(targetKind==='shrine' && obj){
-      lines.push('You bring yourself to the shrine as if posture still counts for anything here.');
-      const d=revealObj(); if(d) lines.push(d + '.');
-      if(baseRoll>=13 && !obj.blessed){
-        obj.blessed = true;
-        state.player.ward = (state.player.ward||0)+1;
-        lines.push('Something thin and protective settles over you. One small ward is yours now.');
-        changed = true;
+        lines.push(`You focus on ${obj.label}. ${reveal.text}`);
       }
     }else{
-      lines.push('You commit an action to the room and wait to see what it thinks that meant.');
-      const d=revealRoom(); if(d) lines.push(d + '.');
+      lines.push(`You let your attention spread through ${room.name}. ${deepenRoom()}`);
     }
-  }else if(intent.type==='listen'){
-    lines.push('You stop trying to impose meaning and let the room volunteer its own.');
-    if(rs.sounds && rs.sounds.length) lines.push(`What reaches you first is ${pick(rr, rs.sounds)}.`);
-    if(baseRoll>=12){
-      const d=revealRoom(); if(d) lines.push(d + '.');
-    }
-  }else{
-    if(targetKind==='rubble' && style.greedy){
-      lines.push('You gather from the collapse like the room owes you a handful of itself.');
-      gainItem({name:'Loose Stone', qty:1, desc:'A rough shard taken from the room.'});
-      changed = true;
-    }else{
-      lines.push('You make a choice the room was not built to ignore.');
-      const d = obj ? revealObj() : revealRoom();
-      if(d) lines.push(d + '.');
-    }
+    if(baseRoll<=5) lines.push('You learn something real, but not enough to make it comfortable.');
+    sayAtmosphere();
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
   }
 
-  if(baseRoll>=16) lines.push(pick(rr, [
-    'The room gives up more than you asked for.',
-    'Something hidden becomes willing to be found.',
-    'A second layer peels back under the pressure of attention.'
-  ]));
-  else if(baseRoll<=5) lines.push(pick(rr, [
-    'The place keeps some of itself back.',
-    'You learn something, but not without cost or uncertainty.',
-    'The room answers reluctantly and not without shifting against you.'
-  ]));
-  if(rs.facts.length && baseRoll>=10) lines.push(`What you know now changes the room: ${pick(rr, rs.facts)}.`);
-  return {kind: outcomeKind, text: lines.filter(Boolean).join(' '), meta: `${prettyRollLabel(intent, rawText)} · ${baseRoll}`, pulse, changed};
+  if(intent.type==='search'){
+    if(targetKind==='corpse'){
+      lines.push('You search the body with practical urgency rather than reverence.');
+      if(baseRoll>=10 && !hasItem('Thin Wire')){
+        rewardItem({name:'Thin Wire', qty:1, desc:'Thin salvaged wire useful for traps or bindings.'});
+        lines.push('A coil of thin wire survives in a pocket that did not.');
+      }else{
+        lines.push('The corpse gives up less than the smell around it promises.');
+      }
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='rubble' && obj){
+      const reveal = deepenObj();
+      lines.push('You work your hands into the rubble and search for pattern inside collapse.');
+      if(baseRoll>=11 && !obj.cleared){
+        obj.cleared = true;
+        if(targetCtx) state.map.grid[targetCtx.y][targetCtx.x]='.';
+        lines.push('Clearing it changes the room physically, not just in your head.');
+        changed = true;
+      }else if(baseRoll>=8){
+        lines.push(reveal.text);
+      }else{
+        lines.push('You come away with dust, scraped skin, and a better sense of what failed here.');
+      }
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='chest' && obj){
+      if(obj.looted){
+        lines.push('The chest has already surrendered what it was going to surrender.');
+      }else if(baseRoll>=12){
+        const loot = pick(rr, [
+          {name:'Lamp Hook', desc:'A hooked iron piece useful for levering or hanging weight.'},
+          {name:'Saint Thread', desc:'A waxed cord once tied around a relic.'},
+          {name:'Mire Salt', desc:'A pinch of coarse salt packed against corruption.'}
+        ]);
+        obj.looted = true;
+        rewardItem({...loot, qty:1});
+        lines.push(`You search the chest thoroughly enough to find ${loot.name}.`);
+      }else{
+        lines.push('You find splinters, dust, and evidence that someone else once searched faster than you are now.');
+      }
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    lines.push(`You search the immediate space instead of the whole world. ${deepenRoom()}`);
+    sayAtmosphere();
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='open'){
+    if(targetKind==='door' && targetCtx){
+      const reveal = obj ? deepenObj() : {text:''};
+      if(state.flags.innerGateOpen || state.map.grid[targetCtx.y][targetCtx.x]==='O'){
+        lines.push('The way is already open enough to accept you.');
+      }else if(hasItem('Iron Key') || hasItem('Saint Key') || baseRoll>=14){
+        state.flags.innerGateOpen = true;
+        state.map.grid[targetCtx.y][targetCtx.x]='O';
+        if(obj) obj.opened = true;
+        lines.push(practical
+          ? 'You open the door without giving it more noise than necessary.'
+          : 'The door yields with the weary complaint of something that expected to matter longer.');
+        changed = true;
+      }else{
+        lines.push(`The door refuses you. ${reveal.text || 'Its resistance teaches you where the real problem is.'}`);
+      }
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='chest' && obj){
+      if(obj.looted){
+        lines.push('The chest is already spent.');
+      }else if(baseRoll>=11){
+        obj.looted = true;
+        const loot = pick(rr, [
+          {name:'Iron Key', desc:'A cold key with a better memory than you want.'},
+          {name:'Tallow Stub', desc:'Poor light, but honest light.'},
+          {name:'Bone Charm', desc:'A ward carved against being followed.'}
+        ]);
+        rewardItem({...loot, qty:1});
+        if(loot.name==='Iron Key') state.flags.questKeyFound = true;
+        lines.push(`The chest opens with a tired complaint. Inside waits ${loot.name}.`);
+      }else{
+        lines.push('The lid shifts, then catches. Something about the chest prefers delay.');
+      }
+      sayAtmosphere();
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    return null;
+  }
+
+  if(intent.type==='talk'){
+    const npc = nearbyEntities('npc',3)[0];
+    if(npc){
+      const reveal = obj ? deepenObj() : {text:''};
+      lines.push(`${npc.name} studies you before the first answer arrives.`);
+      if(baseRoll>=12){
+        const clue = npc.clue || pick(rr, state.theme.truths);
+        lines.push(`"${pick(rr, [
+          'Do not trust the first kindness this place offers.',
+          'If something speaks first, let it hear a lie.',
+          'The rooms remember what gets said in them.',
+          'The obvious path is the one the dungeon prepared for you.'
+        ])}"`);
+        lines.push(`Then, quieter: "${clue}"`);
+        addRoomFact(room, `${npc.name} gave you a warning that felt practiced`);
+        changed = true;
+      }else{
+        lines.push(`"${pick(rr, [
+          'Ask a smaller question if you want a truer answer.',
+          'You are loud for someone still alive.',
+          'The room is listening harder than I am.'
+        ])}"`);
+      }
+      if(reveal.text && baseRoll>=10) lines.push(reveal.text);
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    lines.push('You speak into the room and the room proves it was listening, even if nothing human answers.');
+    lines.push(deepenRoom());
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='attack'){
+    const enemy = nearbyEntities('hostile',3)[0];
+    if(enemy){
+      const exactWild = /one punch|one-punch|instantly kill|kill outright|split.*in half/.test(raw);
+      if(exactWild && baseRoll>=18){
+        enemy.alive = false;
+        if(state.map.grid[enemy.y]?.[enemy.x]==='E') state.map.grid[enemy.y][enemy.x]='.';
+        lines.push(`You commit to the absurd version of the strike and, against good judgment, it works. ${enemy.name} drops as if the room forgot to hold it up.`);
+        changed = true;
+      }else if(baseRoll>=13){
+        enemy.hp -= brutal ? 3 : 2;
+        lines.push(`Your attack lands cleanly enough to change the room. ${enemy.name} gives ground under it.`);
+        if(enemy.hp<=0){
+          enemy.alive = false;
+          if(state.map.grid[enemy.y]?.[enemy.x]==='E') state.map.grid[enemy.y][enemy.x]='.';
+          lines.push(`${enemy.name} folds into the floor and stays there.`);
+          addRoomFact(room, `${enemy.name} died here`);
+        }else{
+          lines.push(`${enemy.name} is still in it, but no longer on its own terms.`);
+        }
+        changed = true;
+      }else{
+        lines.push(`You go for ${enemy.name}, but the room makes your angle worse than your courage.`);
+        const reveal = obj ? deepenObj() : null;
+        if(reveal?.text) lines.push(reveal.text);
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse:{x:enemy.x,y:enemy.y,kind:'enemy'}};
+    }
+    return null;
+  }
+
+  if(intent.type==='use'){
+    if(targetKind==='water' && obj){
+      const reveal = deepenObj();
+      if(baseRoll>=12){
+        obj.tested = true;
+        lines.push('You test the water carefully enough to learn from it without surrendering to it.');
+        lines.push(reveal.text);
+        addRoomFact(room, 'the water can be touched safely for a moment, but not trusted');
+        changed = true;
+      }else{
+        lines.push('The water answers your touch with a cold that feels too deliberate.');
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='shrine' && obj){
+      const reveal = deepenObj();
+      if(baseRoll>=12 && !obj.blessed){
+        obj.blessed = true;
+        state.player.ward += 1;
+        lines.push('The shrine does not forgive the room, but it does place a thin ward over you.');
+        lines.push(reveal.text);
+        changed = true;
+      }else{
+        lines.push('Whatever grace lives here has already been thinned by repetition.');
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+    }
+    if(targetKind==='door' && /wedge|brace|jam/.test(raw) && hasItem('Loose Stone')){
+      lines.push('You set the loose stone where the door will have to argue with it later.');
+      addRoomFact(room, 'the door has been roughly wedged');
+      changed = true;
+      return {kind:'sys', text:lines.join(' '), meta:`Use · ${baseRoll}`, changed, pulse};
+    }
+    lines.push('You use what you have against what is here and get back a smaller, stranger truth.');
+    lines.push(deepenRoom());
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='listen'){
+    lines.push(`You hold still long enough for ${room.name} to admit it is not empty.`);
+    lines.push(`${rs.sounds.join(' and ')}.`);
+    if(baseRoll>=13){
+      lines.push(pick(rr, [
+        'The strongest note seems to come from deeper in.',
+        'Something on the far side of the room is listening back.',
+        'The room gives you the sense of a patient mechanism rather than a random ruin.'
+      ]));
+      addRoomFact(room, 'the room carries sound in a deliberate way');
+      changed = true;
+    }
+    return {kind: outcomeKind, text: lines.join(' '), meta: metaLabel, changed, pulse};
+  }
+
+  if(intent.type==='interact'){
+    if(targetKind==='rubble' && /gather|pocket|collect|take/.test(raw)){
+      const reveal = obj ? deepenObj() : {text:''};
+      if(baseRoll>=8){
+        rewardItem({name:'Loose Stone', qty:1 + (baseRoll>=15 ? 1 : 0), desc:'Broken masonry useful as a wedge or distraction.'});
+        lines.push('You gather the most useful pieces of rubble rather than every worthless fragment.');
+        if(reveal.text) lines.push(reveal.text);
+      }else{
+        lines.push('You pocket stone, dust, and the sense that this collapse has already been searched once.');
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+    }
+    if(targetKind==='rubble' && /climb/.test(raw)){
+      const reveal = obj ? deepenObj() : {text:''};
+      lines.push('You climb the rubble carefully enough to borrow its height without marrying its instability.');
+      if(baseRoll>=11){
+        addRoomFact(room, 'the rubble offers a higher angle over the room');
+        lines.push('From up there, the room looks arranged rather than ruined.');
+        if(reveal.text) lines.push(reveal.text);
+        changed = true;
+      }else{
+        lines.push('The rubble shifts just enough to remind you that height is never free.');
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+    }
+    if(obj){
+      const reveal = deepenObj();
+      lines.push(`You choose a direct way of dealing with ${obj.label} rather than a tidy one. ${reveal.text}`);
+      if(baseRoll>=14 && targetKind==='rubble' && targetCtx){
+        state.map.grid[targetCtx.y][targetCtx.x]='.';
+        lines.push('Your interference changes the shape of the room in a way future turns will have to respect.');
+        changed = true;
+      }
+      return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+    }
+    lines.push(`Suso answers the exact shape of what you said rather than flattening it into a generic verb. ${deepenRoom()}`);
+    return {kind: outcomeKind, text: lines.join(' '), meta:`Interact · ${baseRoll}`, changed, pulse};
+  }
+
+  return null;
 }
 /* --- end Suso v7 local-depth overrides --- */
 
