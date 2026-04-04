@@ -2283,6 +2283,38 @@ function refreshAiFields(){
   if(els.aiModeHint) els.aiModeHint.textContent=aiModeHint(ai.enabled ? (ai.mode||'local') : 'local');
 }
 
+function centerMapOnPlayer(){
+  if(!state || !state.player || !els.mapStage) return;
+  const stageW = els.mapStage.clientWidth || 0;
+  const stageH = els.mapStage.clientHeight || 0;
+  const mapW = state.map.w * tileSize * mapZoom;
+  const mapH = state.map.h * tileSize * mapZoom;
+  const playerCx = (state.player.x * tileSize + tileSize/2) * mapZoom;
+  const playerCy = (state.player.y * tileSize + tileSize/2) * mapZoom;
+
+  let nextX = (stageW / 2) - playerCx;
+  let nextY = (stageH / 2) - playerCy;
+
+  if(mapW <= stageW){
+    nextX = (stageW - mapW) / 2;
+  }else{
+    const minX = stageW - mapW;
+    const maxX = 0;
+    nextX = Math.max(minX, Math.min(maxX, nextX));
+  }
+
+  if(mapH <= stageH){
+    nextY = (stageH - mapH) / 2;
+  }else{
+    const minY = stageH - mapH;
+    const maxY = 0;
+    nextY = Math.max(minY, Math.min(maxY, nextY));
+  }
+
+  mapPanX = Math.round(nextX);
+  mapPanY = Math.round(nextY);
+}
+
 function updateMapTransform(){
   mapCanvas.style.display=showAscii?'none':'block';
   els.asciiMap.style.display=showAscii?'block':'none';
@@ -2292,7 +2324,7 @@ function updateMapTransform(){
 }
 function startNewRun(profile){
   state=createRun(profile); els.onboard.style.display='none';
-  mapZoom=1; mapPanX=12; mapPanY=12; showAscii=false; refreshAiFields(); refreshUI();
+  mapZoom=1; mapPanX=12; mapPanY=12; showAscii=false; lastFollowPos=null; refreshAiFields(); refreshUI(); centerMapOnPlayer(); updateMapTransform();
 }
 
 function resolveAndClear(){
@@ -2312,9 +2344,9 @@ els.startRunBtn.onclick=()=>startNewRun({name:els.nameInput.value,title:els.titl
 els.loadFromModalBtn.onclick=()=>{ if(!loadGame()) startNewRun({name:els.nameInput.value,title:els.titleInput.value,tone:els.toneInput.value,risk:els.riskInput.value}); };
 els.tileModeBtn.onclick=()=>{ showAscii=false; updateMapTransform(); };
 els.asciiModeBtn.onclick=()=>{ showAscii=true; updateMapTransform(); };
-els.zoomOutBtn.onclick=()=>{ mapZoom=Math.max(.5, +(mapZoom-.1).toFixed(1)); updateMapTransform(); };
-els.zoomInBtn.onclick=()=>{ mapZoom=Math.min(4, +(mapZoom+.1).toFixed(1)); updateMapTransform(); };
-els.zoomResetBtn.onclick=()=>{ mapZoom=1; mapPanX=12; mapPanY=12; updateMapTransform(); };
+els.zoomOutBtn.onclick=()=>{ mapZoom=Math.max(.5, +(mapZoom-.1).toFixed(1)); centerMapOnPlayer(); updateMapTransform(); };
+els.zoomInBtn.onclick=()=>{ mapZoom=Math.min(4, +(mapZoom+.1).toFixed(1)); centerMapOnPlayer(); updateMapTransform(); };
+els.zoomResetBtn.onclick=()=>{ mapZoom=1; centerMapOnPlayer(); updateMapTransform(); };
 
 function shouldCaptureArrowTravel(ev){
   const tag=(ev.target && ev.target.tagName ? ev.target.tagName.toLowerCase() : '');
