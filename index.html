@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,16 +20,16 @@
   --radius:18px;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Georgia,serif;background:#000;color:var(--ink)}
+html,body{height:100%;margin:0;font-family:Georgia,serif;background:#000;color:var(--ink);overflow:hidden}
 body{
   background:
     linear-gradient(rgba(6,4,3,.66), rgba(7,5,4,.84)),
     url('bg_main.png') center/cover fixed no-repeat,
     var(--bg);
 }
-.app{max-width:1500px;margin:0 auto;height:100vh;padding:18px;display:grid;grid-template-columns:320px minmax(520px,1fr) 380px;gap:18px;overflow:hidden}
+.app{max-width:1500px;margin:0 auto;height:100dvh;padding:18px;display:grid;grid-template-columns:320px minmax(520px,1fr) 380px;gap:18px;overflow:hidden}
 .left,.right{display:flex;flex-direction:column;gap:18px;min-height:0}
-.center{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:18px;min-height:0}
+.center{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:18px;min-height:0;height:100%}
 .panel{
   background:linear-gradient(180deg, rgba(24,18,15,.88), rgba(14,11,9,.92));
   border:1px solid var(--line);
@@ -60,8 +59,8 @@ h1,h2,h3{margin:0}
 .quest-step{display:flex;gap:10px;align-items:flex-start}
 .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;margin-top:4px;background:#514338;border:1px solid rgba(255,255,255,.08)}
 .dot.done{background:var(--good)}
-.log-wrap{display:flex;flex-direction:column;min-height:0;overflow:hidden}
-#log{padding:18px;overflow:auto;min-height:0;height:100%;max-height:100%;background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0)), rgba(8,6,5,.16)}
+.log-wrap{display:flex;flex-direction:column;min-height:0;overflow:hidden;height:100%}
+#log{padding:18px;overflow:auto;min-height:0;flex:1 1 auto;height:auto;max-height:none;background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0)), rgba(8,6,5,.16)}
 .entry{margin:0 0 14px;padding:12px 14px;border-radius:14px;border:1px solid rgba(229,178,92,.1);background:rgba(0,0,0,.18)}
 .entry.sys{border-color:rgba(123,214,139,.2)}
 .entry.player{border-color:rgba(110,160,255,.18);background:rgba(19,25,40,.28)}
@@ -112,6 +111,11 @@ select{
 .modal{width:min(740px,100%);background:linear-gradient(180deg, rgba(27,20,17,.96), rgba(15,11,10,.98));border-radius:24px;border:1px solid var(--lineStrong);box-shadow:var(--shadow);overflow:hidden}
 .modal .panel-body{padding:22px;display:flex;flex-direction:column;gap:14px}
 #thinking{display:none;color:#f5d8a6}
+.center > .panel{min-height:0}
+.input-panel{flex:0 0 auto}
+.left,.right{overflow:hidden}
+.left .panel,.right .panel{min-height:0}
+
 @media (max-width:1240px){
   .app{grid-template-columns:1fr;height:auto;min-height:100vh;overflow:visible}
   .center{min-height:auto}
@@ -593,12 +597,15 @@ async function resolveAction(input){
   const text=(input||'').trim(); if(!text) return;
   state.turn++;
   const intent=parseIntent(text);
-  pushMoveMemory(`${intent.type}${intent.target?` → ${intent.target}`:''}${intent.direction?` ${intent.direction}`:''}${intent.insane?' [insane]':''}`);
+  pushMoveMemory(`${intent.type}${intent.target?` → ${intent.target}`:''}${intent.direction?` ${intent.direction}`:''}${intent.insane?' [insane]':''}${intent.travel?' [travel]':''}`);
   addEntry('player', text, `Action · turn ${state.turn}`);
+  refreshUI();
+  setTurnBusy(true, intent.insane ? 'Suso is entertaining a dangerous impossibility…' : 'Suso is reading intent, distance, threats, and room logic…');
+  await delay(estimateThinkTime(intent));
   const room=getCurrentRoom();
   const rr=rngFactory(state.seed + state.turn*97 + state.health);
   let baseRoll=intent.insane ? rollWithInsaneModifier() : roll();
-  if(baseRoll===0){ killPlayer('The dungeon rejects the turn completely. Fate drops out beneath you.'); return; }
+  if(baseRoll===0){ setTurnBusy(false); killPlayer('The dungeon rejects the turn completely. Fate drops out beneath you.'); return; }
   let result;
   if(intent.type==='move') result=resolveMove(intent, baseRoll, room, rr);
   else if(intent.type==='inspect') result=resolveInspect(intent, baseRoll, room, rr);
@@ -617,6 +624,7 @@ async function resolveAction(input){
   revealAround(state,6);
   updateQuestProgress(result);
   refreshUI();
+  setTurnBusy(false);
   maybeEnhanceLastEntry(text, result).catch(console.error);
 }
 
@@ -654,8 +662,11 @@ function nearbyEntities(type=null, dist=1){
 }
 
 function resolveMove(intent, r, room, rng){
+  if(intent.target || intent.explicitExit || intent.travel){
+    const target=intent.target || (intent.explicitExit ? 'exit' : null);
+    if(target) return resolveMoveTarget(target, r, room, rng);
+  }
   if(intent.direction) return resolveMoveDir(intent.direction, r, room, rng);
-  if(intent.target) return resolveMoveTarget(intent.target, r, room, rng);
   return resolveMoveRandom(r, room, rng);
 }
 function resolveMoveDir(dir, r, room, rng){
@@ -676,14 +687,97 @@ function resolveMoveDir(dir, r, room, rng){
   if(newRoom && newRoom.id!==room.id) txt += describeRoom(state,newRoom,false);
   return {kind:'sys', text:txt.trim(), meta:`Move · ${r}`, entered:newRoom && newRoom.id!==room.id};
 }
-function resolveMoveTarget(target, r, room, rng){
-  const symbolMap={door:'D',stairs:'S',chest:'C',water:'W',enemy:'E',fiend:'E',npc:'n',keeper:'n',shrine:'^',trap:'T',rubble:'X',key:'k',relic:'C',boss:'E',gate:'D'};
-  const symbol=symbolMap[target];
-  if(!symbol) return resolveMoveRandom(r, room, rng);
-  const step=nextStepToward(symbol);
-  if(!step) return {kind:'bad', text:`You angle toward the ${target}, but no clean route offers itself from here.`, meta:`Move · ${r}`};
-  return resolveMoveDir(directionName(step.x-state.player.x, step.y-state.player.y), r, room, rng);
+function findBestTravelDestination(target, room){
+  const options=[];
+  const add=(sym, requireOtherRoom=false)=>{
+    for(let y=0;y<state.map.h;y++) for(let x=0;x<state.map.w;x++){
+      if(state.map.grid[y][x]!==sym || !state.discovered[y][x]) continue;
+      const destinationRoom=findRoomAt(state,x,y);
+      if(requireOtherRoom && destinationRoom && room && destinationRoom.id===room.id) continue;
+      options.push({x,y,symbol:sym,room:destinationRoom});
+    }
+  };
+  if(target==='exit'){ add('O', true); add('D', true); add('S', true); add('O', false); add('D', false); add('S', false); }
+  else {
+    const symMap={door:'D',opening:'O',gate:'D',stairs:'S',chest:'C',water:'W',enemy:'E',fiend:'E',boss:'E',npc:'n',keeper:'n',shrine:'^',trap:'T',rubble:'X',key:'k',relic:'C'};
+    const sym=symMap[target];
+    if(sym){ add(sym, false); }
+  }
+  if(!options.length) return null;
+  options.sort((a,b)=>manhattan(state.player,a)-manhattan(state.player,b));
+  return options[0];
 }
+function manhattan(a,b){ return Math.abs(a.x-b.x)+Math.abs(a.y-b.y); }
+function pathfindTo(tx,ty){
+  const sx=state.player.x, sy=state.player.y;
+  const q=[[sx,sy]], came=new Map(); came.set(key(sx,sy),null);
+  while(q.length){
+    const [x,y]=q.shift(); if(x===tx && y===ty) break;
+    for(const [dx,dy] of Object.values(DIRS).slice(0,4)){
+      const nx=x+dx, ny=y+dy, c=state.map.grid[ny]?.[nx]; if(c==null) continue;
+      const pass=WALKABLE.has(c) || ['D','E','C','S','^','X','W','T','n','k','%','O'].includes(c) || (nx===tx && ny===ty);
+      if(!pass) continue;
+      const ent=findEntityAt(nx,ny);
+      if(ent && ent.type!=='npc' && !(nx===tx&&ny===ty)) continue;
+      const k=key(nx,ny); if(came.has(k)) continue;
+      came.set(k,[x,y]); q.push([nx,ny]);
+    }
+  }
+  if(!came.has(key(tx,ty))) return null;
+  const path=[]; let cur=[tx,ty];
+  while(cur){ path.push({x:cur[0],y:cur[1]}); cur=came.get(key(cur[0],cur[1])); }
+  path.reverse();
+  return path;
+}
+function simulatePathTravel(path, maxSteps, r, room, intent){
+  let steps=0, notes=[], entered=false, stoppedBy=null;
+  for(let i=1;i<path.length && steps<maxSteps;i++){
+    const {x:nx,y:ny}=path[i];
+    const cell=state.map.grid[ny]?.[nx];
+    const ent=findEntityAt(nx,ny);
+    if(ent && ent.type!=='npc'){ stoppedBy=ent.name; break; }
+    if(cell==='D'){
+      if(!(state.flags.innerGateOpen || hasItem('Saint Key') || hasItem('Iron Key') || r>=15)){ stoppedBy='locked door'; break; }
+      state.map.grid[ny][nx]='O'; state.flags.innerGateOpen=true; notes.push('You work a locked way open in passing.');
+    }
+    movePlayer(nx,ny); steps++;
+    if(cell==='W' && r<8){ damagePlayer(1,'Cold water punishes the longer crossing.'); notes.push('Water drags at your stride.'); }
+    if(cell==='T' && r<10){ damagePlayer(1,'A trap edge bites during the rush.'); notes.push('A trap catches you on the move.'); }
+    if(cell==='k'){ state.map.grid[ny][nx]='.'; gainItem({name:'Saint Key', desc:'A weighty key tied to the run’s central lock.'}); state.flags.questKeyFound=true; notes.push('You snatch up a key as you pass.'); }
+    const newRoom=getCurrentRoom();
+    if(newRoom && room && newRoom.id!==room.id){ entered=true; room=newRoom; if(intent.explicitExit || intent.travel) break; }
+  }
+  return {steps, notes, entered, room, stoppedBy};
+}
+function buildTravelText(intent, target, travel, r, room){
+  let lead='';
+  if(intent.explicitExit) lead='You commit to leaving the room, and Suso treats it like a real traversal instead of a single square.';
+  else if(target) lead=`You make for the ${target}, covering actual ground instead of inching like a cursor.`;
+  else lead='You push through the room in a longer stride.';
+  let text=lead+' ';
+  if(travel.steps===0){
+    text += travel.stoppedBy ? `You do not get far before ${travel.stoppedBy} stops the route.` : 'But the route never opens enough to reward the attempt.';
+    return text.trim();
+  }
+  text += `You cover ${travel.steps} step${travel.steps===1?'':'s'} before the dungeon answers back.`;
+  if(travel.notes.length) text += ' ' + [...new Set(travel.notes)].join(' ');
+  if(travel.entered && travel.room) text += ' ' + describeRoom(state, travel.room, false);
+  else if(target==='exit' && !travel.entered) text += ' The nearest way onward is closer now, but not yet behind you.';
+  else if(target && !travel.entered) text += ` You close distance toward the ${target}.`;
+  if(r>=16 && !travel.entered) text += ' The route reveals itself under confident movement.';
+  return text.trim();
+}
+
+function resolveMoveTarget(target, r, room, rng){
+  const destination=findBestTravelDestination(target, room);
+  if(!destination) return {kind:'bad', text:`You angle toward the ${target}, but no believable route offers itself from here.`, meta:`Move · ${r}`};
+  const path=pathfindTo(destination.x,destination.y);
+  if(!path || path.length<2) return {kind:'bad', text:`You can name the ${target}, but from here the route stays knotted.`, meta:`Move · ${r}`};
+  const maxSteps=target==='exit' ? Math.max(3, Math.min(8, 2 + Math.floor(r/3))) : Math.max(2, Math.min(6, 1 + Math.floor(r/4)));
+  const travel=simulatePathTravel(path, maxSteps, r, room, {target, travel:true, explicitExit:target==='exit'});
+  return {kind:travel.steps>0?'sys':'bad', text:buildTravelText({target, travel:true, explicitExit:target==='exit'}, target, travel, r, room), meta:`Travel · ${r}`, entered:travel.entered};
+}
+
 function resolveMoveRandom(r, room, rng){
   const dirs=shuffle(rng,Object.keys(DIRS).slice(0,4));
   for(const dir of dirs){ const [dx,dy]=DIRS[dir]; const cell=state.map.grid[state.player.y+dy]?.[state.player.x+dx]; if(cell && cell!=='#') return resolveMoveDir(dir,r,room,rng); }
