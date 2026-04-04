@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aillumi's Dungeon</title>
+<title>Aillumi's Dungeon — Suso Engine v3 Hybrid</title>
 <style>
 :root{
   --bg:#120f0d;
@@ -143,7 +143,7 @@ select{
   <aside class="left">
     <section class="panel title-card">
       <h1 style="font-size:1.9rem">Aillumi's Dungeon</h1>
-      <div class="subtitle" id="premiseText">SusoLAI is weaving a new descent.</div>
+      <div class="subtitle" id="premiseText">Suso v2 is weaving a new descent.</div>
       <div class="chips" id="runChips"></div>
     </section>
 
@@ -1519,7 +1519,33 @@ els.asciiModeBtn.onclick=()=>{ showAscii=true; updateMapTransform(); };
 els.zoomOutBtn.onclick=()=>{ mapZoom=Math.max(.5, +(mapZoom-.1).toFixed(1)); updateMapTransform(); };
 els.zoomInBtn.onclick=()=>{ mapZoom=Math.min(4, +(mapZoom+.1).toFixed(1)); updateMapTransform(); };
 els.zoomResetBtn.onclick=()=>{ mapZoom=1; mapPanX=12; mapPanY=12; updateMapTransform(); };
+
+function shouldCaptureArrowTravel(ev){
+  const tag=(ev.target && ev.target.tagName ? ev.target.tagName.toLowerCase() : '');
+  if(tag==='textarea') return false;
+  if(tag==='input'){
+    const type=(ev.target.type||'text').toLowerCase();
+    if(['text','password','search','email','url','number'].includes(type)) return false;
+  }
+  return !turnBusy && !!state && !state.dead && els.onboard.style.display==='none';
+}
+function arrowKeyToAction(key){
+  if(key==='ArrowUp') return 'move north';
+  if(key==='ArrowDown') return 'move south';
+  if(key==='ArrowLeft') return 'move west';
+  if(key==='ArrowRight') return 'move east';
+  return null;
+}
+
 els.actionInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); resolveAndClear(); }});
+window.addEventListener('keydown', e=>{
+  const action = arrowKeyToAction(e.key);
+  if(!action) return;
+  if(!shouldCaptureArrowTravel(e)) return;
+  e.preventDefault();
+  resolveAction(action);
+});
+
 els.mapStage.addEventListener('mousedown', e=>{ drag={x:e.clientX,y:e.clientY,px:mapPanX,py:mapPanY}; els.mapStage.classList.add('dragging'); });
 window.addEventListener('mousemove', e=>{ if(!drag) return; mapPanX=drag.px + (e.clientX-drag.x); mapPanY=drag.py + (e.clientY-drag.y); updateMapTransform(); });
 window.addEventListener('mouseup', ()=>{ drag=null; els.mapStage.classList.remove('dragging'); });
