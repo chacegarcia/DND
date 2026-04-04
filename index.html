@@ -109,6 +109,30 @@ select{
 .map-stage.dragging{cursor:grabbing}
 #mapCanvas,#asciiMap{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}
 #asciiMap{display:none;color:#edd6b0;background:rgba(10,7,6,.22);padding:10px;border-radius:12px;font:13px/13px "Courier New",monospace;white-space:pre}
+.dice-overlay{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  pointer-events:none; opacity:0; transition:opacity .16s ease; z-index:10;
+  background:radial-gradient(circle at 50% 50%, rgba(0,0,0,.08), rgba(0,0,0,.28) 42%, rgba(0,0,0,.02) 72%);
+}
+.dice-overlay.show{ opacity:1; }
+.dice-card{
+  min-width:120px; padding:14px 16px; border-radius:18px;
+  border:1px solid rgba(229,178,92,.42);
+  background:linear-gradient(180deg, rgba(29,21,17,.74), rgba(10,8,7,.82));
+  box-shadow:0 18px 48px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.03);
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  backdrop-filter: blur(4px);
+}
+.dice-d20{
+  width:76px; height:76px; display:grid; place-items:center;
+  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
+  background:linear-gradient(180deg, rgba(229,178,92,.22), rgba(114,74,30,.34));
+  border:1px solid rgba(229,178,92,.65);
+  color:#fff6df; font-size:1.55rem; font-weight:900; letter-spacing:.03em;
+  text-shadow:0 2px 10px rgba(0,0,0,.45);
+}
+.dice-meta{ font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+.dice-sub{ font-size:.88rem; color:var(--ink); text-align:center; max-width:180px; line-height:1.2; }
 .map-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:.9rem;color:var(--muted)}
 .map-legend span{display:flex;align-items:center;gap:8px}
 .swatch{width:14px;height:14px;border-radius:4px;background:#666;border:1px solid rgba(255,255,255,.15)}
@@ -224,6 +248,13 @@ select{
         <div class="map-stage" id="mapStage">
           <canvas id="mapCanvas"></canvas>
           <pre id="asciiMap"></pre>
+          <div class="dice-overlay" id="diceOverlay" aria-hidden="true">
+            <div class="dice-card">
+              <div class="dice-meta" id="diceMeta">0–20 die</div>
+              <div class="dice-d20" id="diceValue">—</div>
+              <div class="dice-sub" id="diceSub">Awaiting the turn.</div>
+            </div>
+          </div>
         </div>
         <div class="map-legend">
           <span><i class="swatch" style="background:#9d7a49"></i> doors / structures</span>
@@ -368,6 +399,10 @@ const els = {
   zoomInBtn: document.getElementById('zoomInBtn'),
   zoomOut: document.getElementById('zoomOut'),
   atlasStatus: document.getElementById('atlasStatus'),
+  diceOverlay: document.getElementById('diceOverlay'),
+  diceValue: document.getElementById('diceValue'),
+  diceMeta: document.getElementById('diceMeta'),
+  diceSub: document.getElementById('diceSub'),
   nearbyList: document.getElementById('nearbyList'),
   movesList: document.getElementById('movesList'),
   enhancerState: document.getElementById('enhancerState'),
@@ -417,6 +452,32 @@ function estimateThinkTime(intent){
   return ms;
 }
 
+let diceAnimToken = 0;
+function hideDiceOverlay(){
+  if(els.diceOverlay) els.diceOverlay.classList.remove('show');
+}
+async function animateDiceRoll(finalRoll, opts={}){
+  if(finalRoll==null || !els.diceOverlay || !els.diceValue) return;
+  const token = ++diceAnimToken;
+  const insane = !!opts.insane;
+  const label = opts.label || (insane ? 'Insane request roll' : '0–20 die');
+  const sub = opts.sub || (finalRoll===0 ? 'Absolute collapse.' : `Result ${finalRoll}`);
+  els.diceMeta.textContent = label;
+  els.diceSub.textContent = 'Rolling…';
+  els.diceOverlay.classList.add('show');
+  const spinCount = 8 + Math.floor(Math.random()*4);
+  for(let i=0;i<spinCount;i++){
+    if(token!==diceAnimToken) return;
+    els.diceValue.textContent = String(Math.floor(Math.random()*21));
+    await delay(55 + i*8);
+  }
+  if(token!==diceAnimToken) return;
+  els.diceValue.textContent = String(finalRoll);
+  els.diceSub.textContent = sub;
+  await delay(620);
+  if(token!==diceAnimToken) return;
+  els.diceOverlay.classList.remove('show');
+}
 
 function aiModeLabel(ai){
   if(!ai || !ai.enabled || ai.mode==='local') return 'Local Only';
@@ -513,6 +574,7 @@ function mergeAiIntent(baseIntent, aiJson){
 }
 async function maybeInterpretIntent(playerText, baseIntent){
   const ai=state?.ai;
+  if(baseIntent?.fromArrow || baseIntent?.type==='move') return localLanguageModelIntent(playerText, baseIntent);
   if(!ai?.enabled || !ai.apiKey || ai.mode==='local') return localLanguageModelIntent(playerText, baseIntent);
   const systemText = 'You are the intent interpreter for a procedural dungeon crawler. Return strict JSON only. Keep the local engine authoritative. Infer what the player is trying to do in plain language. Prioritize broad intent over literal wording: if the player says leave the room, go through the door, head deeper, move into the next chamber, or run toward the exit, treat it as travel toward the nearest believable exit. If they mention an object like chest, stairs, water, enemy, shrine, or door, target that object. Never invent impossible target objects if they are absent from state. JSON schema: {"type":"move|inspect|listen|search|open|attack|rest|talk|use|combine|interact","direction":"north|south|east|west|null","target":"exit|door|stairs|chest|water|enemy|npc|shrine|trap|rubble|key|relic|torch|tonic|rope|charm|null","travel":true/false,"explicitExit":true/false,"insane":true/false,"tone":"short phrase","reasoning":"one short sentence"}';
   const payload = { action: playerText, parsed: baseIntent, state: compactStateSnapshot() };
@@ -675,7 +737,7 @@ function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
 
 async function maybeAiFinalizeTurn(playerText, result, resolvedIntent){
   const ai=state?.ai;
-  if(result?.usedAiPrimary) return;
+  if(result?.usedAiPrimary || resolvedIntent?.fromArrow || resolvedIntent?.type==='move') return;
   if(!ai?.enabled || !ai.apiKey || ai.mode==='local' || aiEnhancing) return;
   aiEnhancing=true;
   if(els.thinking) els.thinking.style.display='inline-flex';
@@ -1104,7 +1166,16 @@ async function resolveAction(input){
   const room=getCurrentRoom();
   const rr=rngFactory(state.seed + state.turn*97 + state.health);
   let baseRoll = intent.fromArrow ? null : (intent.insane ? rollWithInsaneModifier() : roll());
-  if(baseRoll===0){ setTurnBusy(false); killPlayer('The dungeon rejects the turn completely. Fate drops out beneath you.'); return; }
+  if(baseRoll===0){
+    await animateDiceRoll(0, { insane:intent.insane, sub:'The die empties out. The dungeon takes you.' });
+    setTurnBusy(false); killPlayer('The dungeon rejects the turn completely. Fate drops out beneath you.'); return;
+  }
+  if(baseRoll!=null){
+    await animateDiceRoll(baseRoll, {
+      insane:intent.insane,
+      sub:intent.insane ? `Wild action checked against fate: ${baseRoll}` : `Roll ${baseRoll}`
+    });
+  }
   let result;
   const aiPrimary = await maybeAiPrimaryOutcome(text, intent, baseRoll, room);
   if(aiPrimary){
