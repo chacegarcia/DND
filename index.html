@@ -101,10 +101,11 @@ select{
 }
 .map-tools{display:flex;flex-wrap:wrap;gap:8px}
 .map-stage{
-  position:relative;height:560px;border-top:1px solid var(--line);
+  position:relative;min-height:420px;height:560px;border-top:1px solid var(--line);
   background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.04), rgba(0,0,0,.12) 45%, rgba(0,0,0,.42));
   overflow:hidden;cursor:grab;user-select:none;border-radius:12px;
 }
+#mapCanvas{background:rgba(10,7,6,.08)}
 .map-stage.dragging{cursor:grabbing}
 #mapCanvas,#asciiMap{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}
 #asciiMap{display:none;color:#edd6b0;background:rgba(10,7,6,.22);padding:10px;border-radius:12px;font:13px/13px "Courier New",monospace;white-space:pre}
@@ -127,6 +128,8 @@ select{
 .left .panel .panel-body.listcol,.right .panel .panel-body.listcol{max-height:28vh}
 .left .panel .panel-body.ai-box,.right .panel .panel-body.ai-box{max-height:none}
 .left,.right{align-self:stretch}
+.right > .panel:first-child .panel-body{max-height:none !important;overflow:visible !important}
+.right > .panel:first-child{flex:0 0 auto}
 
 @media (max-width:1240px){
   .app{grid-template-columns:1fr;height:auto;min-height:100vh;overflow:visible}
@@ -216,7 +219,7 @@ select{
           <button class="secondary" id="zoomOutBtn">−</button>
           <button class="secondary" id="zoomResetBtn">Reset</button>
           <button class="secondary" id="zoomInBtn">+</button>
-          <span class="small" id="zoomOut">Zoom 1.0x</span>
+          <span class="small" id="zoomOut">Zoom 1.0x</span><span class="small" id="atlasStatus">Tiles: loading…</span>
         </div>
         <div class="map-stage" id="mapStage">
           <canvas id="mapCanvas"></canvas>
@@ -319,6 +322,8 @@ select{
 const SAVE_KEY='aillumi_suso_v2_save';
 const AI_KEY='aillumi_suso_v2_ai';
 const atlas = new Image();
+let atlasReady = false;
+let atlasFailed = false;
 atlas.src='dungeon_tiles_atlas_32.png';
 const mapCanvas=document.getElementById('mapCanvas');
 const ctx=mapCanvas.getContext('2d');
@@ -362,6 +367,7 @@ const els = {
   zoomResetBtn: document.getElementById('zoomResetBtn'),
   zoomInBtn: document.getElementById('zoomInBtn'),
   zoomOut: document.getElementById('zoomOut'),
+  atlasStatus: document.getElementById('atlasStatus'),
   nearbyList: document.getElementById('nearbyList'),
   movesList: document.getElementById('movesList'),
   enhancerState: document.getElementById('enhancerState'),
@@ -1310,11 +1316,15 @@ function drawTile(symbol,dx,dy){
   }
   const ij=TILE_INDEX[symbol] || TILE_INDEX['.'];
   const sx=ij[0]*atlasTile, sy=ij[1]*atlasTile;
-  if(atlas.complete && atlas.naturalWidth){ ctx.drawImage(atlas,sx,sy,atlasTile,atlasTile,dx,dy,tileSize,tileSize); }
-  else {
-    const fills={'#':'#544534','.':'#7d6f5e','W':'#365c78','X':'#5a4a3d','D':'#9c7340','O':'#816339','T':'#8a3629','C':'#9f7b42','@':'#f0d39d','E':'#9f3328','S':'#b2b2b2','?':'#26211c','^':'#746349','%':'#5c2b24'};
-    ctx.fillStyle=fills[symbol]||'#777'; ctx.fillRect(dx,dy,tileSize,tileSize);
+  if(atlasReady && atlas.naturalWidth){ 
+    try{
+      ctx.drawImage(atlas,sx,sy,atlasTile,atlasTile,dx,dy,tileSize,tileSize);
+      return;
+    }catch(err){}
   }
+  const fills={'#':'#544534','.':'#7d6f5e','W':'#365c78','X':'#5a4a3d','D':'#9c7340','O':'#816339','T':'#8a3629','C':'#9f7b42','@':'#f0d39d','E':'#9f3328','S':'#b2b2b2','?':'#26211c','^':'#746349','%':'#5c2b24'};
+  ctx.fillStyle=fills[symbol]||'#777'; ctx.fillRect(dx,dy,tileSize,tileSize);
+  ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.strokeRect(dx+.5,dy+.5,tileSize-1,tileSize-1);
 }
 function refreshUI(){
   if(!state) return;
@@ -1467,9 +1477,21 @@ els.clearAiBtn.onclick=()=>{
   els.statusLine.textContent='AI settings cleared.';
   setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to send. Shift+Enter for newline.'; },1200);
 };
-atlas.onload=()=>{ if(state) drawMap(); };
+atlas.onload=()=>{
+  atlasReady = true; atlasFailed = false;
+  if(els.atlasStatus) els.atlasStatus.textContent = 'Tiles: loaded';
+  if(state) drawMap();
+};
+atlas.onerror=()=>{
+  atlasReady = false; atlasFailed = true;
+  if(els.atlasStatus) els.atlasStatus.textContent = 'Tiles missing → fallback';
+  if(state) drawMap();
+};
 
 refreshAiFields();
+if(els.atlasStatus){
+  els.atlasStatus.textContent = atlasReady ? 'Tiles: loaded' : (atlasFailed ? 'Tiles missing → fallback' : 'Tiles: loading…');
+}
 if(!loadGame()) els.onboard.style.display='flex';
 })();
 </script>
