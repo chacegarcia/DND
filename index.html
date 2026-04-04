@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -353,6 +354,24 @@ const els = {
 };
 
 let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false;
+let turnBusy = false;
+
+function setTurnBusy(busy, msg=''){
+  turnBusy = !!busy;
+  if(els.actionInput) els.actionInput.disabled = turnBusy;
+  ['actBtn','restBtn','listenBtn','searchBtn','saveBtn','loadBtn','newRunBtn','clearSaveBtn'].forEach(id=>{
+    if(els[id]) els[id].disabled = turnBusy;
+  });
+  if(els.thinking) els.thinking.style.display = turnBusy ? 'inline-flex' : 'none';
+  if(els.statusLine){
+    if(turnBusy){
+      els.statusLine.textContent = msg || 'Suso is thinking...';
+    } else {
+      els.statusLine.textContent = 'Enter to send. Shift+Enter for newline.';
+    }
+  }
+}
+
 
 const THEMES = [
   {
