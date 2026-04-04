@@ -1222,8 +1222,23 @@ function extractTarget(t){
   if(/(room|hall|hallway|passage|corridor)/.test(t)) return 'exit';
   return null;
 }
-function roll(){ return Math.floor(Math.random()*21); }
-function rollWithInsaneModifier(){ return Math.max(1, roll()-3); }
+function rollZeroToTwenty(){ return Math.floor(Math.random()*21); }
+function rollOneToTwenty(){ return Math.floor(Math.random()*20)+1; }
+function rollSafe(){ return Math.floor(Math.random()*19)+2; }
+function classifyRollTier(intent, rawText=''){
+  const t=(rawText||'').toLowerCase();
+  if(intent?.insane) return 'insane';
+  if(intent?.type==='inspect' || intent?.type==='search' || intent?.type==='talk') return 'safe';
+  if(/listen|look|examine|inspect|search|gather|take|talk|ask|read|mark|check/.test(t)) return 'safe';
+  if(/disarm|attack|force|break|kick|drink|wade|climb|jump|threaten|steal|pray|offer|open|unlock|descend|enter/.test(t)) return 'risk';
+  return 'risk';
+}
+function rollForIntent(intent, rawText=''){
+  const tier = classifyRollTier(intent, rawText);
+  const value = tier==='safe' ? rollSafe() : tier==='insane' ? rollZeroToTwenty() : rollOneToTwenty();
+  return { value, tier };
+}
+function rollWithInsaneModifier(){ return Math.max(1, rollZeroToTwenty()-3); }
 
 async function resolveAction(input){
   if(!state || state.dead || turnBusy) return;
@@ -1264,9 +1279,10 @@ async function resolveAction(input){
 
   const room=getCurrentRoom();
   const rr=rngFactory(state.seed + state.turn*97 + state.health);
-  let baseRoll = intent.fromArrow ? null : (intent.insane ? rollWithInsaneModifier() : roll());
+  const rollInfo = intent.fromArrow ? null : (intent.insane ? { value: rollWithInsaneModifier(), tier:'insane' } : rollForIntent(intent, text));
+  let baseRoll = rollInfo ? rollInfo.value : null;
   if(baseRoll===0){
-    await animateDiceRoll(0, { insane:intent.insane, sub:'The die empties out. The dungeon takes you.' });
+    await animateDiceRoll(0, { insane:true, actionLabel:'Insane Request', sub:'The die empties out. The dungeon takes you.' });
     setTurnBusy(false); killPlayer('The dungeon rejects the turn completely. Fate drops out beneath you.'); return;
   }
   if(baseRoll!=null){
@@ -1888,8 +1904,7 @@ function afterPlayerTurn(rng){
   for(const e of hostiles){
     const dist=Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y);
     if(dist===1){
-      const hit=roll();
-      if(hit===0){ killPlayer(`${e.name} finds the one fatal seam in you.`); return; }
+      const hit=rollOneToTwenty();
       if(hit>=8){
         let dmg=e.type==='boss'?2:1;
         if(hasItem('Knotted Ward')){ dmg=Math.max(0,dmg-1); removeItem('Knotted Ward'); }
