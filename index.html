@@ -114,256 +114,143 @@ select{
 .map-stage.dragging{cursor:grabbing}
 #mapCanvas,#asciiMap{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}
 #asciiMap{display:none;color:#edd6b0;background:rgba(10,7,6,.22);padding:10px;border-radius:12px;font:13px/13px "Courier New",monospace;white-space:pre}
-.dice-panel{
-  background:url('dice_tray_bg.png') center/100% 100% no-repeat;
-  border:0;
 
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin-top:12px;
-  padding:2px 0 2px;
+.dice-panel{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  padding:8px 0 0 !important;
+  min-height:0 !important;
+  overflow:visible !important;
 }
-.dice-panel.show{ opacity:1; }
-.dice-widget{
+.dice-tray{
+  position:relative;
+  min-height:190px;
   width:100%;
+  background:url('dice_tray_bg.png') center/100% 100% no-repeat;
   display:grid;
-  grid-template-columns:minmax(0,1fr) 120px;
-  gap:12px;
+  grid-template-columns:minmax(0,1fr) 150px;
+  gap:14px;
   align-items:stretch;
-  padding:12px;
-  border-radius:18px;
-  border:1px solid rgba(229,178,92,.18);
-  background:linear-gradient(180deg, rgba(18,13,11,.72), rgba(10,8,7,.82));
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.03), 0 10px 30px rgba(0,0,0,.22);
-}
-
-.dice-panel{
-  min-height:220px;
   padding:22px 22px 18px;
-  position:relative;
-  overflow:hidden;
 }
-.dice-panel .dice-card{
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  background:linear-gradient(180deg, rgba(29,21,17,.76), rgba(10,8,7,.86));
-  border:1px solid rgba(229,178,92,.35);
-}
-.dice-roll-history{
-  position:absolute;
-  right:22px;
-  top:22px;
-  width:118px;
-  max-height:150px;
-  overflow:auto;
-  padding:8px 10px;
-  border-radius:14px;
-  background:rgba(16,12,10,.52);
-  border:1px solid rgba(229,178,92,.16);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
-}
-.dice-roll-history .hdr{
-  font-size:.68rem;
-  text-transform:uppercase;
-  letter-spacing:.12em;
-  color:#d7b27a;
-  margin-bottom:6px;
-}
-.dice-roll-history .item{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  font-size:.82rem;
-  color:#f0ddbf;
-  padding:3px 0;
-  border-bottom:1px solid rgba(255,255,255,.05);
-}
-.dice-roll-history .item:last-child{ border-bottom:0; }
-.dice-bounce{
-  position:absolute;
-  width:74px;
-  height:74px;
-  display:grid;
-  place-items:center;
-  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
-  background:linear-gradient(180deg, rgba(239,194,122,.88), rgba(131,84,36,.92));
-  color:#fff7e9;
-  font-size:1.45rem;
-  font-weight:900;
-  letter-spacing:.02em;
-  border:1px solid rgba(255,232,184,.8);
-  text-shadow:0 2px 10px rgba(0,0,0,.4);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.18),
-    0 12px 20px rgba(0,0,0,.28),
-    0 0 0 1px rgba(0,0,0,.16);
-  pointer-events:none;
-  opacity:0;
-  z-index:4;
-}
-.dice-bounce.show{ opacity:1; }
-
-
-.dice-panel{
-  background-color:transparent !important;
-}
-.dice-panel::before{
-  content:'';
-  position:absolute;
-  inset:0;
-  pointer-events:none;
-  background:radial-gradient(circle at 50% 55%, rgba(255,210,150,.04), rgba(0,0,0,0) 48%);
-}
-.dice-panel .dice-card{
-  background:linear-gradient(180deg, rgba(18,13,11,.42), rgba(8,6,5,.58)) !important;
-  border:1px solid rgba(229,178,92,.24) !important;
-  box-shadow:0 10px 28px rgba(0,0,0,.22), inset 0 0 0 1px rgba(255,255,255,.02) !important;
-  backdrop-filter: blur(2px);
-}
-.dice-bounce.crit{
-  filter: drop-shadow(0 0 10px rgba(255,226,132,.55)) drop-shadow(0 0 24px rgba(255,180,52,.35));
-}
-.dice-bounce.fail{
-  filter: drop-shadow(0 0 8px rgba(255,92,92,.48)) drop-shadow(0 0 20px rgba(140,18,18,.28));
-}
-
-.dice-panel.flash-crit .dice-card{
-  box-shadow:
-    0 0 0 1px rgba(255,220,170,.22),
-    0 0 28px rgba(255,215,120,.45),
-    0 0 80px rgba(255,176,64,.28),
-    0 18px 48px rgba(0,0,0,.42),
-    inset 0 0 0 1px rgba(255,255,255,.05);
-}
-.dice-panel.flash-fail .dice-card{
-  box-shadow:
-    0 0 0 1px rgba(255,120,120,.18),
-    0 0 26px rgba(180,36,36,.42),
-    0 0 72px rgba(120,0,0,.25),
-    0 18px 48px rgba(0,0,0,.42),
-    inset 0 0 0 1px rgba(255,255,255,.03);
-}
-.dice-card{
-  min-width:0; width:100%;
-  padding:16px 18px; border-radius:20px;
-  border:1px solid rgba(229,178,92,.42);
-  background:linear-gradient(180deg, rgba(29,21,17,.76), rgba(10,8,7,.86));
-  box-shadow:0 18px 48px rgba(0,0,0,.42), inset 0 0 0 1px rgba(255,255,255,.03);
-  display:flex; flex-direction:column; align-items:center; gap:6px;
-  backdrop-filter: blur(5px);
-  transform: translateY(0) scale(1);
-  margin:0 auto;
-}
-.dice-card.rolling{ animation:diceCardFloat .72s ease-in-out infinite; }
-.dice-card.shake{ animation:diceShake .55s ease; }
-.dice-card.crit{ animation:diceCritPulse .7s ease; }
-.dice-card.fail{ animation:diceFailPulse .7s ease; }
-.dice-d20{
-  width:82px; height:82px; display:grid; place-items:center;
-  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
-  background:linear-gradient(180deg, rgba(229,178,92,.24), rgba(114,74,30,.36));
-  border:1px solid rgba(229,178,92,.72);
-  color:#fff6df; font-size:1.65rem; font-weight:900; letter-spacing:.03em;
-  text-shadow:0 2px 10px rgba(0,0,0,.45);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.08),
-    0 0 0 1px rgba(0,0,0,.18),
-    0 8px 24px rgba(0,0,0,.26);
-}
-.dice-panel.flash-crit .dice-d20{
-  border-color:rgba(255,223,138,.95);
-  background:linear-gradient(180deg, rgba(255,228,156,.34), rgba(179,120,36,.44));
-}
-.dice-panel.flash-fail .dice-d20{
-  border-color:rgba(229,100,100,.72);
-  background:linear-gradient(180deg, rgba(160,52,52,.34), rgba(78,14,14,.48));
-}
-.dice-meta{
-  font-size:.76rem; color:#f2d7a3; text-transform:uppercase; letter-spacing:.12em;
-  font-weight:800; text-align:center;
-  padding:2px 8px; border-radius:999px;
-  background:linear-gradient(180deg, rgba(111,74,27,.28), rgba(39,24,10,.18));
-  border:1px solid rgba(229,178,92,.24);
-}
-.dice-sub{ font-size:.88rem; color:var(--ink); text-align:center; max-width:190px; line-height:1.2; }
-.dice-history-wrap{
-  border-radius:14px;
-  border:1px solid rgba(229,178,92,.14);
-  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.12));
-  padding:10px;
+.dice-hud{
+  align-self:end;
   display:flex;
   flex-direction:column;
   gap:8px;
-  min-height:0;
+  max-width:340px;
+}
+.dice-inline{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.dice-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.dice-label{
+  font-size:1rem;
+  font-weight:800;
+  color:#f1ddb4;
+  letter-spacing:.04em;
+}
+.dice-meta{
+  font-size:.72rem;
+  color:#d7b27a;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  font-weight:800;
+}
+.dice-sub{
+  font-size:.88rem;
+  color:#d8c3a1;
+  line-height:1.2;
+  max-width:240px;
+}
+.dice-d20{
+  width:78px;
+  height:78px;
+  flex:0 0 78px;
+  display:grid;
+  place-items:center;
+  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
+  background:linear-gradient(180deg, rgba(185,137,66,.88), rgba(96,63,24,.92));
+  border:1px solid rgba(250,223,173,.72);
+  color:#fff7e7;
+  font-size:1.6rem;
+  font-weight:900;
+  text-shadow:0 2px 10px rgba(0,0,0,.45);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 10px 20px rgba(0,0,0,.25);
+}
+.dice-history-wrap{
+  align-self:stretch;
+  justify-self:end;
+  width:150px;
+  padding:10px 12px;
+  border-radius:16px;
+  background:rgba(10,8,7,.34);
+  border:1px solid rgba(229,178,92,.10);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
 .dice-history-title{
   font-size:.72rem;
-  color:#f2d7a3;
+  color:#d7b27a;
   text-transform:uppercase;
-  letter-spacing:.12em;
+  letter-spacing:.14em;
+  margin-bottom:8px;
   font-weight:800;
 }
 .dice-history{
   display:flex;
   flex-direction:column;
   gap:6px;
-  overflow:auto;
-  min-height:0;
 }
 .dice-history-item{
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
   gap:8px;
-  padding:6px 8px;
-  border-radius:10px;
-  background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.04);
-  font-size:.8rem;
-  color:var(--muted);
+  padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  color:#efddbf;
+  font-size:.84rem;
 }
-.dice-history-item strong{
-  color:#fff1d1;
-  font-size:.95rem;
-}
+.dice-history-item:last-child{border-bottom:0}
 .dice-history-item .tag{
-  color:#f2d7a3;
-  font-size:.72rem;
-  text-transform:uppercase;
-  letter-spacing:.08em;
+  color:#d7c19d;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-@media (max-width: 1100px){
-  .dice-widget{ grid-template-columns:1fr; }
+.dice-bounce{
+  position:absolute;
+  width:72px;
+  height:72px;
+  display:grid;
+  place-items:center;
+  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
+  background:linear-gradient(180deg, rgba(236,192,120,.95), rgba(126,80,31,.96));
+  border:1px solid rgba(255,228,184,.84);
+  color:#fff7e9;
+  font-size:1.4rem;
+  font-weight:900;
+  text-shadow:0 2px 10px rgba(0,0,0,.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 20px rgba(0,0,0,.28);
+  pointer-events:none;
+  opacity:0;
+  z-index:3;
 }
-
-
-@keyframes diceCardFloat{
-  0%{ transform:translateY(0) scale(1); }
-  50%{ transform:translateY(-3px) scale(1.02); }
-  100%{ transform:translateY(0) scale(1); }
+.dice-bounce.show{opacity:1}
+.dice-bounce.crit{
+  filter:drop-shadow(0 0 12px rgba(255,220,120,.65)) drop-shadow(0 0 26px rgba(255,180,52,.34));
 }
-@keyframes diceShake{
-  0%{ transform:translateX(0) rotate(0deg); }
-  16%{ transform:translateX(-7px) rotate(-3deg); }
-  32%{ transform:translateX(6px) rotate(2.5deg); }
-  48%{ transform:translateX(-5px) rotate(-2deg); }
-  64%{ transform:translateX(4px) rotate(1.5deg); }
-  80%{ transform:translateX(-2px) rotate(-1deg); }
-  100%{ transform:translateX(0) rotate(0deg); }
+.dice-bounce.fail{
+  filter:drop-shadow(0 0 10px rgba(255,104,104,.58)) drop-shadow(0 0 24px rgba(120,18,18,.30));
 }
-@keyframes diceCritPulse{
-  0%{ transform:scale(1); }
-  40%{ transform:scale(1.07); }
-  100%{ transform:scale(1); }
+.dice-panel.flash-crit .dice-d20{
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 20px rgba(255,220,120,.32), 0 10px 20px rgba(0,0,0,.25);
 }
-@keyframes diceFailPulse{
-  0%{ transform:scale(1); filter:saturate(1); }
-  40%{ transform:scale(.97); filter:saturate(1.25); }
-  100%{ transform:scale(1); filter:saturate(1); }
+.dice-panel.flash-fail .dice-d20{
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 18px rgba(255,104,104,.24), 0 10px 20px rgba(0,0,0,.25);
 }
 .map-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:.9rem;color:var(--muted)}
 .map-legend span{display:flex;align-items:center;gap:8px}
@@ -555,11 +442,17 @@ select{
           <pre id="asciiMap"></pre>
         </div>
         <div class="dice-panel" id="dicePanel" aria-hidden="false">
-          <div class="dice-widget">
-            <div class="dice-card">
+          <div class="dice-tray">
+            <div class="dice-bounce" id="diceBounce">—</div>
+            <div class="dice-hud">
               <div class="dice-meta" id="diceMeta">0–20 die</div>
-              <div class="dice-d20" id="diceValue">—</div>
-              <div class="dice-sub" id="diceSub">Previous roll stays here.</div>
+              <div class="dice-inline">
+                <div class="dice-d20" id="diceValue">—</div>
+                <div class="dice-copy">
+                  <div class="dice-label" id="diceLabelText">Waiting</div>
+                  <div class="dice-sub" id="diceSub">Previous roll stays here.</div>
+                </div>
+              </div>
             </div>
             <div class="dice-history-wrap">
               <div class="dice-history-title">Recent Rolls</div>
@@ -716,9 +609,8 @@ const els = {
   diceValue: document.getElementById('diceValue'),
   diceMeta: document.getElementById('diceMeta'),
   diceSub: document.getElementById('diceSub'),
+  diceLabelText: document.getElementById('diceLabelText'),
   diceBounce: document.getElementById('diceBounce'),
-  diceHistory: document.getElementById('diceHistory'),
-  diceCard: document.querySelector('#dicePanel .dice-card'),
   diceHistory: document.getElementById('diceHistory'),
   nearbyList: document.getElementById('nearbyList'),
   movesList: document.getElementById('movesList'),
@@ -773,16 +665,10 @@ let diceAnimToken = 0;
 let diceRollHistory = [];
 function renderDiceHistory(){
   if(!els.diceHistory) return;
-  const rows = rollHistory.slice(0,5).map(r=>`<div class="dice-history-item"><span class="tag">${escapeHtml(r.label||'Roll')}</span><strong>${escapeHtml(String(r.value))}</strong></div>`).join('');
-  els.diceHistory.innerHTML = rows || '<div class="dice-history-item"><span class="tag">Waiting</span><strong>—</strong></div>';
-}
-
-function renderDiceHistory(){
-  if(!els.diceHistory) return;
-  const rows = diceRollHistory.slice(-6).reverse().map(r =>
-    `<div class="item"><span>${escapeHtml(r.label)}</span><strong>${escapeHtml(String(r.roll))}</strong></div>`
+  const rows = diceRollHistory.slice(-5).reverse().map(r=>
+    `<div class="dice-history-item"><span class="tag">${escapeHtml(r.label||'Roll')}</span><strong>${escapeHtml(String(r.roll))}</strong></div>`
   ).join('');
-  els.diceHistory.innerHTML = `<div class="hdr">Recent Rolls</div>${rows || '<div class="item"><span>No rolls yet</span><strong>—</strong></div>'}`;
+  els.diceHistory.innerHTML = rows || '<div class="dice-history-item"><span class="tag">Waiting</span><strong>—</strong></div>';
 }
 function pushDiceHistory(label, roll){
   diceRollHistory.push({label: label || 'Roll', roll});
@@ -795,15 +681,15 @@ async function animateTrayBounce(finalRoll, label){
   if(!els.diceBounce || !els.dicePanel) return;
   const el = els.diceBounce;
   const box = els.dicePanel.getBoundingClientRect();
-  const pad = 18;
-  const size = 74;
+  const pad = 28;
+  const size = 72;
   const maxX = Math.max(pad+1, box.width - size - pad);
   const maxY = Math.max(pad+1, box.height - size - pad);
   let x = Math.min(maxX, Math.max(pad, pad + Math.random() * Math.max(8, box.width - size - pad*2)));
   let y = Math.min(maxY, Math.max(pad, pad + Math.random() * Math.max(8, box.height - size - pad*2)));
-  let vx = (Math.random() * 10 + 7) * (Math.random() > 0.5 ? 1 : -1);
-  let vy = (Math.random() * 8 + 5) * (Math.random() > 0.5 ? 1 : -1);
-  const gravity = 0.38;
+  let vx = (Math.random() * 8 + 6) * (Math.random() > 0.5 ? 1 : -1);
+  let vy = (Math.random() * 6 + 4) * (Math.random() > 0.5 ? 1 : -1);
+  const gravity = 0.34;
   const crit = finalRoll===20;
   const fail = finalRoll===0 || finalRoll===1;
 
@@ -812,59 +698,37 @@ async function animateTrayBounce(finalRoll, label){
   else if(fail) el.classList.add('fail');
 
   el.textContent = '—';
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
-  el.style.transform = 'rotate(0deg) scale(1)';
   el.classList.add('show');
 
-  for(let i=0;i<42;i++){
-    let hitX = false;
-    let hitY = false;
+  for(let i=0;i<36;i++){
+    let hitX = false, hitY = false;
+    x += vx; y += vy; vy += gravity;
+    if(x <= pad){ x = pad; vx = Math.abs(vx) * 0.92; hitX = true; }
+    if(x >= maxX){ x = maxX; vx = -Math.abs(vx) * 0.92; hitX = true; }
+    if(y <= pad){ y = pad; vy = Math.abs(vy) * 0.86; hitY = true; }
+    if(y >= maxY){ y = maxY; vy = -Math.abs(vy) * 0.80; vx *= 0.99; hitY = true; }
 
-    x += vx;
-    y += vy;
-    vy += gravity;
-
-    if(x <= pad){ x = pad; vx = Math.abs(vx) * 0.9; hitX = true; }
-    if(x >= maxX){ x = maxX; vx = -Math.abs(vx) * 0.9; hitX = true; }
-    if(y <= pad){ y = pad; vy = Math.abs(vy) * 0.85; hitY = true; }
-    if(y >= maxY){
-      y = maxY;
-      vy = -Math.abs(vy) * 0.78;
-      vx *= 0.98;
-      hitY = true;
-    }
-
-    const scaleX = hitY ? 1.14 : hitX ? .92 : 1;
-    const scaleY = hitY ? .88 : hitX ? 1.08 : 1;
+    const sx = hitY ? 1.10 : hitX ? .94 : 1;
+    const sy = hitY ? .90 : hitX ? 1.06 : 1;
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
-    el.style.transform = `rotate(${(vx+vy)*1.6}deg) scale(${scaleX},${scaleY})`;
-    el.style.filter = crit
-      ? 'drop-shadow(0 0 10px rgba(255,226,132,.55)) drop-shadow(0 0 24px rgba(255,180,52,.35)) brightness(1.08)'
-      : fail
-        ? 'drop-shadow(0 0 8px rgba(255,92,92,.48)) drop-shadow(0 0 20px rgba(140,18,18,.28)) brightness(1.06)'
-        : (hitX || hitY)
-          ? 'brightness(1.2)'
-          : 'none';
+    el.style.transform = `rotate(${(vx+vy)*1.5}deg) scale(${sx},${sy})`;
     el.textContent = String(Math.floor(Math.random()*21));
-    await delay(hitX || hitY ? 28 : 22);
+    await delay(hitX || hitY ? 28 + i*2 : 22 + i*2);
   }
 
   el.textContent = String(finalRoll);
   el.style.transform = 'rotate(0deg) scale(1,1)';
-  await delay(180);
+  await delay(160);
   el.classList.remove('show','crit','fail');
-  el.style.filter = 'none';
 }
 
 
 
 function clearDiceFx(){
-  if(!els.dicePanel || !els.diceCard || !els.diceValue) return;
+  if(!els.dicePanel || !els.diceValue) return;
   els.dicePanel.classList.remove('flash-crit','flash-fail');
-  els.diceCard.classList.remove('rolling','shake','crit','fail');
-  if(els.diceBounce) els.diceBounce.classList.remove('show');
+  if(els.diceBounce) els.diceBounce.classList.remove('show','crit','fail');
 }
 function hideDiceOverlay(){
   diceAnimToken++;
@@ -872,7 +736,7 @@ function hideDiceOverlay(){
 }
 
 async function animateDiceRoll(finalRoll, opts={}){
-  if(finalRoll==null || !els.dicePanel || !els.diceValue || !els.diceCard) return;
+  if(finalRoll==null || !els.dicePanel || !els.diceValue) return;
   const token = ++diceAnimToken;
   const insane = !!opts.insane;
   const actionLabel = opts.actionLabel || opts.kind || opts.type || '';
@@ -883,30 +747,23 @@ async function animateDiceRoll(finalRoll, opts={}){
 
   clearDiceFx();
   els.diceMeta.textContent = label;
+  if(els.diceLabelText) els.diceLabelText.textContent = label;
   els.diceSub.textContent = 'Rolling…';
   els.diceValue.textContent = '—';
   els.dicePanel.classList.add('show');
-  els.diceCard.classList.add('rolling');
 
   await animateTrayBounce(finalRoll, label);
   if(token!==diceAnimToken) return;
 
-  els.diceCard.classList.remove('rolling');
   els.diceValue.textContent = String(finalRoll);
   els.diceSub.textContent = sub;
 
-  if(crit){
-    els.dicePanel.classList.add('flash-crit');
-    els.diceCard.classList.add('crit');
-  }else if(fail){
-    els.dicePanel.classList.add('flash-fail');
-    els.diceCard.classList.add('fail');
-  }
+  if(crit) els.dicePanel.classList.add('flash-crit');
+  else if(fail) els.dicePanel.classList.add('flash-fail');
 
   pushDiceHistory(label, finalRoll);
-  await delay(940);
+  await delay(760);
   if(token!==diceAnimToken) return;
-  els.diceCard.classList.remove('rolling','shake','crit','fail');
   els.dicePanel.classList.remove('flash-crit','flash-fail');
 }
 
