@@ -268,7 +268,7 @@ select{
           <button class="secondary" id="saveAiBtn">Save AI Settings</button>
           <button class="secondary" id="clearAiBtn">Clear AI Settings</button>
         </div>
-        <div class="footer-note">Local Suso still decides damage, loot, movement, combat, quests, and save-state. Hybrid AI interprets natural-language intent better; AI Heavy also rewrites most turn narration and dialogue.</div>
+        <div class="footer-note">Local Suso still decides damage, loot, movement, combat, quests, and save-state. Hybrid AI interprets natural-language intent better; AI Heavy can author the actual consequence text and tell Suso what happens, while Suso applies the world-state changes.</div>
       </div>
     </section>
   </aside>
@@ -528,8 +528,154 @@ async function maybeInterpretIntent(playerText, baseIntent){
     return {intent:baseIntent, usedAI:false, error:err};
   }
 }
+
+function extractJsonFromLooseText(raw){
+  const txt=(raw||'').trim();
+  if(!txt) return null;
+  try{ return JSON.parse(txt); }catch{}
+  const first=txt.indexOf('{'), last=txt.lastIndexOf('}');
+  if(first!==-1 && last>first){
+    const slice=txt.slice(first,last+1);
+    try{ return JSON.parse(slice); }catch{}
+  }
+  return null;
+}
+function sanitizeDelta(n,min=-99,max=99){
+  n=Number(n);
+  if(!Number.isFinite(n)) return 0;
+  return Math.max(min, Math.min(max, Math.trunc(n)));
+}
+function findNamedEntity(name, dist=8){
+  if(!name) return null;
+  const low=String(name).toLowerCase();
+  let exact=(state.entities||[]).find(e=>e.alive && (e.name||'').toLowerCase()===low && Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)<=dist);
+  if(exact) return exact;
+  return (state.entities||[]).find(e=>e.alive && (e.name||'').toLowerCase().includes(low) && Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)<=dist) || null;
+}
+function validNearbyCoord(x,y,maxDist=8){
+  x=Number(x); y=Number(y);
+  if(!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  if(y<0 || y>=state.map.grid.length || x<0 || x>=state.map.grid[0].length) return false;
+  if(Math.abs(x-state.player.x)+Math.abs(y-state.player.y) > maxDist) return false;
+  return true;
+}
+function canStandOnTile(c){
+  return c!=null && c!=='#';
+}
+async function maybeAiPrimaryOutcome(playerText, intent, baseRoll, room){
+  const ai=state?.ai;
+  if(!ai?.enabled || !ai.apiKey || ai.mode==='local' || intent.fromArrow || intent.type==='move') return null;
+  const nearby = nearbyInteractiveContext(3).slice(0,8).map(n=>({kind:n.kind,label:n.label,dist:n.d,x:n.x,y:n.y}));
+  const hostiles = nearbyEntities('hostile',6).map(e=>({name:e.name,hp:e.hp,dist:Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y),type:e.type})).slice(0,5);
+  const npcs = nearbyEntities('npc',6).map(e=>({name:e.name,dist:Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)})).slice(0,5);
+  const systemText = 'You are the primary consequence author for a procedural dungeon crawler when AI mode is active. The player can say wild specific things like "I one punch kill the mire hound" or "I gather rubble in my pockets" and you should respond to the exact phrasing, not flatten it into a generic intent label. You decide what happens narratively. Return STRICT JSON ONLY. You may be generous, harsh, ironic, or surprising, but keep it grounded in the current room state and roll. Use the roll seriously. If the action is plausible but strong, allow it with costs. If it is impossible, say so and create a meaningful consequence. Schema: {"use_ai":true,"kind":"sys|good|bad","meta":"short label","narration":"2-7 vivid sentences responding directly to what the player said","health_delta":-3..3,"gain_items":[{"name":"item","qty":1,"desc":"optional"}],"lose_items":["item"],"facts":["short fact"],"flags":{"innerGateOpen":true,"questKeyFound":false,"warded":true,"usedShrine":true},"kill_enemy":["exact nearby enemy name"],"damage_enemy":[{"name":"enemy","amount":1}],"move_player_to":{"x":number,"y":number},"set_tiles":[{"x":number,"y":number,"tile":".|O|D|W|X|T|^|k"}],"quest_note":"optional short note","noise":"none|low|medium|high"}. Never move the player more than 4 tiles. Never target objects or enemies absent from nearby context. If nothing mechanical changes, still write bespoke narration.';
+  const payload = {
+    playerAction: playerText,
+    roll: baseRoll,
+    intent,
+    room: room ? {name: room.name, tags: Array.from(room.tags||[]), features: roomFeatureSummary(state,room).map(symbolName)} : null,
+    nearby, hostiles, npcs,
+    state: compactStateSnapshot()
+  };
+  try{
+    const rsp = await callConfiguredLLM(systemText, payload);
+    const aiJson = extractJsonFromLooseText(rsp?.text || '');
+    if(!aiJson || aiJson.use_ai===false) return null;
+    return aiJson;
+  }catch(err){
+    console.error(err);
+    return null;
+  }
+}
+function applyAiPrimaryOutcome(aiJson, playerText, intent, baseRoll, room){
+  let changed=false;
+  const kind = (aiJson.kind==='good'||aiJson.kind==='bad') ? aiJson.kind : 'sys';
+  const meta = aiJson.meta || `${intent.type[0].toUpperCase()+intent.type.slice(1)} · ${baseRoll}`;
+  let narration = (aiJson.narration || '').trim();
+  if(!narration) narration = `The dungeon answers your choice, but the answer arrives without language.`;
+  const hd = sanitizeDelta(aiJson.health_delta, -3, 3);
+  if(hd<0){ damagePlayer(Math.abs(hd), 'The exchange bites back.'); changed=true; }
+  else if(hd>0){ healPlayer(hd, 'Something in the moment turns in your favor.'); changed=true; }
+
+  if(Array.isArray(aiJson.gain_items)){
+    for(const it of aiJson.gain_items.slice(0,4)){
+      if(!it || !it.name) continue;
+      gainItem({name:String(it.name).slice(0,40), qty: Math.max(1, Math.min(5, Number(it.qty)||1)), desc: String(it.desc||'A thing gained through play.').slice(0,120)});
+      changed=true;
+    }
+  }
+  if(Array.isArray(aiJson.lose_items)){
+    for(const nm of aiJson.lose_items.slice(0,4)){
+      if(typeof nm!=='string') continue;
+      if(removeItem(nm,1)) changed=true;
+    }
+  }
+  if(aiJson.flags && typeof aiJson.flags==='object'){
+    for(const [k,v] of Object.entries(aiJson.flags)){
+      if(k in state.flags && typeof v==='boolean'){ state.flags[k]=v; changed=true; }
+    }
+  }
+  if(Array.isArray(aiJson.kill_enemy)){
+    for(const nm of aiJson.kill_enemy.slice(0,3)){
+      const e=findNamedEntity(nm,6);
+      if(!e) continue;
+      e.alive=false;
+      if(state.map.grid[e.y]?.[e.x]==='E') state.map.grid[e.y][e.x]='.';
+      narration += ` ${e.name} goes down hard.`;
+      changed=true;
+    }
+  }
+  if(Array.isArray(aiJson.damage_enemy)){
+    for(const d of aiJson.damage_enemy.slice(0,3)){
+      const e=findNamedEntity(d?.name,6);
+      if(!e) continue;
+      e.hp = Math.max(0, e.hp - Math.max(1, Math.min(4, Number(d.amount)||1)));
+      if(e.hp<=0){
+        e.alive=false;
+        if(state.map.grid[e.y]?.[e.x]==='E') state.map.grid[e.y][e.x]='.';
+        narration += ` ${e.name} buckles and falls.`;
+      }
+      changed=true;
+    }
+  }
+  if(aiJson.move_player_to && validNearbyCoord(aiJson.move_player_to.x, aiJson.move_player_to.y, 4)){
+    const x=Math.trunc(aiJson.move_player_to.x), y=Math.trunc(aiJson.move_player_to.y);
+    if(canStandOnTile(state.map.grid[y][x])){
+      movePlayer(x,y); changed=true;
+    }
+  }
+  if(Array.isArray(aiJson.set_tiles)){
+    for(const st of aiJson.set_tiles.slice(0,5)){
+      if(!validNearbyCoord(st?.x, st?.y, 6)) continue;
+      const t=String(st.tile||'.');
+      if(!['.','O','D','W','X','T','^','k'].includes(t)) continue;
+      state.map.grid[Math.trunc(st.y)][Math.trunc(st.x)] = t;
+      changed=true;
+    }
+  }
+  if(Array.isArray(aiJson.facts)){
+    for(const f of aiJson.facts.slice(0,4)){
+      if(typeof f==='string' && f.trim()){ state.facts.push(f.trim()); changed=true; }
+    }
+    if(state.facts.length>60) state.facts=state.facts.slice(-60);
+  }
+  if(typeof aiJson.quest_note==='string' && aiJson.quest_note.trim()){
+    state.facts.push(`Quest note: ${aiJson.quest_note.trim()}`);
+    if(state.facts.length>60) state.facts=state.facts.slice(-60);
+  }
+  if(aiJson.noise && aiJson.noise!=='none'){
+    narration += aiJson.noise==='high'
+      ? ' The noise races through the dungeon and invites attention.'
+      : aiJson.noise==='medium'
+        ? ' The room does not keep the sound to itself.'
+        : ' Something somewhere could have heard that.';
+  }
+  return {kind, text:narration, meta, usedAiPrimary:true, changed};
+}
+
 async function maybeAiFinalizeTurn(playerText, result, resolvedIntent){
   const ai=state?.ai;
+  if(result?.usedAiPrimary) return;
   if(!ai?.enabled || !ai.apiKey || ai.mode==='local' || aiEnhancing) return;
   aiEnhancing=true;
   if(els.thinking) els.thinking.style.display='inline-flex';
@@ -960,7 +1106,10 @@ async function resolveAction(input){
   let baseRoll = intent.fromArrow ? null : (intent.insane ? rollWithInsaneModifier() : roll());
   if(baseRoll===0){ setTurnBusy(false); killPlayer('The dungeon rejects the turn completely. Fate drops out beneath you.'); return; }
   let result;
-  if(intent.type==='move' && intent.fromArrow) result=resolveArrowTravel(intent.direction, room);
+  const aiPrimary = await maybeAiPrimaryOutcome(text, intent, baseRoll, room);
+  if(aiPrimary){
+    result = applyAiPrimaryOutcome(aiPrimary, text, intent, baseRoll, room);
+  } else if(intent.type==='move' && intent.fromArrow) result=resolveArrowTravel(intent.direction, room);
   else if(intent.type==='move') result=resolveMove(intent, baseRoll, room, rr);
   else if(intent.type==='inspect') result=resolveInspect(intent, baseRoll, room, rr);
   else if(intent.type==='listen') result=resolveListen(intent, baseRoll, room, rr);
@@ -973,7 +1122,7 @@ async function resolveAction(input){
   else if(intent.type==='combine') result=resolveCombine(intent, baseRoll, room, rr);
   else result=resolveInteract(intent, baseRoll, room, rr);
 
-  if(interpreted.usedAI && intent.aiReasoning){
+  if(!result.usedAiPrimary && interpreted.usedAI && intent.aiReasoning){
     result.text += `\n\nSuso reads your intent as: ${intent.aiReasoning}`;
   }
 
