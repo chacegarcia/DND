@@ -51,6 +51,19 @@ body{
 .map-panel-body{max-height:none !important;overflow:visible !important}
 h1,h2,h3{margin:0}
 .title-card{padding:18px}
+
+.collapsible-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.collapsible-panel .collapsible-body{
+  overflow:hidden;
+}
+.collapsible-panel.collapsed .collapsible-body{
+  display:none !important;
+}
 .subtitle{color:var(--muted);line-height:1.45;margin-top:8px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:.84rem;color:var(--muted)}
@@ -75,6 +88,25 @@ h1,h2,h3{margin:0}
 .entry.bad{border-color:rgba(217,107,86,.28)}
 .entry .meta{font-size:.78rem;color:var(--muted);margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase}
 .entry .body{white-space:pre-wrap;line-height:1.5}
+.entry .hint-wrap{margin-top:10px}
+.entry .hint-btn{
+  padding:6px 10px;
+  font-size:.78rem;
+  line-height:1;
+  border-radius:999px;
+}
+.entry .hint-text{
+  display:none;
+  margin-top:8px;
+  padding:10px 11px;
+  border-radius:10px;
+  border:1px solid rgba(123,214,139,.18);
+  background:rgba(123,214,139,.08);
+  color:#e9f2e0;
+  font-size:.92rem;
+  line-height:1.45;
+}
+.entry .hint-wrap.open .hint-text{display:block}
 textarea,input[type="text"]{
   width:100%;background:rgba(20,16,13,.88);color:var(--ink);border:1px solid var(--line);border-radius:14px;
   padding:12px 14px;font:inherit;line-height:1.45;
@@ -104,156 +136,270 @@ select{
   position:relative;
   width:100%;
   aspect-ratio:1 / 1;
-  min-height:320px;
-  max-height:420px;
+  min-height:360px;
+  max-height:460px;
   border-top:1px solid var(--line);
   background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.04), rgba(0,0,0,.12) 45%, rgba(0,0,0,.42));
   overflow:hidden;cursor:grab;user-select:none;border-radius:12px;
 }
 #mapCanvas{background:rgba(10,7,6,.08)}
+
+.map-legend-overlay{
+  position:absolute;
+  left:10px;
+  top:10px;
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  pointer-events:auto;
+}
+.map-legend-overlay-head{display:flex;justify-content:flex-start}
+.map-legend-toggle{
+  padding:7px 11px !important;
+  border-radius:999px !important;
+  font-size:.78rem !important;
+  line-height:1 !important;
+}
+.map-legend-overlay-body{
+  display:none;
+  width:min(320px, calc(100vw - 40px));
+  padding:10px;
+  border-radius:12px;
+  background:linear-gradient(180deg, rgba(19,14,12,.86), rgba(9,7,6,.9));
+  border:1px solid rgba(229,178,92,.16);
+  box-shadow:0 8px 18px rgba(0,0,0,.24);
+  backdrop-filter: blur(2px);
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.map-legend-overlay.open .map-legend-overlay-body{display:grid}
+.legend-chip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:28px;
+  padding:6px 8px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.05);
+  background:rgba(255,255,255,.03);
+  color:#edd6b0;
+  font-size:.84rem;
+}
+.legend-swatch{
+  width:14px;
+  height:14px;
+  border-radius:4px;
+  border:1px solid rgba(255,255,255,.12);
+  flex:0 0 auto;
+}
+
 .map-stage.dragging{cursor:grabbing}
+
+.map-battlebar{
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  z-index:4;
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:linear-gradient(180deg, rgba(20,14,12,.82), rgba(10,8,7,.88));
+  border:1px solid rgba(229,178,92,.16);
+  box-shadow:0 8px 18px rgba(0,0,0,.25);
+  backdrop-filter: blur(2px);
+}
+.map-battlebar.show{display:flex}
+.battlebar-info{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.battlebar-title{
+  color:#f2dfbf;
+  font-size:.9rem;
+  font-weight:700;
+}
+.battlebar-sub{
+  color:var(--muted);
+  font-size:.78rem;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.battlebar-actions{
+  display:flex;
+  gap:8px;
+  flex:0 0 auto;
+}
+.battlebar-actions button{padding:8px 12px}
+
 #mapCanvas,#asciiMap{position:absolute;left:0;top:0;transform-origin:0 0;image-rendering:pixelated}
 #asciiMap{display:none;color:#edd6b0;background:rgba(10,7,6,.22);padding:10px;border-radius:12px;font:13px/13px "Courier New",monospace;white-space:pre}
+
+@keyframes diceCardFloat{
+  0%{ transform:translateY(0) scale(1); }
+  50%{ transform:translateY(-3px) scale(1.02); }
+  100%{ transform:translateY(0) scale(1); }
+}
+@keyframes diceShake{
+  0%{ transform:translateX(0) rotate(0deg); }
+  16%{ transform:translateX(-7px) rotate(-3deg); }
+  32%{ transform:translateX(6px) rotate(2.5deg); }
+  48%{ transform:translateX(-5px) rotate(-2deg); }
+  64%{ transform:translateX(4px) rotate(1.5deg); }
+  80%{ transform:translateX(-2px) rotate(-1deg); }
+  100%{ transform:translateX(0) rotate(0deg); }
+}
+@keyframes diceCritPulse{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(1.07); }
+  100%{ transform:scale(1); }
+}
+@keyframes diceFailPulse{
+  0%{ transform:scale(1); filter:saturate(1); }
+  40%{ transform:scale(.97); filter:saturate(1.25); }
+  100%{ transform:scale(1); filter:saturate(1); }
+}
 
 .dice-panel{
   background:transparent !important;
   border:0 !important;
   box-shadow:none !important;
-  padding:8px 0 0 !important;
+  padding:6px 0 0 !important;
   min-height:0 !important;
   overflow:visible !important;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
 .dice-tray{
   position:relative;
-  min-height:190px;
   width:100%;
+  height:230px;
   background:url('dice_tray_bg.png') center/100% 100% no-repeat;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 150px;
-  gap:14px;
-  align-items:stretch;
-  padding:22px 22px 18px;
+  border:0;
+  overflow:hidden;
 }
-.dice-hud{
-  align-self:end;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  max-width:340px;
-}
-.dice-inline{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-.dice-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
-.dice-label{
-  font-size:1rem;
-  font-weight:800;
-  color:#f1ddb4;
-  letter-spacing:.04em;
-}
-.dice-meta{
-  font-size:.72rem;
-  color:#d7b27a;
-  text-transform:uppercase;
-  letter-spacing:.14em;
-  font-weight:800;
-}
-.dice-sub{
-  font-size:.88rem;
-  color:#d8c3a1;
-  line-height:1.2;
-  max-width:240px;
-}
-.dice-d20{
-  width:78px;
-  height:78px;
-  flex:0 0 78px;
-  display:grid;
-  place-items:center;
-  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
-  background:linear-gradient(180deg, rgba(185,137,66,.88), rgba(96,63,24,.92));
-  border:1px solid rgba(250,223,173,.72);
-  color:#fff7e7;
-  font-size:1.6rem;
-  font-weight:900;
-  text-shadow:0 2px 10px rgba(0,0,0,.45);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 10px 20px rgba(0,0,0,.25);
+.dice-canvas{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  z-index:1;
 }
 .dice-history-wrap{
-  align-self:stretch;
-  justify-self:end;
-  width:150px;
+  width:100%;
   padding:10px 12px;
-  border-radius:16px;
-  background:rgba(10,8,7,.34);
-  border:1px solid rgba(229,178,92,.10);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(15,10,8,.30), rgba(10,7,6,.42));
+  border:1px solid rgba(233,184,95,.12);
+  box-shadow:0 6px 18px rgba(0,0,0,.12), inset 0 0 0 1px rgba(255,255,255,.02);
+  backdrop-filter:blur(2px);
+}
+
+.tray-status-badge{
+  position:absolute;
+  left:12px;
+  top:12px;
+  z-index:3;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:.76rem;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  background:rgba(18,14,12,.68);
+  border:1px solid rgba(229,178,92,.18);
+  color:#f0ddbf;
+  box-shadow:0 6px 14px rgba(0,0,0,.18);
+}
+.tray-status-badge.lucky{
+  color:#bff5c9;
+  border-color:rgba(80,255,140,.28);
+  background:rgba(12,28,18,.74);
+}
+.tray-status-badge.unlucky{
+  color:#e5c59f;
+  border-color:rgba(155,105,55,.28);
+  background:rgba(36,22,12,.74);
+}
+.dice-history-wrap.stacked{
+  position:relative;
+  right:auto;
+  top:auto;
+  z-index:1;
+}
+
+.dice-history-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:8px;
+}
+.luck-select{
+  appearance:none;
+  -webkit-appearance:none;
+  border:1px solid rgba(233,184,95,.18);
+  background:rgba(24,16,12,.52);
+  color:#f0ddbf;
+  border-radius:999px;
+  padding:4px 10px;
+  font-size:.74rem;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.dice-history-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:8px;
+}
+.quick-roll-btn{
+  padding:6px 10px !important;
+  font-size:.76rem !important;
+  line-height:1 !important;
+  border-radius:999px !important;
 }
 .dice-history-title{
-  font-size:.72rem;
-  color:#d7b27a;
-  text-transform:uppercase;
-  letter-spacing:.14em;
   margin-bottom:8px;
-  font-weight:800;
+  font-size:.74rem;
+  color:#e1bf87;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  font-weight:900;
+  text-align:left;
 }
 .dice-history{
   display:flex;
-  flex-direction:column;
-  gap:6px;
+  flex-wrap:wrap;
+  gap:8px;
 }
 .dice-history-item{
   display:flex;
-  justify-content:space-between;
+  justify-content:center;
   align-items:center;
-  gap:8px;
-  padding:4px 0;
-  border-bottom:1px solid rgba(255,255,255,.05);
-  color:#efddbf;
-  font-size:.84rem;
+  min-width:34px;
+  min-height:28px;
+  padding:2px 10px;
+  color:#f0ddbf;
+  font-size:1rem;
+  font-weight:900;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:999px;
+  background:rgba(255,255,255,.03);
+  text-shadow:0 1px 6px rgba(0,0,0,.35);
 }
 .dice-history-item:last-child{border-bottom:0}
-.dice-history-item .tag{
-  color:#d7c19d;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.dice-bounce{
-  position:absolute;
-  opacity:0;
-  visibility:hidden;
-  width:72px;
-  height:72px;
-  display:grid;
-  place-items:center;
-  clip-path:polygon(50% 0%, 88% 22%, 100% 62%, 78% 100%, 22% 100%, 0% 62%, 12% 22%);
-  background:linear-gradient(180deg, rgba(236,192,120,.95), rgba(126,80,31,.96));
-  border:1px solid rgba(255,228,184,.84);
-  color:#fff7e9;
-  font-size:1.4rem;
-  font-weight:900;
-  text-shadow:0 2px 10px rgba(0,0,0,.4);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 20px rgba(0,0,0,.28);
-  pointer-events:none;
-  opacity:0;
-  z-index:3;
-}
-.dice-bounce.show{opacity:1}
-.dice-bounce.crit{
-  filter:drop-shadow(0 0 12px rgba(255,220,120,.65)) drop-shadow(0 0 26px rgba(255,180,52,.34));
-}
-.dice-bounce.fail{
-  filter:drop-shadow(0 0 10px rgba(255,104,104,.58)) drop-shadow(0 0 24px rgba(120,18,18,.30));
-}
-.dice-panel.flash-crit .dice-d20{
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 20px rgba(255,220,120,.32), 0 10px 20px rgba(0,0,0,.25);
-}
-.dice-panel.flash-fail .dice-d20{
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 18px rgba(255,104,104,.24), 0 10px 20px rgba(0,0,0,.25);
-}
 .map-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:.9rem;color:var(--muted)}
 .map-legend span{display:flex;align-items:center;gap:8px}
 .swatch{width:14px;height:14px;border-radius:4px;background:#666;border:1px solid rgba(255,255,255,.15)}
@@ -279,93 +425,24 @@ select{
 @media (max-width:1240px){
   .app{grid-template-columns:1fr;height:auto;min-height:100vh;overflow:visible}
   .center{min-height:auto}
-  .map-stage{height:420px}
+  .map-stage{min-height:320px;max-height:420px}
 }
-
-/* v2 dice tray cleanup */
-.dice-panel{
-  background:url('dice_tray_bg.png') center/contain no-repeat !important;
-  background-color:transparent !important;
-  min-height:220px !important;
-  padding:0 !important;
-  margin-top:10px;
-  overflow:hidden !important;
-  border:none !important;
-  box-shadow:none !important;
-}
-.dice-panel::before{ display:none !important; }
-.dice-panel .dice-card{
-  position:absolute !important;
-  left:16px !important;
-  bottom:14px !important;
-  top:auto !important;
-  transform:none !important;
-  min-width:140px;
-  gap:4px !important;
-  padding:10px 12px !important;
-  background:rgba(12,9,8,.18) !important;
-  border:1px solid rgba(229,178,92,.18) !important;
-  box-shadow:none !important;
-  backdrop-filter:none !important;
-  z-index:6 !important;
-}
-.dice-meta{
-  font-size:.66rem !important;
-  padding:0 !important;
-  background:none !important;
-  border:none !important;
-  color:#f0d6aa !important;
-  text-align:left !important;
-}
-.dice-d20{
-  width:58px !important;
-  height:58px !important;
-  font-size:1.2rem !important;
-}
-.dice-sub{
-  max-width:150px !important;
-  font-size:.78rem !important;
-  text-align:left !important;
-}
-.dice-roll-history{
-  right:16px !important;
-  top:14px !important;
-  width:110px !important;
-  max-height:132px !important;
-  padding:6px 8px !important;
-  background:rgba(12,9,8,.16) !important;
-  border:1px solid rgba(229,178,92,.12) !important;
-  box-shadow:none !important;
-  backdrop-filter:none !important;
-  z-index:6 !important;
-}
-.dice-roll-history .hdr{
-  font-size:.62rem !important;
-  margin-bottom:4px !important;
-}
-.dice-roll-history .item{
-  font-size:.76rem !important;
-  padding:2px 0 !important;
-}
-.dice-bounce{
-  z-index:5 !important;
-  opacity:0;
-  transition:opacity .06s linear;
-}
-.dice-bounce.show{ opacity:1 !important; }
-
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="left">
-    <section class="panel title-card">
-      <h1 style="font-size:1.9rem">Aillumi's Dungeon</h1>
-      <div class="subtitle" id="premiseText">Suso v2 is weaving a new descent.</div>
-      <div class="chips" id="runChips"></div>
+    <section class="panel title-card collapsible-panel" id="titleCard">
+      <div class="panel-head collapsible-head">
+        <h1 style="font-size:1.9rem;margin:0">Aillumi's Dungeon</h1>
+        <button class="secondary" id="titleCardToggleBtn" type="button" aria-expanded="true">Collapse</button>
+      </div>
+      <div class="panel-body collapsible-body" id="titleCardBody" style="display:flex;flex-direction:column;gap:8px">
+        <div class="subtitle" id="premiseText">Suso v2 is weaving a new descent.</div>
+        <div class="chips" id="runChips"></div>
+      </div>
     </section>
-
-    <section class="panel">
+<section class="panel">
       <div class="panel-head"><h3>Expedition</h3><span class="badge" id="engineBadge">Suso Local</span></div>
       <div class="panel-body stats">
         <div class="stat"><div class="label">Delver</div><div class="value" id="playerNameOut">Unknown</div></div>
@@ -375,6 +452,11 @@ select{
           <div class="meter"><span id="healthBar"></span></div>
         </div>
       </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h3>Equipment</h3></div>
+      <div class="panel-body listcol" id="equipmentList"></div>
     </section>
 
     <section class="panel">
@@ -442,31 +524,53 @@ select{
         <div class="map-stage" id="mapStage">
           <canvas id="mapCanvas"></canvas>
           <pre id="asciiMap"></pre>
-        </div>
-        <div class="dice-panel" id="dicePanel" aria-hidden="false">
-          <div class="dice-tray">
-            <div class="dice-bounce" id="diceBounce">—</div>
-            <div class="dice-hud">
-              <div class="dice-meta" id="diceMeta">0–20 die</div>
-              <div class="dice-inline">
-                <div class="dice-d20" id="diceValue">—</div>
-                <div class="dice-copy">
-                  <div class="dice-label" id="diceLabelText">Waiting</div>
-                  <div class="dice-sub" id="diceSub">Previous roll stays here.</div>
-                </div>
-              </div>
+          <div class="map-legend-overlay" id="mapLegendOverlay">
+            <div class="map-legend-overlay-head">
+              <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button">Show Legend</button>
             </div>
-            <div class="dice-history-wrap">
-              <div class="dice-history-title">Recent Rolls</div>
-              <div class="dice-history" id="diceHistory"></div>
+            <div class="map-legend-overlay-body" id="mapLegendOverlayBody">
+              <div class="legend-chip"><span class="legend-swatch" style="background:#7c5f3a"></span> Door / structure</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#2c6f9e"></span> Water</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#9b7a2c"></span> Chest / loot</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#8b2f2a"></span> Enemy</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#8d5c96"></span> Shrine</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#6c6c6c"></span> Rubble</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#d6d0c2"></span> Stairs / exit</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#2fa36e"></span> Player</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#b85a3c"></span> Trap</div>
+              <div class="legend-chip"><span class="legend-swatch" style="background:#d4c36a"></span> Key / relic</div>
+            </div>
+          </div>
+          <div class="map-battlebar" id="battleBar">
+            <div class="battlebar-info">
+              <div class="battlebar-title" id="battleBarTitle">Combat engaged</div>
+              <div class="battlebar-sub" id="battleBarEnemyHp">Enemy HP: —</div>
+              <div class="battlebar-sub" id="battleBarSub">Hostile nearby.</div>
+            </div>
+            <div class="battlebar-actions">
+              <button id="battleAttackBtn">Attack</button>
+              <button class="secondary" id="battleDefendBtn">Defend</button>
             </div>
           </div>
         </div>
+        <div class="dice-panel" id="dicePanel">
+          <div class="dice-tray" id="diceTray">
+            <canvas class="dice-canvas" id="diceCanvas" width="900" height="230"></canvas>
+            <div class="tray-status-badge" id="trayLuckBadge">Normal</div>
+          </div>
+          <div class="dice-history-wrap stacked" id="diceHistoryWrap">
+            <div class="dice-history-head">
+              <div class="dice-history-title">Recent Rolls</div>
+              <button class="secondary quick-roll-btn" id="quickRollBtn" type="button">Quick Roll: Off</button>
+            </div>
+            <div class="dice-history" id="diceHistory"></div>
+          </div>
+        </div>
         <div class="map-legend">
-          <span><i class="swatch" style="background:#9d7a49"></i> doors / structures</span>
-          <span><i class="swatch" style="background:#365c78"></i> water</span>
-          <span><i class="swatch" style="background:#8b6537"></i> loot / quest</span>
-          <span><i class="swatch" style="background:#6e2a20"></i> enemies / danger</span>
+          <span><i class="swatch" style="background:#7c5f3a"></i> doors / structures</span>
+          <span><i class="swatch" style="background:#2c6f9e"></i> water</span>
+          <span><i class="swatch" style="background:#9b7a2c"></i> loot / quest</span>
+          <span><i class="swatch" style="background:#8b2f2a"></i> enemies / danger</span>
         </div>
       </div>
     </section>
@@ -578,11 +682,15 @@ const els = {
   loadFromModalBtn: document.getElementById('loadFromModalBtn'),
   premiseText: document.getElementById('premiseText'),
   runChips: document.getElementById('runChips'),
+  titleCard: document.getElementById('titleCard'),
+  titleCardBody: document.getElementById('titleCardBody'),
+  titleCardToggleBtn: document.getElementById('titleCardToggleBtn'),
   playerNameOut: document.getElementById('playerNameOut'),
   locationOut: document.getElementById('locationOut'),
   healthOut: document.getElementById('healthOut'),
   healthBar: document.getElementById('healthBar'),
   engineBadge: document.getElementById('engineBadge'),
+  equipmentList: document.getElementById('equipmentList'),
   questList: document.getElementById('questList'),
   inventoryList: document.getElementById('inventoryList'),
   factsList: document.getElementById('factsList'),
@@ -607,13 +715,21 @@ const els = {
   zoomInBtn: document.getElementById('zoomInBtn'),
   zoomOut: document.getElementById('zoomOut'),
   atlasStatus: document.getElementById('atlasStatus'),
+  battleBar: document.getElementById('battleBar'),
+  battleBarTitle: document.getElementById('battleBarTitle'),
+  battleBarEnemyHp: document.getElementById('battleBarEnemyHp'),
+  battleBarSub: document.getElementById('battleBarSub'),
+  battleAttackBtn: document.getElementById('battleAttackBtn'),
+  battleDefendBtn: document.getElementById('battleDefendBtn'),
   dicePanel: document.getElementById('dicePanel'),
-  diceValue: document.getElementById('diceValue'),
-  diceMeta: document.getElementById('diceMeta'),
-  diceSub: document.getElementById('diceSub'),
-  diceLabelText: document.getElementById('diceLabelText'),
-  diceBounce: document.getElementById('diceBounce'),
+  trayLuckBadge: document.getElementById('trayLuckBadge'),
+  diceTray: document.getElementById('diceTray'),
+  diceCanvas: document.getElementById('diceCanvas'),
+  diceHistoryWrap: document.getElementById('diceHistoryWrap'),
   diceHistory: document.getElementById('diceHistory'),
+  quickRollBtn: document.getElementById('quickRollBtn'),
+  luckModeSelect: document.getElementById('luckModeSelect'),
+  diceCard: document.querySelector('#diceOverlay .dice-card'),
   nearbyList: document.getElementById('nearbyList'),
   movesList: document.getElementById('movesList'),
   enhancerState: document.getElementById('enhancerState'),
@@ -627,11 +743,51 @@ const els = {
   saveAiBtn: document.getElementById('saveAiBtn'),
   clearAiBtn: document.getElementById('clearAiBtn'),
   thinking: document.getElementById('thinking'),
+  equipModal: document.getElementById('equipModal'),
+  equipCurrentCard: document.getElementById('equipCurrentCard'),
+  equipCandidateCard: document.getElementById('equipCandidateCard'),
+  equipReplaceBtn: document.getElementById('equipReplaceBtn'),
+  equipKeepBtn: document.getElementById('equipKeepBtn'),
+  equipCloseBtn: document.getElementById('equipCloseBtn'),
+  equipModalHint: document.getElementById('equipModalHint'),
 };
 
-let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false, showApiKey=false;
+let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false, showApiKey=false, mapLegendOpen=false;
 let turnBusy = false;
+let quickRollMode = false;
+let pendingEquipChoice = null;
 
+
+function syncTitleCardToggle(){
+  if(!els.titleCard || !els.titleCardToggleBtn) return;
+  const collapsed = els.titleCard.classList.contains('collapsed');
+  els.titleCardToggleBtn.textContent = collapsed ? 'Open' : 'Collapse';
+  els.titleCardToggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+function toggleTitleCard(forceCollapsed=null){
+  if(!els.titleCard) return;
+  const collapsed = forceCollapsed == null
+    ? !els.titleCard.classList.contains('collapsed')
+    : !!forceCollapsed;
+  els.titleCard.classList.toggle('collapsed', collapsed);
+  syncTitleCardToggle();
+}
+
+function rollDelay(ms){
+  const n = Number(ms) || 0;
+  return quickRollMode ? Math.max(6, Math.floor(n * 0.28)) : n;
+}
+function syncQuickRollBtn(){
+  if(!els.quickRollBtn) return;
+  els.quickRollBtn.textContent = `Quick Roll: ${quickRollMode ? 'On' : 'Off'}`;
+}
+
+
+function syncMapLegendToggle(){
+  if(!els.mapLegendOverlay || !els.mapLegendToggleBtn) return;
+  els.mapLegendOverlay.classList.toggle('open', !!mapLegendOpen);
+  els.mapLegendToggleBtn.textContent = mapLegendOpen ? 'Hide Legend' : 'Show Legend';
+}
 function setTurnBusy(busy, msg=''){
   turnBusy = !!busy;
   if(els.actionInput) els.actionInput.disabled = turnBusy;
@@ -663,113 +819,268 @@ function estimateThinkTime(intent){
   return ms;
 }
 
+
 let diceAnimToken = 0;
 let diceRollHistory = [];
+let diceCanvasState = {
+  x: 110, y: 145, vx: 0, vy: 0, angle: 0, va: 0,
+  value: '—', visible: false, glow: 'none',
+  trail: [],
+  trailMode: 'normal',
+  pendingGlow: 'none'
+};
+let luckMode = 'normal';
+let currentRollLuckMode = 'normal';
+
+
+function rollSkewedByLuck(){
+  const roll = () => Math.floor(Math.random()*21);
+  if(currentRollLuckMode==='lucky'){
+    return Math.min(20, Math.max(roll(), roll(), roll()) + 2);
+  }
+  if(currentRollLuckMode==='unlucky'){
+    return Math.max(0, Math.min(roll(), roll()) - 1);
+  }
+  return roll();
+}
+function pushTrailPoint(x,y){
+  const glow = diceCanvasState.trailMode;
+  diceCanvasState.trail.push({x,y,life:1,mode:glow});
+  if(diceCanvasState.trail.length > 18) diceCanvasState.trail = diceCanvasState.trail.slice(-18);
+}
 function renderDiceHistory(){
   if(!els.diceHistory) return;
-  const rows = diceRollHistory.slice(-5).reverse().map(r=>
-    `<div class="dice-history-item"><span class="tag">${escapeHtml(r.label||'Roll')}</span><strong>${escapeHtml(String(r.roll))}</strong></div>`
+  const items = diceRollHistory.slice(-5).reverse().map(r =>
+    `<div class="dice-history-item"><strong>${escapeHtml(String(r.roll))}</strong></div>`
   ).join('');
-  els.diceHistory.innerHTML = rows || '<div class="dice-history-item"><span class="tag">Waiting</span><strong>—</strong></div>';
+  els.diceHistory.innerHTML = items || '<div class="dice-history-item"><strong>—</strong></div>';
 }
 function pushDiceHistory(label, roll){
   diceRollHistory.push({label: label || 'Roll', roll});
   if(diceRollHistory.length > 10) diceRollHistory = diceRollHistory.slice(-10);
   renderDiceHistory();
 }
+function resizeDiceCanvas(){
+  if(!els.diceCanvas || !els.diceTray) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(320, Math.round(els.diceTray.clientWidth || 320));
+  const h = 230;
+  els.diceCanvas.width = Math.round(w * dpr);
+  els.diceCanvas.height = Math.round(h * dpr);
+  els.diceCanvas.style.width = `${w}px`;
+  els.diceCanvas.style.height = `${h}px`;
 
-
-async function animateTrayBounce(finalRoll, label){
-  if(!els.diceBounce || !els.dicePanel) return;
-  const el = els.diceBounce;
-  const box = els.dicePanel.getBoundingClientRect();
-  const pad = 28;
-  const size = 72;
-  const maxX = Math.max(pad+1, box.width - size - pad);
-  const maxY = Math.max(pad+1, box.height - size - pad);
-  let x = Math.min(maxX, Math.max(pad, pad + Math.random() * Math.max(8, box.width - size - pad*2)));
-  let y = Math.min(maxY, Math.max(pad, pad + Math.random() * Math.max(8, box.height - size - pad*2)));
-  let vx = (Math.random() * 8 + 6) * (Math.random() > 0.5 ? 1 : -1);
-  let vy = (Math.random() * 6 + 4) * (Math.random() > 0.5 ? 1 : -1);
-  const gravity = 0.34;
-  const crit = finalRoll===20;
-  const fail = finalRoll===0 || finalRoll===1;
-
-  el.classList.remove('crit','fail');
-  if(crit) el.classList.add('crit');
-  else if(fail) el.classList.add('fail');
-
-  el.textContent = '—';
-  el.classList.add('show');
-
-  for(let i=0;i<36;i++){
-    let hitX = false, hitY = false;
-    x += vx; y += vy; vy += gravity;
-    if(x <= pad){ x = pad; vx = Math.abs(vx) * 0.92; hitX = true; }
-    if(x >= maxX){ x = maxX; vx = -Math.abs(vx) * 0.92; hitX = true; }
-    if(y <= pad){ y = pad; vy = Math.abs(vy) * 0.86; hitY = true; }
-    if(y >= maxY){ y = maxY; vy = -Math.abs(vy) * 0.80; vx *= 0.99; hitY = true; }
-
-    const sx = hitY ? 1.10 : hitX ? .94 : 1;
-    const sy = hitY ? .90 : hitX ? 1.06 : 1;
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    el.style.transform = `rotate(${(vx+vy)*1.5}deg) scale(${sx},${sy})`;
-    el.textContent = String(Math.floor(Math.random()*21));
-    await delay(hitX || hitY ? 28 + i*2 : 22 + i*2);
-  }
-
-  el.textContent = String(finalRoll);
-  el.style.transform = 'rotate(0deg) scale(1,1)';
-  await delay(160);
-  el.classList.remove('show','crit','fail');
+  const b = getDiceBounds(w, h);
+  if(!Number.isFinite(diceCanvasState.x)) diceCanvasState.x = b.minX + 80;
+  if(!Number.isFinite(diceCanvasState.y)) diceCanvasState.y = b.maxY - 10;
+  diceCanvasState.x = Math.max(b.minX, Math.min(b.maxX, diceCanvasState.x));
+  diceCanvasState.y = Math.max(b.minY, Math.min(b.maxY, diceCanvasState.y));
 }
+function getDiceBounds(w, h){
+  const dieR = 48;
+  const padL = 12;
+  const padR = 12;
+  const padY = 14;
+  const minX = dieR + padL;
+  const maxX = Math.max(minX + 80, w - dieR - padR);
+  const minY = dieR + padY;
+  const maxY = Math.max(minY + 20, h - dieR - padY);
+  return { dieR, minX, maxX, minY, maxY };
+}
+function drawD20Shape(ctx, cx, cy, r, fill1, fill2, stroke, text, angle=0, glow='none'){
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+  if(glow==='crit'){
+    ctx.shadowColor = 'rgba(255,210,110,.55)';
+    ctx.shadowBlur = 24;
+  }else if(glow==='fail'){
+    ctx.shadowColor = 'rgba(255,90,90,.45)';
+    ctx.shadowBlur = 18;
+  }
+  ctx.beginPath();
+  for(let i=0;i<7;i++){
+    const a = -Math.PI/2 + i*(Math.PI*2/7);
+    const x = Math.cos(a)*r;
+    const y = Math.sin(a)*r;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(-r,-r,r,r);
+  grad.addColorStop(0, fill1);
+  grad.addColorStop(1, fill2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = stroke;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.08)';
+  ctx.beginPath();
+  ctx.moveTo(-r*0.4,-r*0.5);
+  ctx.lineTo(r*0.2,-r*0.65);
+  ctx.lineTo(r*0.45,-r*0.18);
+  ctx.lineTo(-r*0.15,-r*0.05);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#fff6e7';
+  ctx.font = `900 ${Math.round(r*0.86)}px Georgia, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,.35)';
+  ctx.shadowBlur = 8;
+  ctx.fillText(String(text), 0, r*0.05);
+  ctx.restore();
+}
+function paintDiceTray(){
+  if(!els.diceCanvas) return;
+  const ctx = els.diceCanvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = els.diceCanvas.width / dpr;
+  const h = els.diceCanvas.height / dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  const grad = ctx.createRadialGradient(w*0.34, h*0.56, 12, w*0.34, h*0.56, w*0.52);
+  grad.addColorStop(0, 'rgba(255,180,80,.05)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
 
+  // trail
+  for(let i=0;i<diceCanvasState.trail.length;i++){
+    const p = diceCanvasState.trail[i];
+    const alpha = Math.max(0, p.life);
+    const r = 12 * alpha;
+    const trailGrad = ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, r);
+    if(p.mode==='lucky'){
+      trailGrad.addColorStop(0, `rgba(80,255,140,${0.22*alpha})`);
+      trailGrad.addColorStop(1, 'rgba(80,255,140,0)');
+    }else if(p.mode==='unlucky'){
+      trailGrad.addColorStop(0, `rgba(155,105,55,${0.24*alpha})`);
+      trailGrad.addColorStop(1, 'rgba(155,105,55,0)');
+    }else{
+      trailGrad.addColorStop(0, `rgba(255,210,130,${0.12*alpha})`);
+      trailGrad.addColorStop(1, 'rgba(255,210,130,0)');
+    }
+    ctx.fillStyle = trailGrad;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fill();
+    p.life -= 0.08;
+  }
+  diceCanvasState.trail = diceCanvasState.trail.filter(p => p.life > 0.02);
 
+  if(diceCanvasState.visible){
+    const glow = diceCanvasState.glow;
+    const fill1 = glow==='fail' ? 'rgba(180,74,74,.96)' : 'rgba(236,192,120,.98)';
+    const fill2 = glow==='fail' ? 'rgba(96,28,28,.98)' : 'rgba(126,80,31,.98)';
+    const stroke = glow==='fail' ? 'rgba(255,170,170,.65)' : 'rgba(255,228,184,.84)';
+    drawD20Shape(ctx, diceCanvasState.x, diceCanvasState.y, 48, fill1, fill2, stroke, diceCanvasState.value, diceCanvasState.angle, glow);
+  }
+}
+window.addEventListener('resize', ()=>{ resizeDiceCanvas(); paintDiceTray(); });
 
 function clearDiceFx(){
-  if(!els.dicePanel || !els.diceValue) return;
+  if(!els.dicePanel) return;
   els.dicePanel.classList.remove('flash-crit','flash-fail');
-  if(els.diceBounce) els.diceBounce.classList.remove('show','crit','fail');
-}
-function hideDiceOverlay(){
   diceAnimToken++;
-  clearDiceFx();
+}
+
+async function animateTrayBounce(finalRoll, label){
+  if(!els.diceCanvas) return;
+  resizeDiceCanvas();
+  const w = Math.max(320, els.diceCanvas.clientWidth || els.diceTray.clientWidth || 320);
+  const h = Math.max(190, els.diceCanvas.clientHeight || els.diceTray.clientHeight || 230);
+  const b = getDiceBounds(w, h);
+
+  let x = Math.max(b.minX, Math.min(b.maxX, Number.isFinite(diceCanvasState.x) ? diceCanvasState.x : (b.minX + 80)));
+  let y = Math.max(b.minY, Math.min(b.maxY, Number.isFinite(diceCanvasState.y) ? diceCanvasState.y : (b.maxY - 10)));
+  let vx = Number.isFinite(diceCanvasState.vx) && Math.abs(diceCanvasState.vx) > 2
+    ? Math.sign(diceCanvasState.vx) * Math.max(10, Math.abs(diceCanvasState.vx))
+    : ((Math.random() * 10 + 12) * (Math.random() > 0.5 ? 1 : -1));
+  let vy = Number.isFinite(diceCanvasState.vy) && Math.abs(diceCanvasState.vy) > 1
+    ? -Math.max(6, Math.abs(diceCanvasState.vy))
+    : (-(Math.random() * 8 + 6));
+  let va = Number.isFinite(diceCanvasState.va) && Math.abs(diceCanvasState.va) > 0.03
+    ? diceCanvasState.va
+    : ((Math.random() * 0.26 + 0.16) * (Math.random() > 0.5 ? 1 : -1));
+
+  diceCanvasState.visible = true;
+  diceCanvasState.glow = 'none';
+  diceCanvasState.pendingGlow = finalRoll===20 ? 'crit' : (finalRoll===0 || finalRoll===1 ? 'fail' : 'none');
+  diceCanvasState.trailMode = currentRollLuckMode;
+
+  for(let i=0;i<64;i++){
+    let hitX = false, hitY = false;
+    x += vx;
+    y += vy;
+    vy += 0.62;
+    diceCanvasState.angle += va;
+
+    if(x <= b.minX){
+      x = b.minX;
+      vx = Math.abs(vx) * 0.90;
+      va *= -0.95;
+      hitX = true;
+    }
+    if(x >= b.maxX){
+      x = b.maxX;
+      vx = -Math.abs(vx) * 0.90;
+      va *= -0.95;
+      hitX = true;
+    }
+    if(y <= b.minY){
+      y = b.minY;
+      vy = Math.abs(vy) * 0.76;
+      hitY = true;
+    }
+    if(y >= b.maxY){
+      y = b.maxY;
+      vy = -Math.abs(vy) * 0.70;
+      vx *= 0.988;
+      va *= 0.98;
+      hitY = true;
+    }
+
+    diceCanvasState.x = x;
+    diceCanvasState.y = y;
+    diceCanvasState.vx = vx;
+    diceCanvasState.vy = vy;
+    diceCanvasState.va = va;
+    diceCanvasState.value = rollSkewedByLuck();
+    pushTrailPoint(x, y);
+    paintDiceTray();
+    await delay(rollDelay((hitX || hitY) ? (24 + i*2) : (18 + i*2)));
+  }
+
+  diceCanvasState.x = Math.max(b.minX, Math.min(b.maxX, x));
+  diceCanvasState.y = Math.max(b.minY, Math.min(b.maxY, y));
+  diceCanvasState.vx = 0;
+  diceCanvasState.vy = 0;
+  diceCanvasState.va = va * 0.18;
+  diceCanvasState.angle = ((diceCanvasState.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  diceCanvasState.value = finalRoll;
+  diceCanvasState.glow = diceCanvasState.pendingGlow;
+  pushTrailPoint(diceCanvasState.x, diceCanvasState.y);
+  paintDiceTray();
 }
 
 async function animateDiceRoll(finalRoll, opts={}){
-  if(finalRoll==null || !els.dicePanel || !els.diceValue) return;
+  if(finalRoll==null || !els.dicePanel || !els.diceCanvas) return;
   const token = ++diceAnimToken;
-  const insane = !!opts.insane;
-  const actionLabel = opts.actionLabel || opts.kind || opts.type || '';
-  const label = opts.label || actionLabel || (insane ? 'Insane Request' : 'Roll');
-  const sub = opts.sub || (finalRoll===0 ? 'Absolute collapse.' : `Result ${finalRoll}`);
-  const crit = finalRoll===20;
-  const fail = finalRoll===0 || finalRoll===1;
-
+  currentRollLuckMode = opts.luckMode || getEffectiveLuckMode();
   clearDiceFx();
-  els.diceMeta.textContent = label;
-  if(els.diceLabelText) els.diceLabelText.textContent = label;
-  els.diceSub.textContent = 'Rolling…';
-  els.diceValue.textContent = '—';
-  els.dicePanel.classList.add('show');
-
-  await animateTrayBounce(finalRoll, label);
+  await animateTrayBounce(finalRoll, opts.label || opts.actionLabel || 'Roll');
   if(token!==diceAnimToken) return;
+  pushDiceHistory(opts.label || opts.actionLabel || 'Roll', finalRoll);
 
-  els.diceValue.textContent = String(finalRoll);
-  els.diceSub.textContent = sub;
-
-  if(crit) els.dicePanel.classList.add('flash-crit');
-  else if(fail) els.dicePanel.classList.add('flash-fail');
-
-  pushDiceHistory(label, finalRoll);
-  await delay(760);
-  if(token!==diceAnimToken) return;
-  els.dicePanel.classList.remove('flash-crit','flash-fail');
+  for(let i=0;i<10;i++){
+    diceCanvasState.angle += diceCanvasState.va;
+    diceCanvasState.va *= 0.82;
+    paintDiceTray();
+    await delay(rollDelay(16));
+  }
 }
-
-
 function aiModeLabel(ai){
   if(!ai || !ai.enabled || ai.mode==='local') return 'Local Only';
   return ai.mode==='aiheavy' ? 'AI Heavy' : 'Hybrid AI';
@@ -798,7 +1109,7 @@ function compactStateSnapshot(){
       sounds: ensureRoomState(room).sounds,
       smells: ensureRoomState(room).smells
     } : null,
-    nearbyHostiles: nearbyEntities('hostile', 7).map(e=>({name:e.name,hp:e.hp,dist:Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)})).slice(0,4),
+    nearbyHostiles: nearbyEntities('hostile', 7).map(e=>({name:e.name,hp:e.hp,maxHp:e.maxHp||null,dist:Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)})).slice(0,4),
     nearbyNpcs: nearbyEntities('npc', 7).map(e=>e.name).slice(0,4),
     inventory: state.inventory.map(i=>`${i.name}${(i.qty||1)>1?` x${i.qty}`:''}`).slice(0,10),
     quest: state.quest ? {title:state.quest.title, steps:state.quest.steps, progress:state.quest.progress} : null,
@@ -920,7 +1231,7 @@ function canStandOnTile(c){
 }
 async function maybeAiPrimaryOutcome(playerText, intent, baseRoll, room){
   const ai=state?.ai;
-  if(!ai?.enabled || !ai.apiKey || ai.mode==='local' || intent.fromArrow || intent.type==='move') return null;
+  if(!ai?.enabled || !ai.apiKey || ai.mode==='local' || intent.fromArrow || intent.type==='move' || intent.type==='attack' || intent.type==='defend') return null;
   const nearby = nearbyInteractiveContext(3).slice(0,8).map(n=>({kind:n.kind,label:n.label,dist:n.d,x:n.x,y:n.y}));
   const hostiles = nearbyEntities('hostile',6).map(e=>({name:e.name,hp:e.hp,dist:Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y),type:e.type})).slice(0,5);
   const npcs = nearbyEntities('npc',6).map(e=>({name:e.name,dist:Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)})).slice(0,5);
@@ -1142,6 +1453,154 @@ function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 function key(x,y){ return `${x},${y}`; }
 function escapeHtml(str){ return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
+
+const WEAPON_BASES = {
+  fists: {name:'Fists', min:1, max:3, accuracy:0, crit:0, desc:'Nothing but nerve and timing.'},
+  knife: {name:'Knife', min:2, max:5, accuracy:1, crit:0, desc:'Fast, ugly, close-range work.'},
+  sword: {name:'Sword', min:4, max:8, accuracy:1, crit:1, desc:'Reliable steel with room to breathe.'},
+  axe: {name:'Axe', min:5, max:9, accuracy:-1, crit:2, desc:'Heavy commitment and brutal payoff.'},
+  spear: {name:'Spear', min:3, max:7, accuracy:2, crit:0, desc:'Measured reach and disciplined pressure.'},
+  relic: {name:'Relic Blade', min:6, max:10, accuracy:1, crit:2, desc:'Old violence made ceremonial.'}
+};
+const WEAPON_PREFIXES = {
+  rusty: {name:'Rusty', min:-1, max:0, accuracy:-1, crit:0},
+  plain: {name:'Plain', min:0, max:0, accuracy:0, crit:0},
+  sharp: {name:'Sharp', min:1, max:2, accuracy:0, crit:1},
+  gilded: {name:'Gilded', min:0, max:1, accuracy:1, crit:1},
+  heavy: {name:'Heavy', min:2, max:3, accuracy:-1, crit:1},
+  blessed: {name:'Blessed', min:1, max:2, accuracy:1, crit:1}
+};
+function weaponRandInt(min,max){ return min + Math.floor(Math.random()*(max-min+1)); }
+function makeWeapon(baseKey='sword', prefixKey='plain'){
+  const base = WEAPON_BASES[baseKey] || WEAPON_BASES.sword;
+  const pref = WEAPON_PREFIXES[prefixKey] || WEAPON_PREFIXES.plain;
+  return {
+    kind:'weapon',
+    weaponBase: baseKey,
+    prefix: prefixKey,
+    name: `${pref.name} ${base.name}`,
+    min: Math.max(1, base.min + pref.min),
+    max: Math.max(2, base.max + pref.max),
+    accuracy: base.accuracy + pref.accuracy,
+    crit: base.crit + pref.crit,
+    qty: 1,
+    desc: `${pref.name} ${base.desc}`.replace(/^Plain /,'')
+  };
+}
+function getEquippedWeapon(){
+  const weapon = state?.inventory?.find?.(i => i.kind==='weapon');
+  return weapon || makeWeapon('fists','plain');
+}
+
+function findFirstWeaponInInventory(excludeName=''){
+  return (state?.inventory || []).find(i => i.kind==='weapon' && (!excludeName || i.name !== excludeName)) || null;
+}
+function weaponSummaryHtml(w){
+  if(!w) return '<div class="small">No weapon.</div>';
+  return `<strong>${escapeHtml(w.name)}</strong><div class="small">Damage ${w.min}-${w.max} · Accuracy ${w.accuracy>=0?'+':''}${w.accuracy} · Crit ${w.crit>=0?'+':''}${w.crit}</div><div class="small">${escapeHtml(w.desc||'')}</div>`;
+}
+function openEquipModal(candidate){
+  if(!candidate || !els.equipModal) return;
+  pendingEquipChoice = candidate;
+  const current = getEquippedWeapon();
+  if(els.equipCurrentCard) els.equipCurrentCard.innerHTML = weaponSummaryHtml(current);
+  if(els.equipCandidateCard) els.equipCandidateCard.innerHTML = weaponSummaryHtml(candidate);
+  if(els.equipModalHint) els.equipModalHint.textContent = 'Pick the weapon you want to carry into the next fight.';
+  els.equipModal.style.display = 'flex';
+}
+function closeEquipModal(){
+  pendingEquipChoice = null;
+  if(els.equipModal) els.equipModal.style.display = 'none';
+}
+function equipWeaponByName(name){
+  if(!state?.inventory?.length) return false;
+  const idx = state.inventory.findIndex(i => i.kind==='weapon' && i.name===name);
+  if(idx < 0) return false;
+  const [item] = state.inventory.splice(idx,1);
+  const existingIdx = state.inventory.findIndex(i => i.kind==='weapon');
+  if(existingIdx >= 0){
+    state.inventory.splice(existingIdx,1);
+  }
+  state.inventory.unshift(item);
+  return true;
+}
+function maybeOfferEquipChoice(item){
+  if(!item || item.kind!=='weapon') return;
+  const current = getEquippedWeapon();
+  if(!current || current.name !== item.name){
+    openEquipModal(item);
+  }
+}
+function enhanceWeapon(weapon, roll){
+  if(!weapon) return null;
+  if(roll >= 18){
+    weapon.max += 2;
+    weapon.accuracy += 1;
+    weapon.crit += 1;
+    weapon.name = weapon.name.startsWith('Blessed ') ? weapon.name : `Blessed ${weapon.name}`;
+    return {tier:'great', text:`${weapon.name} drinks in the shrine's force. Its edge and certainty both deepen.`};
+  }
+  if(roll >= 12){
+    weapon.max += 1;
+    weapon.min += 1;
+    return {tier:'good', text:`The weapon comes away keener than before.`};
+  }
+  if(roll >= 7){
+    return {tier:'neutral', text:`The ritual settles over the weapon, but it changes only by a whisper.`};
+  }
+  weapon.accuracy -= 1;
+  weapon.name = weapon.name.startsWith('Rusty ') ? weapon.name : `Rusty ${weapon.name}`;
+  return {tier:'bad', text:`The rite curdles. The weapon feels less trustworthy in your hand.`};
+}
+function rollBandLabel(r){
+  if(r<=5) return 'bad';
+  if(r<=11) return 'neutral';
+  if(r<=16) return 'good';
+  return 'great';
+}
+function damageFromBattleRoll(roll, weapon, luck='normal'){
+  const w = weapon || makeWeapon('fists','plain');
+  const base = weaponRandInt(w.min, w.max);
+  const band = rollBandLabel(roll);
+  let dmg = base;
+  if(band==='bad') dmg = Math.max(1, base - 2);
+  else if(band==='neutral') dmg = base;
+  else if(band==='good') dmg = base + 2;
+  else if(band==='great') dmg = base + 4 + (w.crit||0);
+
+  dmg += Math.max(-2, Math.min(3, w.accuracy||0));
+  if(luck==='lucky') dmg += 1;
+  if(luck==='unlucky') dmg -= 1;
+  if(roll===20) dmg += 3 + (w.crit||0);
+  if(roll<=1) dmg = Math.max(1, Math.floor(dmg*0.5));
+
+  return Math.max(1, dmg);
+}
+
+function attackOutcomeFromRoll(roll, weapon, luck='normal'){
+  const w = weapon || makeWeapon('fists','plain');
+  const hitScore = roll + Math.max(-2, Math.min(3, w.accuracy || 0)) + (luck==='lucky' ? 1 : luck==='unlucky' ? -1 : 0);
+
+  if(hitScore <= 3){
+    return {result:'miss', damage:0, hitScore};
+  }
+  if(hitScore <= 7){
+    return {
+      result:'graze',
+      damage: Math.max(1, Math.floor(damageFromBattleRoll(Math.max(4, roll), w, luck) * 0.5)),
+      hitScore
+    };
+  }
+  return {
+    result:'hit',
+    damage: damageFromBattleRoll(roll, w, luck),
+    hitScore
+  };
+}
+function enemyDamageValue(enemy, charged=false){
+  const base = enemy?.type==='boss' ? 10 : 6;
+  return charged ? base + 10 : base;
+}
 function createRun(profile={}){
   const seed = Date.now() ^ ((Math.random()*1e9)|0);
   const rng = rngFactory(seed);
@@ -1154,9 +1613,9 @@ function createRun(profile={}){
   const title = (profile.title || 'Delver').trim() || 'Delver';
 
   const run = {
-    seed, theme, tone, risk, maxHealth:10, health:10, turn:0, dead:false,
+    seed, theme, tone, risk, maxHealth:100, health:100, turn:0, dead:false,
     name, title,
-    inventory:[{name:'Torch', qty:1, desc:'A guttering torch with more faith than oil.'},{name:'Small Tonic', qty:1, desc:'A bitter restorative.'}],
+    inventory:[makeWeapon('sword','plain'), {name:'Torch', qty:1, desc:'A guttering torch with more faith than oil.'},{name:'Small Tonic', qty:1, desc:'A bitter restorative.'}],
     facts:[theme.truths[0], `False comfort: ${theme.lie}`],
     flags:{questKeyFound:false, innerGateOpen:false, bossDefeated:false, warded:false, brightTorch:false, usedShrine:false},
     log:[], moves:[],
@@ -1169,7 +1628,8 @@ function createRun(profile={}){
     quest: {...quest, progress: quest.steps.map(()=>false), done:false},
     premise: `${theme.premise} You descend as ${title.toLowerCase()} ${name}.`,
     labels:{engine:'Suso Local'},
-    ai: loadAiSettings()
+    ai: loadAiSettings(),
+    luck:{mode:'normal', source:null, turnsLeft:0, intensity:1}
   };
   revealAround(run,6);
   addEntry('sys', `A new run takes shape.\n\n${run.premise}\n\nQuest: ${run.quest.title}`, 'Opening');
@@ -1253,9 +1713,169 @@ function findOpenInRoom(grid, room, rng){
   return spots.length ? pick(rng,spots) : null;
 }
 
+
+
+
+
+function decodeSusoMeaning(text){
+  const raw = String(text || '').trim();
+  const t = raw.toLowerCase();
+  if(!t) return '';
+
+  // ignore straightforward lines that do not need decoding
+  if(/^you move (north|south|east|west)\.?$/.test(t)) return '';
+  if(/^you attack .* and deal \d+ damage\.?/.test(t)) return '';
+  if(/^you clip .* for \d+ damage/.test(t)) return '';
+  if(/^you raise your guard/.test(t)) return '';
+  if(/^you tighten your stance/.test(t)) return '';
+  if(/^movement is on the arrow keys now/.test(t)) return '';
+
+  const hints = [];
+  const add = msg => { if(msg && !hints.includes(msg)) hints.push(msg); };
+
+  // richer contextual interpretation
+  if(/attention pays for itself here/.test(t)){
+    add('Hint: your action revealed a real clue. The important meaning is usually in the sentence that comes after this opener.');
+  }
+
+  if(/the room answers with/.test(t) && /distant knock|knock that travels badly through stone/.test(t)){
+    add('Hint: something outside this room reacted to what you just did. The sound is muffled by walls or distance, so inspect nearby walls, seams, and hidden routes.');
+  }
+
+  if(/old ash/.test(t) && /moss in the seams/.test(t)){
+    add('Hint: this room has age and layered wear. Check older-looking surfaces, cracks, mossy seams, and wall edges for a hidden route or older mechanism.');
+  }
+
+  if(/water carries signs|moved through it recently|moved through the water recently/.test(t)){
+    add('Hint: something passed through the water recently. Inspect the waterline, nearby walls, and possible hidden paths.');
+  }
+
+  if(/danger is in the approach/.test(t)){
+    add('Hint: the trigger is before the obvious trap or object. Inspect or disarm from a careful approach instead of rushing the center.');
+  }
+
+  if(/older version of the room|belongs to an older version/.test(t)){
+    add('Hint: this points to an older layer of the dungeon. Keep the item and look for older locks, shrines, vaults, hidden seams, or deeper routes.');
+  }
+
+  if(/room remembers|gets said in them/.test(t)){
+    add('Hint: this room may react to repeated actions, dialogue, or earlier choices.');
+  }
+
+  if(/scratched over the first|second truth was scratched over the first|altered by hand/.test(t)){
+    add('Hint: the room’s original meaning was changed later. Distrust the obvious surface version and inspect for older markings, seams, or overwritten clues.');
+  }
+
+  if(/observer, not a guest|arranged for an observer/.test(t)){
+    add('Hint: this room was built to test, watch, or ritualize someone. Expect a hidden function, a trap, or a deliberate clue.');
+  }
+
+  if(/sealed rooms/.test(t)){
+    add('Hint: there may be a hidden or locked area nearby. Inspect barriers, water, doors, and wall seams.');
+  }
+
+  if(/door lives in its edges|truth of the door lives in its edges|hinge|latch/.test(t)){
+    add('Hint: the useful detail is on the frame or lock side, not the middle. Inspect the seams, hinge side, and latch side.');
+  }
+
+  if(/lurking threat|first shape suggests/.test(t)){
+    add('Hint: the enemy or danger has more going on than its first appearance. Expect a second behavior, hidden trait, or stronger follow-up.');
+  }
+
+  if(/key feels like it belongs/.test(t)){
+    add('Hint: this key is important later, not random loot. Keep it and look for an older lock, vault, shrine, or deeper route.');
+  }
+
+  if(/practical|ceremonial|ritual/.test(t)){
+    add('Hint: this object or room matters both for lore and mechanics. Interact with it instead of treating it as background flavor.');
+  }
+
+  if(/posture rather than words|first answer comes from posture/.test(t)){
+    add('Hint: the NPC is cautious and reading your intent before trusting you.');
+  }
+
+  if(/whispers from sealed rooms/.test(t)){
+    add('Hint: listening near water or barriers may reveal hidden spaces or nearby activity.');
+  }
+
+  if(/exact shape of what you said|generic verb/.test(t)){
+    add('Hint: the game is responding to your specific wording. Keep being specific, because phrasing can matter.');
+  }
+
+  if(/room's earlier truths|earlier truths/.test(t)){
+    add('Hint: the room still points back to its older purpose. Inspect again for older clues, hidden layers, or a deeper route.');
+  }
+
+  if(/carries evidence|second story beneath the obvious one|surface version/.test(t)){
+    add('Hint: the surface reading is incomplete. Inspect again or look around the object instead of accepting the first explanation.');
+  }
+
+  if(/learned here, not brought in from outside/.test(t)){
+    add('Hint: this fear or caution comes from what happened in this dungeon. Take the warning seriously.');
+  }
+
+  if(/charging up for a powerful attack/.test(t)){
+    add('Hint: the enemy is telegraphing a stronger hit next turn. Defend, move, or finish it before the release.');
+  }
+
+  if(/within reach|close with/.test(t)){
+    add('Hint: combat or interaction range is open. Attack, defend, talk, inspect, or use the object now.');
+  }
+
+  if(/locked door stops you/.test(t)){
+    add('Hint: you cannot walk through yet. Open it, force it, inspect it, or use a key.');
+  }
+
+  if(/stairs wait here/.test(t)){
+    add('Hint: this is a progression point. Inspect or descend when ready.');
+  }
+
+  if(/chest sits here within reach/.test(t)){
+    add('Hint: there is loot or a container available. Inspect, pry, or open it.');
+  }
+
+  if(/trap line or plate nearby/.test(t)){
+    add('Hint: there is an active trap close by. Inspect or disarm it before moving carelessly.');
+  }
+
+  if(/fails to find a real opening|timing slips/.test(t)){
+    add('Hint: you missed. Attack again, improve luck, or defend if the enemy is winding up.');
+  }
+
+  if(/shallow hit, but it counts/.test(t)){
+    add('Hint: that was a graze for reduced damage.');
+  }
+
+  if(/brace now or move before the release/.test(t)){
+    add('Hint: defend or reposition before the charged attack goes off.');
+  }
+
+  // stronger fallback based on concrete nouns in the line
+  if(!hints.length){
+    const actions = [];
+    if(/door|gate|lock/.test(t)) actions.push('inspect the door, frame, lock, or use a key');
+    if(/water|pool|flood/.test(t)) actions.push('inspect the water and nearby walls');
+    if(/trap|wire|plate/.test(t)) actions.push('inspect or disarm before moving carelessly');
+    if(/key|relic|artifact/.test(t)) actions.push('keep the item and look for where it fits later');
+    if(/enemy|hound|foe|hostile|boss/.test(t)) actions.push('prepare for combat, defend, or attack with intent');
+    if(/shrine|altar|idol/.test(t)) actions.push('pray, inspect, or enhance equipment here');
+    if(/stairs|descend/.test(t)) actions.push('this likely advances the run');
+    if(/npc|says|warns|murmurs/.test(t)) actions.push('treat it as a clue or warning, not just flavor');
+
+    if(actions.length){
+      return `Hint: this line is mostly atmosphere, but it is pointing you toward a useful next step. Try to ${actions.slice(0,2).join(' and ')}.`;
+    }
+    return '';
+  }
+
+  return hints.join(' ');
+}
+
+
+
 function addEntry(kind, body, meta='Turn'){
   if(!state) return;
-  state.log.push({kind,body,meta});
+  state.log.push({kind,body,meta,decoded:'',showDecoded:false});
   if(state.log.length>140) state.log.shift();
 }
 function getCurrentRoom(run=state){ return findRoomAt(run,run.player.x,run.player.y) || nearestRoom(run,run.player.x,run.player.y); }
@@ -1506,6 +2126,7 @@ function roomAtmosphereLine(room, rs){
 }
 function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
   if(!room) return null;
+  if(intent?.type==='attack' || intent?.type==='defend') return null;
   const rs = ensureRoomState(room);
   const targetCtx = nearbyTargetContext(intent, 3);
   const targetKind = targetCtx?.kind || intent.target || 'room';
@@ -1755,7 +2376,7 @@ function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
       lines.push('You set the loose stone where the door will have to argue with it later.');
       addRoomFact(room, 'the door has been roughly wedged');
       changed = true;
-      return {kind:'sys', text:lines.join(' '), meta:`Use · ${baseRoll}`, changed, pulse};
+      return {kind:'sys', text:lines.join(' '), meta:tierMetaLabel('Use', baseRoll), changed, pulse};
     }
     lines.push('You use what you have against what is here and get back a smaller, stranger truth.');
     lines.push(deepenRoom());
@@ -1918,6 +2539,7 @@ function parseIntent(text){
   else if(/(use|drink|consume|equip|light|apply)/.test(t)) intent.type='use';
   else if(/(attack|fight|hit|kill|stab|slash|shoot|smash)/.test(t)) intent.type='attack';
   else if(/(open|unlock)/.test(t)) intent.type='open';
+  else if(/(defend|guard|brace|block|parry|shield up|hold guard)/.test(t)) intent.type='defend';
   else if(/(listen|hear)/.test(t)) intent.type='listen';
   else if(/(search|loot|rummage|scavenge|check around)/.test(t)) intent.type='search';
   else if(/(inspect|examine|look|study|read)/.test(t)) intent.type='inspect';
@@ -1964,6 +2586,68 @@ function extractTarget(t){
   if(/(room|hall|hallway|passage|corridor)/.test(t)) return 'exit';
   return null;
 }
+
+function setRunLuck(mode='normal', turns=0, source=''){
+  if(!state) return;
+  state.luck = {
+    mode: mode || 'normal',
+    source: source || null,
+    turnsLeft: Math.max(0, Number(turns)||0),
+    intensity: 1
+  };
+  if(mode !== 'normal' && turns > 0){
+    addEntry(mode==='lucky' ? 'sys' : 'bad',
+      `${source || (mode==='lucky' ? 'Fortune' : 'Misfortune')} settles over the run. ${mode==='lucky' ? 'Your next turns feel favored.' : 'The dungeon’s timing turns against you.'}`,
+      mode==='lucky' ? 'Luck shifts' : 'Luck darkens');
+  }
+}
+function clearRunLuck(msg=''){
+  if(!state || !state.luck || state.luck.mode==='normal') return;
+  const old = state.luck.mode;
+  state.luck = {mode:'normal', source:null, turnsLeft:0, intensity:1};
+  if(msg){
+    addEntry(old==='lucky' ? 'sys' : 'bad', msg, 'Luck fades');
+  }
+}
+function maybeTriggerRandomLuckSurge(){
+  if(!state) return;
+  if(luckMode !== 'normal') return; // manual override
+  if(state.luck && state.luck.turnsLeft > 0) return;
+  const r = Math.random();
+  if(r < 0.08){
+    setRunLuck('lucky', 1, 'Fortune Surge');
+  }else if(r > 0.92){
+    setRunLuck('unlucky', 1, 'Omen');
+  }
+}
+function getEffectiveLuckMode(){
+  if(luckMode === 'lucky' || luckMode === 'unlucky') return luckMode;
+  if(state && state.luck && state.luck.turnsLeft > 0) return state.luck.mode || 'normal';
+  return 'normal';
+}
+function consumeLuckTurn(){
+  if(!state || !state.luck) return;
+  if(luckMode === 'lucky' || luckMode === 'unlucky') return; // manual override does not consume
+  if(state.luck.turnsLeft > 0){
+    state.luck.turnsLeft -= 1;
+    if(state.luck.turnsLeft <= 0){
+      const was = state.luck.mode;
+      clearRunLuck(was==='lucky' ? 'The blessing slips away.' : 'The curse loosens its grip.');
+    }
+  }
+}
+function rollRangeWithLuck(minVal, maxVal, mode='normal'){
+  const roll = () => minVal + Math.floor(Math.random() * (maxVal - minVal + 1));
+  if(mode === 'lucky'){
+    const best = Math.max(roll(), roll(), roll());
+    return Math.min(maxVal, best + 2);
+  }
+  if(mode === 'unlucky'){
+    const worst = Math.min(roll(), roll());
+    return Math.max(minVal, worst - 1);
+  }
+  return roll();
+}
 function rollZeroToTwenty(){ return Math.floor(Math.random()*21); }
 function rollOneToTwenty(){ return Math.floor(Math.random()*20)+1; }
 function rollSafe(){ return Math.floor(Math.random()*19)+2; }
@@ -1975,13 +2659,28 @@ function classifyRollTier(intent, rawText=''){
   if(/disarm|attack|force|break|kick|drink|wade|climb|jump|threaten|steal|pray|offer|open|unlock|descend|enter/.test(t)) return 'risk';
   return 'risk';
 }
-function rollForIntent(intent, rawText=''){
+function rollForIntent(intent, rawText='', luck='normal'){
   const tier = classifyRollTier(intent, rawText);
-  const value = tier==='safe' ? rollSafe() : tier==='insane' ? rollZeroToTwenty() : rollOneToTwenty();
+  let value;
+  if(tier==='safe') value = rollRangeWithLuck(2, 20, luck);
+  else if(tier==='insane') value = rollRangeWithLuck(0, 20, luck);
+  else value = rollRangeWithLuck(1, 20, luck);
   return { value, tier };
 }
 function rollWithInsaneModifier(){ return Math.max(1, rollZeroToTwenty()-3); }
 
+
+function interactionTier(r){
+  if(r <= 5) return 'bad';
+  if(r <= 11) return 'neutral';
+  if(r <= 16) return 'good';
+  return 'great';
+}
+function tierMetaLabel(base, r){
+  const t = interactionTier(r);
+  const title = t.charAt(0).toUpperCase() + t.slice(1);
+  return `${base} · ${r} · ${title}`;
+}
 async function resolveAction(input){
   if(!state || state.dead || turnBusy) return;
   const text=(input||'').trim(); if(!text) return;
@@ -2021,7 +2720,9 @@ async function resolveAction(input){
 
   const room=getCurrentRoom();
   const rr=rngFactory(state.seed + state.turn*97 + state.health);
-  const rollInfo = intent.fromArrow ? null : (intent.insane ? { value: rollWithInsaneModifier(), tier:'insane' } : rollForIntent(intent, text));
+  maybeTriggerRandomLuckSurge();
+  const effectiveLuck = getEffectiveLuckMode();
+  const rollInfo = intent.fromArrow ? null : (intent.insane ? { value: rollWithInsaneModifier(), tier:'insane' } : rollForIntent(intent, text, effectiveLuck));
   let baseRoll = rollInfo ? rollInfo.value : null;
   if(baseRoll===0){
     await animateDiceRoll(0, { insane:true, actionLabel:'Insane Request', sub:'The die empties out. The dungeon takes you.' });
@@ -2041,6 +2742,8 @@ async function resolveAction(input){
   else if(intent.type==='move') result=resolveMove(intent, baseRoll, room, rr);
   else if(intent.type==='rest') result=resolveRest(intent, baseRoll, room, rr);
   else if(intent.type==='combine') result=resolveCombine(intent, baseRoll, room, rr);
+  else if(intent.type==='attack') result=resolveAttack(intent, baseRoll, room, rr);
+  else if(intent.type==='defend') result=resolveDefend(intent, baseRoll, room, rr);
   else {
     result = richLocalInteraction(intent, baseRoll, room, rr, text);
     if(!result){
@@ -2048,7 +2751,6 @@ async function resolveAction(input){
       else if(intent.type==='listen') result=resolveListen(intent, baseRoll, room, rr);
       else if(intent.type==='search') result=resolveSearch(intent, baseRoll, room, rr);
       else if(intent.type==='open') result=resolveOpen(intent, baseRoll, room, rr);
-      else if(intent.type==='attack') result=resolveAttack(intent, baseRoll, room, rr);
       else if(intent.type==='talk') result=resolveTalk(intent, baseRoll, room, rr);
       else if(intent.type==='use') result=resolveUse(intent, baseRoll, room, rr);
       else result=resolveInteract(intent, baseRoll, room, rr);
@@ -2063,6 +2765,7 @@ async function resolveAction(input){
   afterPlayerTurn(rr);
   revealAround(state,6);
   updateQuestProgress(result);
+  if(baseRoll != null) consumeLuckTurn();
   refreshUI();
   setTurnBusy(false);
   maybeAiFinalizeTurn(text, result, intent).catch(console.error);
@@ -2087,7 +2790,10 @@ function healPlayer(n, reason=''){
 function gainItem(item){
   const existing=state.inventory.find(i=>i.name===item.name);
   if(existing){ existing.qty=(existing.qty||1)+(item.qty||1); }
-  else state.inventory.push({...item, qty:item.qty||1});
+  else {
+    state.inventory.push({...item, qty:item.qty||1});
+    if(item.kind==='weapon') maybeOfferEquipChoice(item);
+  }
 }
 function removeItem(name, qty=1){
   const item=state.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase()); if(!item) return false;
@@ -2324,30 +3030,62 @@ function resolveOpen(intent, r, room, rng){
 }
 function resolveAttack(intent, r, room, rng){
   const foe=nearbyEntities('hostile',1)[0] || nearbyEntities('hostile',2)[0];
-  if(!foe) return {kind:'bad', text:'You square up to empty air and old stone. Nothing is close enough to strike.', meta:`Attack · ${r}`};
-  const weapon = hasItem('Sword of Undefiled Truth') ? 'Sword of Undefiled Truth' : hasItem('Rusted Knife') ? 'Rusted Knife' : 'bare violence';
-  let dmg = r>=16 ? 3 : r>=10 ? 2 : 1;
-  if(weapon==='Sword of Undefiled Truth' && (foe.type==='enemy' || foe.type==='boss')) dmg += 1;
-  foe.hp -= dmg;
-  let txt=`You answer ${foe.name} with ${weapon}. The blow lands for ${dmg}.`;
+  if(!foe) return {kind:'bad', text:'You square up to empty air and old stone. Nothing is close enough to strike.', meta:tierMetaLabel('Attack', r)};
+  const weapon = getEquippedWeapon();
+  const luck = getEffectiveLuckMode();
+  const outcome = attackOutcomeFromRoll(r, weapon, luck);
+
+  if(outcome.result==='miss'){
+    return {
+      kind:'bad',
+      text:`You go for ${foe.name}, but your timing slips and the strike fails to find a real opening.`,
+      meta:tierMetaLabel('Attack', r),
+      combat:true
+    };
+  }
+
+  foe.hp -= outcome.damage;
+  let txt = outcome.result==='graze'
+    ? `You clip ${foe.name} with ${weapon.name} for ${outcome.damage} damage. It is a shallow hit, but it counts.`
+    : `You attack ${foe.name} with ${weapon.name} and deal ${outcome.damage} damage.`;
+
+  if(r>=17 && outcome.result==='hit') txt += ' The strike lands with real authority.';
   if(foe.hp<=0){
-    foe.alive=false; state.map.grid[foe.y][foe.x]='%';
+    foe.alive=false;
+    state.map.grid[foe.y][foe.x]='%';
     txt += ` ${foe.name} falls and stays fallen.`;
     addLootMaybe(rng, foe.type==='boss');
-    if(foe.type==='boss'){ state.flags.bossDefeated=true; txt += ' The room feels lighter in a way the dungeon resents.'; }
-  } else if(r<=5) {
-    txt += ` The exchange was clumsy and opens your guard.`;
+    if(foe.type==='boss'){
+      state.flags.bossDefeated=true;
+      txt += ' The room feels lighter in a way the dungeon resents.';
+    }
   }
-  return {kind:foe.hp<=0?'sys':'bad', text:txt, meta:`Attack · ${r}`, combat:true};
+
+  return {
+    kind:(outcome.result==='graze' ? 'bad' : 'sys'),
+    text:txt,
+    meta:tierMetaLabel('Attack', r),
+    combat:true
+  };
 }
+
+function resolveDefend(intent, r, room, rng){
+  state.flags.defending = true;
+  const hostile = nearbyEntities('hostile', 3)[0];
+  if(hostile){
+    return {kind:'sys', text:`You tighten your stance and prepare for ${hostile.name} instead of overcommitting. Your guard is set for the next enemy action.`, meta:tierMetaLabel('Defend', r), combat:true};
+  }
+  return {kind:'sys', text:'You raise your guard and slow your breathing. If danger answers soon, you will meet it more squarely.', meta:tierMetaLabel('Defend', r)};
+}
+
 function resolveRest(intent, r, room, rng){
-  if(nearbyEntities('hostile',3).length) return {kind:'bad', text:'You try to rest, but danger nearby makes the idea feel insulting.', meta:`Rest · ${r}`};
+  if(nearbyEntities('hostile',3).length) return {kind:'bad', text:'You try to rest, but danger nearby makes the idea feel insulting.', meta:tierMetaLabel('Rest', r)};
   healPlayer(r>=12?2:1,'You steady your breathing and reclaim a little of yourself.');
-  return {kind:'sys', text:'You pause long enough to let your body remember it wants to live.', meta:`Rest · ${r}`};
+  return {kind:'sys', text:'You pause long enough to let your body remember it wants to live.', meta:tierMetaLabel('Rest', r)};
 }
 function resolveTalk(intent, r, room, rng){
   const npc=nearbyEntities('npc',2)[0] || state.entities.find(e=>e.type==='npc' && e.alive && getCurrentRoom().id===findRoomAt(state,e.x,e.y)?.id);
-  if(!npc) return {kind:'bad', text:'You offer words to the room. It gives you stone back.', meta:`Talk · ${r}`};
+  if(!npc) return {kind:'bad', text:'You offer words to the room. It gives you stone back.', meta:tierMetaLabel('Talk', r)};
   const lines=[
     `"${npc.clue}" ${npc.name} says without greeting.`,
     `"The gate below listens for keys and for lies," ${npc.name} murmurs.`,
@@ -2359,7 +3097,7 @@ function resolveTalk(intent, r, room, rng){
   if(!state.facts.includes(npc.clue)) state.facts.push(npc.clue);
   if(r>=14 && !state.flags.questKeyFound) txt += ' They hint that the run’s key was hidden in a middle vault, not the deepest one.';
   if(state.flags.bossDefeated && !state.quest.done){ state.quest.progress = state.quest.progress.map(()=>true); state.quest.done=true; txt += ' They stare at the blood on you and quietly name the quest complete.'; }
-  return {kind:'sys', text:txt, meta:`Talk · ${r}`};
+  return {kind:'sys', text:txt, meta:tierMetaLabel('Talk', r)};
 }
 function resolveUse(intent, r, room, rng){
   const t=intent.target || '';
@@ -2509,123 +3247,139 @@ function attractNearbyHostile(room){
 }
 function resolveRubbleInteraction(verb, r, room, rng, point, raw){
   if(verb==='climb'){
-    if(r>=15){ revealAround(state,8); const secret=maybeRevealHiddenNear(point,rng); return {kind:'sys', text:`You climb the rubble carefully and gain the room's higher angle. From up there the geometry makes more sense. ${secret ? 'A hidden opening reveals itself where the wall should have remained solid.' : generateClue(room,rng)}`, meta:`Interact · ${r}`}; }
-    if(r>=9){ revealAround(state,7); return {kind:'sys', text:`You scramble up the rubble and back down with scraped palms but better sightlines. ${generateClue(room,rng)}`, meta:`Interact · ${r}`}; }
+    if(r>=15){ revealAround(state,8); const secret=maybeRevealHiddenNear(point,rng); return {kind:'sys', text:`You climb the rubble carefully and gain the room's higher angle. From up there the geometry makes more sense. ${secret ? 'A hidden opening reveals itself where the wall should have remained solid.' : generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)}; }
+    if(r>=9){ revealAround(state,7); return {kind:'sys', text:`You scramble up the rubble and back down with scraped palms but better sightlines. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)}; }
     damagePlayer(1,'The rubble shifts under you.');
-    return {kind:'bad', text:'You try to climb the rubble, but loose stone rolls under your weight and punishes the attempt.', meta:`Interact · ${r}`};
+    return {kind:'bad', text:'You try to climb the rubble, but loose stone rolls under your weight and punishes the attempt.', meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='gather'){
     gainItem({name:'Loose Stone', qty:r>=14?2:1, desc:'A fist-sized chunk of masonry that can be thrown, wedged, or used as proof of disturbance.'});
     if(r>=12 && point){ state.map.grid[point.y][point.x]='.'; }
-    return {kind:'sys', text:r>=12 ? 'You pocket useful rubble and, in the process, strip away enough debris to slightly change the room’s footing.' : 'You gather a few sharp pieces of rubble into your pockets. They are ugly, but usable.', meta:`Interact · ${r}`};
+    return {kind:'sys', text:r>=12 ? 'You pocket useful rubble and, in the process, strip away enough debris to slightly change the room’s footing.' : 'You gather a few sharp pieces of rubble into your pockets. They are ugly, but usable.', meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='clear' || verb==='brace'){
-    if(!point) return {kind:'bad', text:'There is no meaningful pile of rubble close enough to change.', meta:`Interact · ${r}`};
-    if(r>=13){ state.map.grid[point.y][point.x]='.'; const secret=maybeRevealHiddenNear(point,rng); return {kind:'sys', text:`You shift the rubble into a different story. The obstruction opens. ${secret ? 'Behind it, a hidden gap or service opening is exposed.' : 'The room now has a clearer line through it.'}`, meta:`Interact · ${r}`}; }
-    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You move stone, but not enough of it. The noise carries.${foe ? ` ${foe.name} responds from deeper in the room.` : ''}`, meta:`Interact · ${r}`};
+    if(!point) return {kind:'bad', text:'There is no meaningful pile of rubble close enough to change.', meta:tierMetaLabel('Interact', r)};
+    if(r>=13){ state.map.grid[point.y][point.x]='.'; const secret=maybeRevealHiddenNear(point,rng); return {kind:'sys', text:`You shift the rubble into a different story. The obstruction opens. ${secret ? 'Behind it, a hidden gap or service opening is exposed.' : 'The room now has a clearer line through it.'}`, meta:tierMetaLabel('Interact', r)}; }
+    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You move stone, but not enough of it. The noise carries.${foe ? ` ${foe.name} responds from deeper in the room.` : ''}`, meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:`You work at the rubble long enough to learn its character: broken recently in one place, old everywhere else. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  return {kind:'sys', text:`You work at the rubble long enough to learn its character: broken recently in one place, old everywhere else. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function resolveWaterInteraction(verb, r, room, rng, point, raw){
   if(verb==='drink'){
-    if(r>=16){ healPlayer(1,'The water was cleaner than it looked, or your body was kinder than expected.'); return {kind:'sys', text:'You drink cautiously. The water is cold, metallic, and survivable. At the bottom of the pooled stone you notice something deliberately sunk there.', meta:`Interact · ${r}`}; }
-    if(r>=9){ return {kind:'bad', text:'You drink and immediately regret it. The taste is wrong, but not ruinous. The pool ripples wider than it should and tells the room you are here.', meta:`Interact · ${r}`}; }
+    if(r>=16){ healPlayer(1,'The water was cleaner than it looked, or your body was kinder than expected.'); return {kind:'sys', text:'You drink cautiously. The water is cold, metallic, and survivable. At the bottom of the pooled stone you notice something deliberately sunk there.', meta:tierMetaLabel('Interact', r)}; }
+    if(r>=9){ return {kind:'bad', text:'You drink and immediately regret it. The taste is wrong, but not ruinous. The pool ripples wider than it should and tells the room you are here.', meta:tierMetaLabel('Interact', r)}; }
     damagePlayer(1,'The water turns your stomach.');
-    return {kind:'bad', text:'You drink the water and your body rejects the decision. The sound of it travels.', meta:`Interact · ${r}`};
+    return {kind:'bad', text:'You drink the water and your body rejects the decision. The sound of it travels.', meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='wade'){
-    if(r>=13){ if(point){ state.player.x=point.x; state.player.y=point.y; } revealAround(state,8); return {kind:'sys', text:'You wade through the cold water instead of around it and find a line of safer stones hidden beneath the surface.', meta:`Interact · ${r}`}; }
-    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You enter the water and the splash gives you away.${foe ? ` ${foe.name} shifts closer, hunting the sound.` : ''}`, meta:`Interact · ${r}`};
+    if(r>=13){ if(point){ state.player.x=point.x; state.player.y=point.y; } revealAround(state,8); return {kind:'sys', text:'You wade through the cold water instead of around it and find a line of safer stones hidden beneath the surface.', meta:tierMetaLabel('Interact', r)}; }
+    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You enter the water and the splash gives you away.${foe ? ` ${foe.name} shifts closer, hunting the sound.` : ''}`, meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:`You test the water instead of trusting it. It smells of stone, old metal, and something that sat here longer than it should have. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  return {kind:'sys', text:`You test the water instead of trusting it. It smells of stone, old metal, and something that sat here longer than it should have. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function resolveDoorInteraction(verb, r, room, rng, point, raw){
   if(verb==='listen' || verb==='knock'){
     const hasHostile=roomHostiles(room).length;
-    return {kind:'sys', text:verb==='knock' ? `Your knock moves through the chamber and comes back changed. ${hasHostile ? 'Something nearby stops pretending not to hear you.' : generateClue(room,rng)}` : `You put your ear to the door and listen. ${hasHostile ? 'Breathing or dragging shifts somewhere beyond the obvious silence.' : generateClue(room,rng)}`, meta:`Interact · ${r}`};
+    return {kind:'sys', text:verb==='knock' ? `Your knock moves through the chamber and comes back changed. ${hasHostile ? 'Something nearby stops pretending not to hear you.' : generateClue(room,rng)}` : `You put your ear to the door and listen. ${hasHostile ? 'Breathing or dragging shifts somewhere beyond the obvious silence.' : generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='force'){
-    if(r>=14 && point){ state.map.grid[point.y][point.x]='O'; return {kind:'sys', text:'You commit your weight to the door and break its argument. It opens with a violence the room will remember.', meta:`Interact · ${r}`}; }
-    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You hit the door hard, but the only thing that yields is the room’s patience.${foe ? ` ${foe.name} answers the noise.` : ''}`, meta:`Interact · ${r}`};
+    if(r>=14 && point){ state.map.grid[point.y][point.x]='O'; return {kind:'sys', text:'You commit your weight to the door and break its argument. It opens with a violence the room will remember.', meta:tierMetaLabel('Interact', r)}; }
+    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You hit the door hard, but the only thing that yields is the room’s patience.${foe ? ` ${foe.name} answers the noise.` : ''}`, meta:tierMetaLabel('Interact', r)};
   }
   return resolveOpen({target:'door', raw}, r, room, rng);
 }
 function resolveChestInteraction(verb, r, room, rng, point, raw){
   if(verb==='gather' || verb==='take' || verb==='open' || verb==='inspect' || verb==='handle') return resolveOpen({target:'chest', raw}, r, room, rng);
   if(verb==='force'){
-    if(r>=12 && point){ state.map.grid[point.y][point.x]='.'; addLootMaybe(rng,false); return {kind:'sys', text:'You force the chest open in the ugliest possible way. Whatever was inside is now yours, plus splinters.', meta:`Interact · ${r}`}; }
-    return {kind:'bad', text:'You batter the chest, but it gives back noise instead of wealth.', meta:`Interact · ${r}`};
+    if(r>=12 && point){ state.map.grid[point.y][point.x]='.'; addLootMaybe(rng,false); return {kind:'sys', text:'You force the chest open in the ugliest possible way. Whatever was inside is now yours, plus splinters.', meta:tierMetaLabel('Interact', r)}; }
+    return {kind:'bad', text:'You batter the chest, but it gives back noise instead of wealth.', meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:`You circle the chest and read its posture before touching it. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  return {kind:'sys', text:`You circle the chest and read its posture before touching it. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function resolveTrapInteraction(verb, r, room, rng, point, raw){
-  if(!point) return {kind:'bad', text:'No trap lies close enough to command your full attention.', meta:`Interact · ${r}`};
+  if(!point) return {kind:'bad', text:'No trap lies close enough to command your full attention.', meta:tierMetaLabel('Interact', r)};
   if(verb==='disarm' || verb==='clear' || verb==='inspect'){
-    if(r>=14){ state.map.grid[point.y][point.x]='.'; gainItem({name:'Thin Wire', qty:1, desc:'Recovered from an old trap. Useful for improvised solutions.'}); return {kind:'sys', text:'You find the trap’s logic and insult it correctly. The mechanism dies in your hands and leaves salvage behind.', meta:`Interact · ${r}`}; }
-    if(r<=5){ damagePlayer(1,'The trap answers your touch.'); return {kind:'bad', text:'You find the trap by triggering part of it. Pain teaches the lesson the room wanted taught.', meta:`Interact · ${r}`}; }
-    return {kind:'bad', text:'You read the trap, but not deeply enough to kill it. At least now you know exactly where it waits.', meta:`Interact · ${r}`};
+    if(r>=14){ state.map.grid[point.y][point.x]='.'; gainItem({name:'Thin Wire', qty:1, desc:'Recovered from an old trap. Useful for improvised solutions.'}); return {kind:'sys', text:'You find the trap’s logic and insult it correctly. The mechanism dies in your hands and leaves salvage behind.', meta:tierMetaLabel('Interact', r)}; }
+    if(r<=5){ damagePlayer(1,'The trap answers your touch.'); setRunLuck('unlucky', 2, 'Jangled Fate'); return {kind:'bad', text:'You find the trap by triggering part of it. Pain teaches the lesson the room wanted taught.', meta:tierMetaLabel('Interact', r)}; }
+    return {kind:'bad', text:'You read the trap, but not deeply enough to kill it. At least now you know exactly where it waits.', meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:'You give the trap your attention and, in return, it gives away the shape of its threat.', meta:`Interact · ${r}`};
+  return {kind:'sys', text:'You give the trap your attention and, in return, it gives away the shape of its threat.', meta:tierMetaLabel('Interact', r)};
 }
 function resolveShrineInteraction(verb, r, room, rng, point, raw){
   if(verb==='pray' || verb==='offer'){
-    if(r>=15){ state.flags.usedShrine=true; state.player.ward+=1; healPlayer(1,'The shrine gives back a hard mercy.'); addFactOnce('The shrine responds to sincere offerings, but only once without a price.'); return {kind:'sys', text:'You offer something real to the shrine and it answers. The room does not brighten, but it stops leaning against you quite so hard.', meta:`Interact · ${r}`}; }
-    return {kind:'bad', text:'You try to pray, but whatever listens here prefers conviction to performance. The shrine remains stone.', meta:`Interact · ${r}`};
+    if(r>=15){
+      state.flags.usedShrine=true;
+      state.player.ward+=1;
+      healPlayer(6,'The shrine gives back a hard mercy.');
+      setRunLuck('lucky', 4, 'Shrine Blessing');
+      addFactOnce('The shrine responds to sincere offerings, but only once without a price.');
+      return {kind:'sys', text:'You offer something real to the shrine and it answers. The room does not brighten, but it stops leaning against you quite so hard.', meta:tierMetaLabel('Interact', r)};
+    }
+    if(r<=5){
+      setRunLuck('unlucky', 2, 'Cold Shrine');
+      return {kind:'bad', text:'You try to pray, but whatever listens here prefers conviction to performance. The shrine remains stone, and the room seems to lean the wrong way around you.', meta:tierMetaLabel('Interact', r)};
+    }
+    return {kind:'bad', text:'You try to pray, but whatever listens here prefers conviction to performance. The shrine remains stone.', meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:`You study the shrine instead of trusting it. Its wear pattern suggests repeated use by desperate hands. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  if(verb==='use' || /enhance|bless|temper|improve|empower|upgrade/.test(raw||'')){
+    const weapon = getEquippedWeapon();
+    const outcome = enhanceWeapon(weapon, r);
+    return {kind: outcome.tier==='bad' ? 'bad' : 'sys', text:`You place ${weapon.name} before the shrine. ${outcome.text}`, meta:tierMetaLabel('Interact', r)};
+  }
+  return {kind:'sys', text:`You study the shrine instead of trusting it. Its wear pattern suggests repeated use by desperate hands. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function resolveKeyInteraction(verb, r, room, rng, point, raw){
-  if(!point) return {kind:'bad', text:'Whatever key or relic you meant is not actually within reach.', meta:`Interact · ${r}`};
+  if(!point) return {kind:'bad', text:'Whatever key or relic you meant is not actually within reach.', meta:tierMetaLabel('Interact', r)};
   if(verb==='take' || verb==='gather' || verb==='handle' || verb==='inspect'){
-    if(r>=8){ state.map.grid[point.y][point.x]='.'; state.flags.questKeyFound=true; gainItem({name:'Iron Key', qty:1, desc:'A severe key from deeper in the run. It feels more ceremonial than domestic.'}); return {kind:'sys', text:'You take the key and immediately feel the run reorder itself around that decision.', meta:`Interact · ${r}`}; }
-    return {kind:'bad', text:'You reach for the key and think better of exposing yourself for a cleaner grab. The room keeps it for the moment.', meta:`Interact · ${r}`};
+    if(r>=8){ state.map.grid[point.y][point.x]='.'; state.flags.questKeyFound=true; gainItem({name:'Iron Key', qty:1, desc:'A severe key from deeper in the run. It feels more ceremonial than domestic.'}); return {kind:'sys', text:'You take the key and immediately feel the run reorder itself around that decision.', meta:tierMetaLabel('Interact', r)}; }
+    return {kind:'bad', text:'You reach for the key and think better of exposing yourself for a cleaner grab. The room keeps it for the moment.', meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:`You study the key from where you stand. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  return {kind:'sys', text:`You study the key from where you stand. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function resolveNpcInteraction(verb, r, room, rng, point, raw){
   if(verb==='threaten'){
     const npc=(point&&point.entity) || nearbyEntities('npc',2)[0];
-    if(!npc) return {kind:'bad', text:'You square yourself against an absence.', meta:`Interact · ${r}`};
+    if(!npc) return {kind:'bad', text:'You square yourself against an absence.', meta:tierMetaLabel('Interact', r)};
     npc.dialogIndex=(npc.dialogIndex||0)+1;
-    return {kind:r>=12?'sys':'bad', text:r>=12 ? `${npc.name} does not flinch, but they do stop withholding. "Fine," they say, and give you the shortest route they know.` : `${npc.name} watches your threat fail to become leverage. You learn nothing except how calm they are.`, meta:`Interact · ${r}`};
+    return {kind:r>=12?'sys':'bad', text:r>=12 ? `${npc.name} does not flinch, but they do stop withholding. "Fine," they say, and give you the shortest route they know.` : `${npc.name} watches your threat fail to become leverage. You learn nothing except how calm they are.`, meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='offer'){
     const npc=(point&&point.entity) || nearbyEntities('npc',2)[0];
-    if(!npc) return {kind:'bad', text:'There is no one here to receive the offer.', meta:`Interact · ${r}`};
-    if(hasItem('Loose Stone')){ removeItem('Loose Stone'); gainItem({name:'Bone Charm', qty:1, desc:'A small ward traded for an unlikely kindness.'}); return {kind:'sys', text:`You offer up something small and material. ${npc.name} trades you a bone charm and a look that says the exchange mattered.`, meta:`Interact · ${r}`}; }
-    return {kind:'sys', text:`You offer words or posture, but nothing tangible changes hands. ${npc.name} remembers the attempt anyway.`, meta:`Interact · ${r}`};
+    if(!npc) return {kind:'bad', text:'There is no one here to receive the offer.', meta:tierMetaLabel('Interact', r)};
+    if(hasItem('Loose Stone')){ removeItem('Loose Stone'); gainItem({name:'Bone Charm', qty:1, desc:'A small ward traded for an unlikely kindness.'}); return {kind:'sys', text:`You offer up something small and material. ${npc.name} trades you a bone charm and a look that says the exchange mattered.`, meta:tierMetaLabel('Interact', r)}; }
+    return {kind:'sys', text:`You offer words or posture, but nothing tangible changes hands. ${npc.name} remembers the attempt anyway.`, meta:tierMetaLabel('Interact', r)};
   }
   return resolveTalk({raw, target:'npc'}, r, room, rng);
 }
 function resolveEnemyInteraction(verb, r, room, rng, point, raw){
   if(verb==='hide'){
-    if(r>=13){ addFactOnce('A hostile lost your exact position for a moment.'); return {kind:'sys', text:'You break line and let the room swallow you for a second. The hostile has to hunt instead of simply knowing.', meta:`Interact · ${r}`}; }
-    return {kind:'bad', text:'You try to hide from something already reading your shape. It keeps you in mind.', meta:`Interact · ${r}`};
+    if(r>=13){ addFactOnce('A hostile lost your exact position for a moment.'); return {kind:'sys', text:'You break line and let the room swallow you for a second. The hostile has to hunt instead of simply knowing.', meta:tierMetaLabel('Interact', r)}; }
+    return {kind:'bad', text:'You try to hide from something already reading your shape. It keeps you in mind.', meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='throw'){
-    if(!hasItem('Loose Stone')) return {kind:'bad', text:'You reach for a throwable that is not in your pockets.', meta:`Interact · ${r}`};
+    if(!hasItem('Loose Stone')) return {kind:'bad', text:'You reach for a throwable that is not in your pockets.', meta:tierMetaLabel('Interact', r)};
     removeItem('Loose Stone');
     const foe=roomHostiles(room)[0];
-    if(!foe) return {kind:'bad', text:'You throw the stone into a room that offers no moving target.', meta:`Interact · ${r}`};
-    if(r>=12){ foe.hp-=1; return {kind:'sys', text:`You throw a loose stone hard enough to make ${foe.name} answer with pain instead of confidence.`, meta:`Interact · ${r}`}; }
-    return {kind:'bad', text:'The thrown stone buys noise and a moment, but not control.', meta:`Interact · ${r}`};
+    if(!foe) return {kind:'bad', text:'You throw the stone into a room that offers no moving target.', meta:tierMetaLabel('Interact', r)};
+    if(r>=12){ foe.hp-=1; return {kind:'sys', text:`You throw a loose stone hard enough to make ${foe.name} answer with pain instead of confidence.`, meta:tierMetaLabel('Interact', r)}; }
+    return {kind:'bad', text:'The thrown stone buys noise and a moment, but not control.', meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:`You test the enemy with posture instead of steel. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  return {kind:'sys', text:`You test the enemy with posture instead of steel. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function resolveRoomInteraction(verb, r, room, rng, raw){
   if(verb==='hide'){
-    if(r>=13){ state.flags.hidden=true; return {kind:'sys', text:'You make yourself smaller and let the room cover for you. For now, it does.', meta:`Interact · ${r}`}; }
-    return {kind:'bad', text:'You try to hide in a room that has already noticed you.', meta:`Interact · ${r}`};
+    if(r>=13){ state.flags.hidden=true; return {kind:'sys', text:'You make yourself smaller and let the room cover for you. For now, it does.', meta:tierMetaLabel('Interact', r)}; }
+    return {kind:'bad', text:'You try to hide in a room that has already noticed you.', meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='mark'){
     addFactOnce(`You marked ${room.name}.`);
-    return {kind:'sys', text:`You leave a deliberate mark in ${room.name}. Later, if you circle back, you will know the room knew you first.`, meta:`Interact · ${r}`};
+    return {kind:'sys', text:`You leave a deliberate mark in ${room.name}. Later, if you circle back, you will know the room knew you first.`, meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='inspect'){
     revealAround(state,7);
-    return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+    return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
   }
-  return {kind:'sys', text:`You do something small but real to the room, and the room changes by a degree. ${generateClue(room,rng)}`, meta:`Interact · ${r}`};
+  return {kind:'sys', text:`You do something small but real to the room, and the room changes by a degree. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
 function generateClue(room, rng){
   return pick(rng,[
@@ -2637,24 +3391,68 @@ function generateClue(room, rng){
   ]);
 }
 function addLootMaybe(rng,boss=false){
+  const gear = [
+    makeWeapon('knife', pick(rng, ['rusty','sharp','plain'])),
+    makeWeapon('spear', pick(rng, ['plain','sharp','gilded'])),
+    makeWeapon('axe', pick(rng, ['rusty','heavy','plain'])),
+    makeWeapon('sword', pick(rng, ['plain','sharp','gilded','blessed']))
+  ];
   const pool = boss
-    ? [{name:'Relic Fragment', desc:'Evidence the quest wants.'},{name:'Bright Powder', desc:'A revealing mineral dust.'},{name:'Saint Key', desc:'A heavy ritual key.'}]
-    : [{name:'Small Tonic', desc:'A bitter restorative.'},{name:'Oil Flask', desc:'Enough oil for one bright use.'},{name:'Rusted Knife', desc:'Better than empty hands.'}];
-  gainItem(pick(rng,pool));
+    ? [{name:'Relic Fragment', desc:'Evidence the quest wants.'},{name:'Bright Powder', desc:'A revealing mineral dust.'},{name:'Saint Key', desc:'A heavy ritual key.'}, makeWeapon('relic', pick(rng,['gilded','blessed','sharp']))]
+    : [{name:'Small Tonic', desc:'A bitter restorative.'},{name:'Oil Flask', desc:'Enough oil for one bright use.'},{name:'Rusted Knife', desc:'Better than empty hands.'}, pick(rng, gear)];
+  const item = pick(rng,pool);
+  gainItem(item);
 }
 function applyOutcome(result, baseRoll){
-  addEntry(result.kind==='bad'?'bad':'sys', result.text, result.meta || `Roll ${baseRoll}`);
+  const tier = (typeof baseRoll === 'number') ? interactionTier(baseRoll) : null;
+  const kind = result.kind==='bad' ? 'bad' : 'sys';
+  const meta = result.meta || (typeof baseRoll === 'number' ? tierMetaLabel('Roll', baseRoll) : 'System');
+  addEntry(kind, result.text, meta);
   if(result?.pulse) queueMapPulse(result.pulse.x, result.pulse.y, result.pulse.kind||'generic');
 }
+
 function afterPlayerTurn(rng){
   const hostiles = state.entities.filter(e=>e.alive && (e.type==='enemy'||e.type==='boss'));
   for(const e of hostiles){
     const dist=Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y);
+
+    if(e.chargeTurns && e.chargeTurns > 0){
+      e.chargeTurns -= 1;
+      if(dist <= 1){
+        let dmg = enemyDamageValue(e, true);
+        if(state.flags.defending){
+          dmg = Math.max(0, dmg-8);
+          addEntry('sys', `You catch part of ${e.name}'s charged strike on your guard and blunt the worst of it.`, 'Defend');
+        }
+        if(hasItem('Knotted Ward')){ dmg=Math.max(0,dmg-4); removeItem('Knotted Ward'); }
+        damagePlayer(dmg, `${e.name} releases a charged attack.`);
+        addEntry(dmg>0?'bad':'sys', `${e.name} unleashes the attack it was building.`, 'Enemy Turn');
+      }else{
+        addEntry('sys', `${e.name} releases a powerful attack into empty space as you deny it a clean angle.`, 'Enemy Turn');
+      }
+      e.charging = false;
+      continue;
+    }
+
+    if(dist<=2 && !e.charging){
+      const chargeChance = e.type==='boss' ? 0.38 : 0.22;
+      if(Math.random() < chargeChance){
+        e.charging = true;
+        e.chargeTurns = 1;
+        addEntry('bad', `${e.name} is charging up for a powerful attack.`, 'Enemy Turn');
+        continue;
+      }
+    }
+
     if(dist===1){
       const hit=rollOneToTwenty();
       if(hit>=8){
-        let dmg=e.type==='boss'?2:1;
-        if(hasItem('Knotted Ward')){ dmg=Math.max(0,dmg-1); removeItem('Knotted Ward'); }
+        let dmg=enemyDamageValue(e, false);
+        if(state.flags.defending){
+          dmg = Math.max(0, dmg-4);
+          addEntry('sys', `You brace in time and reduce ${e.name}'s attack.`, 'Defend');
+        }
+        if(hasItem('Knotted Ward')){ dmg=Math.max(0,dmg-3); removeItem('Knotted Ward'); }
         damagePlayer(dmg, `${e.name} attacks at close range.`);
       } else {
         addEntry('sys', `${e.name} presses the attack but misses clean purchase.`, 'Enemy Turn');
@@ -2668,7 +3466,9 @@ function afterPlayerTurn(rng){
       }
     }
   }
+  state.flags.defending = false;
 }
+
 function bfsStepEntity(sx,sy,tx,ty){
   const q=[[sx,sy]], came=new Map(); came.set(key(sx,sy),null);
   while(q.length){
@@ -2691,11 +3491,15 @@ function bfsStepEntity(sx,sy,tx,ty){
 function movePlayer(x,y){ state.player.x=x; state.player.y=y; centerMapOnPlayer(); }
 function pushMoveMemory(text){ state.moves.push(`Turn ${state.turn}: ${text}`); if(state.moves.length>22) state.moves.shift(); }
 function updateQuestProgress(result){
+  const wasDone = !!state.quest.done;
   if(state.flags.questKeyFound) state.quest.progress[0]=true;
   if(state.flags.innerGateOpen || hasItem('Saint Key') || hasItem('Iron Key')) state.quest.progress[1]=true;
   if(state.flags.bossDefeated){ state.quest.progress[state.quest.progress.length-1]=true; }
   state.quest.done = state.quest.progress.every(Boolean) || state.flags.bossDefeated;
-  if(state.quest.done) addFactOnce(`Quest complete: ${state.quest.title}`);
+  if(state.quest.done){
+    addFactOnce(`Quest complete: ${state.quest.title}`);
+    if(!wasDone) setRunLuck('lucky', 3, 'Quest Momentum');
+  }
 }
 function addFactOnce(f){ if(!state.facts.includes(f)) state.facts.push(f); }
 function addRoomFact(room, fact){
@@ -2884,9 +3688,19 @@ function drawTile(symbol,dx,dy){
     ctx.fillRect(dx,dy,tileSize,tileSize);
   }
 }
+
+
+function toggleHint(index){
+  if(!state || !state.log || !state.log[index]) return;
+  const body = state.log[index].body || '';
+  state.log[index].decoded = decodeSusoMeaning(body);
+  if(!state.log[index].decoded) return;
+  state.log[index].showDecoded = !state.log[index].showDecoded;
+  refreshUI();
+}
+window.toggleHint = toggleHint;
 function refreshUI(){
-  if(els.dicePanel) els.dicePanel.classList.add('show');
-  renderDiceHistory();
+  if(els.diceOverlay) els.diceOverlay.classList.add('show');
   if(!state) return;
   els.playerNameOut.textContent=`${state.name} the ${state.title}`;
   const room=getCurrentRoom();
@@ -2894,27 +3708,70 @@ function refreshUI(){
   els.healthOut.textContent=`${state.health} / ${state.maxHealth}`;
   els.healthBar.style.width=`${(state.health/state.maxHealth)*100}%`;
   els.engineBadge.textContent = state.ai.enabled ? `Suso + ${aiModeLabel(state.ai)}` : 'Suso Local';
-  els.inventoryList.innerHTML = state.inventory.map(i=>`<div class="list-item"><strong>${escapeHtml(i.name)}</strong>${i.qty&&i.qty>1?` ×${i.qty}`:''}<div class="small">${escapeHtml(i.desc||'')}</div></div>`).join('') || '<div class="list-item">Nothing.</div>';
+  const equipped = getEquippedWeapon();
+  if(els.equipmentList){
+    els.equipmentList.innerHTML = `<div class="list-item">${weaponSummaryHtml(equipped)}</div>`;
+  }
+  els.inventoryList.innerHTML = state.inventory.map(i=>`<div class="list-item"><strong>${escapeHtml(i.name)}</strong>${i.name===equipped.name?' <span class="small">(equipped)</span>':''}${i.qty&&i.qty>1?` ×${i.qty}`:''}<div class="small">${escapeHtml(i.desc||'')}</div></div>`).join('') || '<div class="list-item">Nothing.</div>';
   els.factsList.innerHTML = state.facts.slice(-10).map(f=>`<div class="list-item">${escapeHtml(f)}</div>`).join('') || '<div class="list-item">Nothing yet.</div>';
   els.questList.innerHTML = `<div class="list-item"><strong>${escapeHtml(state.quest.title)}</strong><div class="small">${state.quest.done?'Completed':'Active'}</div></div>` + state.quest.steps.map((s,i)=>`<div class="list-item quest-step"><div class="dot ${state.quest.progress[i]?'done':''}"></div><div>${escapeHtml(s)}</div></div>`).join('');
   const nearbyCtx = nearbyInteractiveContext(2).sort((a,b)=>a.d-b.d);
-  const hostiles=nearbyEntities('hostile',6).map(e=>`${e.name} · HP ${e.hp}`);
+  const hostiles=nearbyEntities('hostile',6).map(e=>`${e.name} · HP ${e.hp}${e.maxHp?`/${e.maxHp}`:''}`);
   const npcs=nearbyEntities('npc',6).map(e=>`${e.name} · willing to talk`);
   const features=roomFeatureSummary(state, room).map(s=>symbolName(s));
   const nearbyReadable = nearbyCtx.map(n=>`${n.label || n.kind} · ${n.d<=1?'within reach':`nearby (${n.d})`}`);
   const localRoomFacts = room ? ensureRoomState(room).facts.slice(-3).map(f=>`Room remembers: ${f}`) : [];
   els.nearbyList.innerHTML = [...nearbyReadable,...hostiles,...npcs,...features,...localRoomFacts].slice(0,12).map(t=>`<div class="list-item">${escapeHtml(t)}</div>`).join('') || '<div class="list-item">Only stone, air, and your choices.</div>';
   els.movesList.innerHTML = state.moves.slice(-8).map(m=>`<div class="list-item">${escapeHtml(m)}</div>`).join('') || '<div class="list-item">Suso will summarize recent intent here.</div>';
-  els.log.innerHTML = state.log.map((entry, idx)=>`<div class="entry ${entry.kind}" data-entry="${idx}"><div class="meta">${escapeHtml(entry.meta||'Turn')}</div><div class="body">${escapeHtml(entry.body)}</div></div>`).join('');
+  els.log.innerHTML = state.log.map((e,i)=>{
+    const decoded = e.kind === 'player' ? '' : (e.decoded || decodeSusoMeaning(e.body||''));
+    return `<div class="entry ${e.kind}">
+    <div class="meta">${escapeHtml(e.meta||'')}</div>
+    <div class="body">${escapeHtml(e.body||'')}</div>
+    ${decoded ? `<div class="hint-wrap ${e.showDecoded?'open':''}">
+      <button class="secondary hint-btn" type="button" onclick="toggleHint(${i})">${e.showDecoded?'Hide hint':'Show hint'}</button>
+      <div class="hint-text">${escapeHtml(decoded)}</div>
+    </div>` : ''}
+  </div>`;
+  }).join('');
   els.log.scrollTop = els.log.scrollHeight;
   els.premiseText.textContent=state.premise;
-  els.runChips.innerHTML=[state.theme.name,state.tone,`Risk: ${state.risk}`,`Seed ${String(state.seed).slice(-6)}`].map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('');
+  const luckChip = state.luck && state.luck.turnsLeft>0 ? `${state.luck.mode==='lucky' ? 'Blessed' : 'Cursed'} · ${state.luck.turnsLeft} turn${state.luck.turnsLeft===1?'':'s'}` : null;
+  els.runChips.innerHTML=[state.theme.name,state.tone,`Risk: ${state.risk}`, luckChip, `Seed ${String(state.seed).slice(-6)}`].filter(Boolean).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('');
   const posKey = `${state.player.x},${state.player.y}`;
   if(lastFollowPos !== posKey){
     lastFollowPos = posKey;
     centerMapOnPlayer();
   }
   updateQuickActions();
+  syncMapLegendToggle();
+  const closeHostiles = nearbyEntities('hostile', 2);
+  const chargingHostile = closeHostiles.find(e => e.charging || e.chargeTurns>0) || nearbyEntities('hostile', 4).find(e => e.charging || e.chargeTurns>0);
+  if(els.battleBar){
+    if(closeHostiles.length){
+      const foe = chargingHostile || closeHostiles[0];
+      els.battleBar.classList.add('show');
+      els.battleBarTitle.textContent = chargingHostile ? `${foe.name} is winding up` : `${foe.name} is in range`;
+      const weapon = getEquippedWeapon();
+      if(els.battleBarEnemyHp) els.battleBarEnemyHp.textContent = `Enemy HP: ${foe.hp}${foe.maxHp?` / ${foe.maxHp}`:''} · ${weapon.name} ${weapon.min}-${weapon.max}`;
+      els.battleBarSub.textContent = chargingHostile ? 'Brace now or move before the release.' : 'Attack: miss 0-3, graze 4-7, hit 8+ before weapon bonuses.';
+    }else{
+      els.battleBar.classList.remove('show');
+    }
+  }
+  if(els.trayLuckBadge){
+    const eff = getEffectiveLuckMode();
+    els.trayLuckBadge.classList.remove('lucky','unlucky');
+    if(eff==='lucky'){
+      els.trayLuckBadge.textContent = state.luck && state.luck.turnsLeft>0 ? `Blessed · ${state.luck.turnsLeft}` : 'Lucky';
+      els.trayLuckBadge.classList.add('lucky');
+    }else if(eff==='unlucky'){
+      els.trayLuckBadge.textContent = state.luck && state.luck.turnsLeft>0 ? `Cursed · ${state.luck.turnsLeft}` : 'Unlucky';
+      els.trayLuckBadge.classList.add('unlucky');
+    }else{
+      els.trayLuckBadge.textContent = 'Normal';
+    }
+  }
   drawMap();
   updateMapTransform();
   saveGame();
@@ -2937,7 +3794,8 @@ function contextActionPool(){
     const who = n.label || n.kind;
     if(n.kind==='enemy'){
       add(`Inspect ${who}`, `inspect ${who}`, 10);
-      add(`Attack ${who}`, `attack ${who}`, 10);
+      add(`Attack ${who}`, `attack ${who}`, 12);
+      add('Defend', 'defend', 9);
       add(`Threaten ${who}`, `threaten ${who}`, 7);
     }else if(n.kind==='npc'){
       add(`Talk to ${who}`, `talk to ${who}`, 10);
@@ -2970,6 +3828,7 @@ function contextActionPool(){
     }else if(n.kind==='shrine'){
       add('Inspect the shrine', 'inspect the shrine', 8);
       add('Pray at the shrine', 'pray at the shrine', 9);
+      add('Enhance weapon', 'enhance my weapon at the shrine', 8);
       add('Offer something', 'offer something at the shrine', 6);
     }else if(n.kind==='key'){
       add('Take the key', 'take the key', 10);
@@ -3036,7 +3895,14 @@ function persistAiSettings(){
   localStorage.setItem(AI_KEY, JSON.stringify(ai));
   if(state) state.ai=ai;
   refreshAiFields();
-renderDiceHistory();
+if(els.luckModeSelect){
+  els.luckModeSelect.value = luckMode;
+  els.luckModeSelect.onchange = ()=>{
+    luckMode = els.luckModeSelect.value || 'normal';
+  };
+}
+resizeDiceCanvas();
+paintDiceTray();
 renderDiceHistory();
 }
 function refreshAiFields(){
@@ -3099,6 +3965,39 @@ function resolveAndClear(){
   resolveAction(v); els.actionInput.value='';
 }
 
+
+if(els.battleAttackBtn) els.battleAttackBtn.onclick=()=>resolveAction('attack');
+if(els.battleDefendBtn) els.battleDefendBtn.onclick=()=>resolveAction('defend');
+
+if(els.equipReplaceBtn) els.equipReplaceBtn.onclick=()=>{
+  if(pendingEquipChoice) equipWeaponByName(pendingEquipChoice.name);
+  refreshUI();
+  closeEquipModal();
+};
+if(els.equipKeepBtn) els.equipKeepBtn.onclick=()=>{ refreshUI(); closeEquipModal(); };
+if(els.equipCloseBtn) els.equipCloseBtn.onclick=()=>{ refreshUI(); closeEquipModal(); };
+
+
+if(els.titleCardToggleBtn){
+  syncTitleCardToggle();
+  els.titleCardToggleBtn.onclick=()=>toggleTitleCard();
+}
+
+if(els.quickRollBtn){
+  syncQuickRollBtn();
+  els.quickRollBtn.onclick=()=>{
+    quickRollMode = !quickRollMode;
+    syncQuickRollBtn();
+  };
+}
+
+if(els.mapLegendToggleBtn){
+  syncMapLegendToggle();
+  els.mapLegendToggleBtn.onclick=()=>{
+    mapLegendOpen = !mapLegendOpen;
+    syncMapLegendToggle();
+  };
+}
 els.actBtn.onclick=resolveAndClear;
 els.restBtn.onclick=()=>resolveAction('rest and steady myself');
 els.listenBtn.onclick=()=>resolveAction('listen carefully');
@@ -3304,6 +4203,7 @@ function narrativeFocusLine(room, rs, targetKind, rr, rawText=''){
 }
 function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
   if(!room) return null;
+  if(intent?.type==='attack' || intent?.type==='defend') return null;
   const rs = ensureRoomState(room);
   const targetCtx = nearbyTargetContext(intent, 3);
   const targetKind = targetCtx?.kind || intent.target || 'room';
@@ -3553,7 +4453,7 @@ function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
       lines.push('You set the loose stone where the door will have to argue with it later.');
       addRoomFact(room, 'the door has been roughly wedged');
       changed = true;
-      return {kind:'sys', text:lines.join(' '), meta:`Use · ${baseRoll}`, changed, pulse};
+      return {kind:'sys', text:lines.join(' '), meta:tierMetaLabel('Use', baseRoll), changed, pulse};
     }
     lines.push('You use what you have against what is here and get back a smaller, stranger truth.');
     lines.push(deepenRoom());
@@ -3619,5 +4519,31 @@ function richLocalInteraction(intent, baseRoll, room, rr, rawText=''){
 /* --- end Suso v7 local-depth overrides --- */
 
 </script>
+
+<div class="onboard" id="equipModal" style="display:none">
+  <div class="modal" style="max-width:760px">
+    <div class="panel-head" style="padding:18px 22px 0">
+      <h3>Equipment Choice</h3>
+      <button class="secondary" id="equipCloseBtn">Close</button>
+    </div>
+    <div class="panel-body">
+      <div class="row">
+        <div class="field">
+          <label>Currently Equipped</label>
+          <div class="list-item" id="equipCurrentCard"></div>
+        </div>
+        <div class="field">
+          <label>New Weapon</label>
+          <div class="list-item" id="equipCandidateCard"></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="equipReplaceBtn">Equip New Weapon</button>
+        <button class="secondary" id="equipKeepBtn">Keep Current</button>
+      </div>
+      <div class="small" id="equipModalHint">Pick the weapon you want to carry into the next fight.</div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
