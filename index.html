@@ -2716,17 +2716,18 @@ function parseIntent(text){
   }
 
   if(/(fly|divine|god|miracle|absolute fortune|unfathomable)/.test(t)) intent.insane=true;
-  if(/(talk|speak|ask|question|negotiate|chat|say to)/.test(t)) intent.type='talk';
+  if(/(talk|speak|ask|question|negotiate|chat|say to|tell|confront)/.test(t)) intent.type='talk';
   else if(/(combine|craft|mix|merge)/.test(t)) intent.type='combine';
-  else if(/(use|drink|consume|equip|light|apply)/.test(t)) intent.type='use';
+  else if(/(use|drink|consume|equip|light|apply|enhance|bless|temper|improve|empower|upgrade|pray|offer)/.test(t)) intent.type='use';
   else if(/(attack|fight|hit|kill|stab|slash|shoot|smash)/.test(t)) intent.type='attack';
-  else if(/(open|unlock)/.test(t)) intent.type='open';
+  else if(/(open|unlock|force|pry)/.test(t)) intent.type='open';
   else if(/(defend|guard|brace|block|parry|shield up|hold guard)/.test(t)) intent.type='defend';
   else if(/(listen|hear)/.test(t)) intent.type='listen';
-  else if(/(search|loot|rummage|scavenge|check around)/.test(t)) intent.type='search';
+  else if(/(search|loot|rummage|scavenge|check around|check)/.test(t)) intent.type='search';
   else if(/(inspect|examine|look|study|read)/.test(t)) intent.type='inspect';
   else if(/(rest|wait|pause|breathe)/.test(t)) intent.type='rest';
   else if(/(move|go|run|walk|head|travel|step|leave|exit|enter|cross|approach|follow)/.test(t)) intent.type='move';
+  else if(/(disarm|clear|wade|climb|throw|threaten|hide|mark|descend|take|gather)/.test(t)) intent.type='interact';
 
   for(const dir of Object.keys(DIRS)){ if(new RegExp(`\b${dir}\b`).test(t)) intent.direction=dir; }
 
@@ -2931,9 +2932,11 @@ async function resolveAction(input){
     else if(intent.type==='listen') result=resolveListen(intent, baseRoll, room, rr);
     else if(intent.type==='search') result=resolveSearch(intent, baseRoll, room, rr);
     else if(intent.type==='open') result=resolveOpen(intent, baseRoll, room, rr);
-    else if(intent.type==='talk') result=resolveTalk(intent, baseRoll, room, rr);
-    else if(intent.type==='use') result=resolveUse(intent, baseRoll, room, rr);
-    else {
+    else if(intent.type==='talk') result=intent.target ? resolveTargetedInteraction(intent, baseRoll, room, rr) : resolveTalk(intent, baseRoll, room, rr);
+    else if(intent.type==='use') result=intent.target ? resolveTargetedInteraction(intent, baseRoll, room, rr) : resolveUse(intent, baseRoll, room, rr);
+    else if(intent.type==='interact' && intent.target){
+      result = resolveTargetedInteraction(intent, baseRoll, room, rr);
+    } else {
       result = richLocalInteraction(intent, baseRoll, room, rr, text);
       if(!result) result=resolveInteract(intent, baseRoll, room, rr);
     }
@@ -3420,16 +3423,16 @@ function resolveRubbleInteraction(verb, r, room, rng, point, raw){
 }
 function resolveWaterInteraction(verb, r, room, rng, point, raw){
   if(verb==='drink'){
-    if(r>=16){ healPlayer(1,'The water was cleaner than it looked, or your body was kinder than expected.'); return {kind:'sys', text:'You drink cautiously. The water is cold, metallic, and survivable. At the bottom of the pooled stone you notice something deliberately sunk there.', meta:tierMetaLabel('Interact', r)}; }
-    if(r>=9){ return {kind:'bad', text:'You drink and immediately regret it. The taste is wrong, but not ruinous. The pool ripples wider than it should and tells the room you are here.', meta:tierMetaLabel('Interact', r)}; }
+    if(r>=14){ healPlayer(4,'The water was cleaner than it looked, or your body was kinder than expected.'); return {kind:'sys', text:'You drink cautiously. The water is cold, metallic, and survivable. At the bottom of the pooled stone you notice something deliberately sunk there.', meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null}; }
+    if(r>=8){ return {kind:'sys', text:'You drink and immediately regret it, but you learn from the way the pool answers. The water tells the room you are here.', meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null}; }
     damagePlayer(1,'The water turns your stomach.');
-    return {kind:'bad', text:'You drink the water and your body rejects the decision. The sound of it travels.', meta:tierMetaLabel('Interact', r)};
+    return {kind:'bad', text:'You drink the water and your body rejects the decision. The sound of it travels.', meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
   }
   if(verb==='wade'){
-    if(r>=13){ if(point){ state.player.x=point.x; state.player.y=point.y; } revealAround(state,8); return {kind:'sys', text:'You wade through the cold water instead of around it and find a line of safer stones hidden beneath the surface.', meta:tierMetaLabel('Interact', r)}; }
-    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You enter the water and the splash gives you away.${foe ? ` ${foe.name} shifts closer, hunting the sound.` : ''}`, meta:tierMetaLabel('Interact', r)};
+    if(r>=10){ if(point){ state.player.x=point.x; state.player.y=point.y; } revealAround(state,8); return {kind:'sys', text:'You wade through the cold water instead of around it and find a line of safer stones hidden beneath the surface.', meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null}; }
+    const foe=attractNearbyHostile(room); return {kind:'bad', text:`You enter the water and the splash gives you away.${foe ? ` ${foe.name} shifts closer, hunting the sound.` : ''}`, meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
   }
-  return {kind:'sys', text:`You test the water instead of trusting it. It smells of stone, old metal, and something that sat here longer than it should have. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
+  return {kind:'sys', text:`You test the water instead of trusting it. It smells of stone, old metal, and something that sat here longer than it should have. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
 }
 function resolveDoorInteraction(verb, r, room, rng, point, raw){
   const locked = !state.flags.innerGateOpen && !hasItem('Saint Key') && !hasItem('Iron Key');
@@ -3466,23 +3469,25 @@ function resolveChestInteraction(verb, r, room, rng, point, raw){
   if(!point) point = nearestTargetPointFor('chest', room);
   if(!point) return {kind:'bad', text:'There is no chest close enough to work on.', meta:tierMetaLabel('Open', r)};
   if(verb==='inspect'){
-    return {kind:'sys', text:`You inspect the chest carefully. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
+    return {kind:'sys', text:`You inspect the chest carefully. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
   }
   if(verb==='open' || verb==='force'){
-    if(r < 6) return {kind:'bad', text:'You fumble the chest and fail to get it open cleanly.', meta:tierMetaLabel('Open', r)};
+    if(r < 5) return {kind:'bad', text:'You fumble the chest and fail to get it open cleanly.', meta:tierMetaLabel('Open', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
     state.map.grid[point.y][point.x]='.';
     const rewards = [
       {name:'Small Tonic', qty:1, desc:'A bitter restorative.'},
       {name:'Oil Flask', qty:1, desc:'Enough oil for one bright use.'},
       {name:'Loose Stone', qty:1, desc:'A fist-sized chunk of masonry that can be thrown, wedged, or used as proof of disturbance.'},
       makeWeapon('knife', pick(rng,['plain','sharp','rusty'])),
-      makeWeapon('sword', pick(rng,['plain','sharp','gilded']))
+      makeWeapon('sword', pick(rng,['plain','sharp','gilded'])),
+      {name:'Iron Key', qty:1, desc:'A severe key from deeper in the run. It feels more ceremonial than domestic.'}
     ];
     const item = pick(rng, rewards);
+    if(item.name==='Iron Key') state.flags.questKeyFound = true;
     gainItem(item);
     return {kind:'sys', text:`The chest opens with a tired complaint. Inside waits ${item.name}.`, meta:tierMetaLabel('Open', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
   }
-  return {kind:'sys', text:`You judge the chest by its seams and weight. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
+  return {kind:'sys', text:`You judge the chest by its seams and weight. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
 }
 function resolveTrapInteraction(verb, r, room, rng, point, raw){
   if(!point) return {kind:'bad', text:'No trap lies close enough to command your full attention.', meta:tierMetaLabel('Interact', r)};
@@ -3503,60 +3508,66 @@ function resolveTrapInteraction(verb, r, room, rng, point, raw){
 }
 function resolveShrineInteraction(verb, r, room, rng, point, raw){
   if(verb==='pray' || verb==='offer'){
-    if(r>=15){
+    if(r>=12){
       state.flags.usedShrine=true;
       state.player.ward+=1;
       healPlayer(6,'The shrine gives back a hard mercy.');
       setRunLuck('lucky', 4, 'Shrine Blessing');
       addFactOnce('The shrine responds to sincere offerings, but only once without a price.');
-      return {kind:'sys', text:'You offer something real to the shrine and it answers. The room does not brighten, but it stops leaning against you quite so hard.', meta:tierMetaLabel('Interact', r)};
+      return {kind:'sys', text:'You offer something real to the shrine and it answers. The room does not brighten, but it stops leaning against you quite so hard.', meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
     }
     if(r<=5){
       setRunLuck('unlucky', 2, 'Cold Shrine');
-      return {kind:'bad', text:'You try to pray, but whatever listens here prefers conviction to performance. The shrine remains stone, and the room seems to lean the wrong way around you.', meta:tierMetaLabel('Interact', r)};
+      return {kind:'bad', text:'You try to pray, but whatever listens here prefers conviction to performance. The shrine remains stone, and the room seems to lean the wrong way around you.', meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
     }
-    return {kind:'bad', text:'You try to pray, but whatever listens here prefers conviction to performance. The shrine remains stone.', meta:tierMetaLabel('Interact', r)};
+    state.player.ward+=1;
+    return {kind:'sys', text:'The shrine does not fully answer, but it gives you enough stillness to carry forward.', meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
   }
   if(verb==='use' || /enhance|bless|temper|improve|empower|upgrade/.test(raw||'')){
     const weapon = getEquippedWeapon();
     const outcome = enhanceWeapon(weapon, r);
-    return {kind: outcome.tier==='bad' ? 'bad' : 'sys', text:`You place ${weapon.name} before the shrine. ${outcome.text}`, meta:tierMetaLabel('Interact', r)};
+    return {kind: outcome.tier==='bad' ? 'bad' : 'sys', text:`You place ${weapon.name} before the shrine. ${outcome.text}`, meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'loot'} : null};
   }
-  return {kind:'sys', text:`You study the shrine instead of trusting it. Its wear pattern suggests repeated use by desperate hands. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
+  return {kind:'sys', text:`You study the shrine instead of trusting it. Its wear pattern suggests repeated use by desperate hands. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
 }
 
 function resolveStairsInteraction(verb, r, room, rng, point, raw){
   if(!point) point = nearestTargetPointFor('stairs', room);
   if(verb==='inspect'){
-    return {kind:'sys', text:`You study the stairs and the air around them. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
+    return {kind:'sys', text:`You study the stairs and the air around them. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
   }
   if(verb==='open' || verb==='descend' || verb==='use'){
-    if(r < 5) return {kind:'bad', text:'You hesitate at the threshold and fail to commit to the descent.', meta:tierMetaLabel('Open', r)};
+    if(r < 4) return {kind:'bad', text:'You hesitate at the threshold and fail to commit to the descent.', meta:tierMetaLabel('Open', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
     state.flags.descended = true;
-    return {kind:'sys', text:'You descend deeper. The run answers by tightening its story around you.', meta:tierMetaLabel('Open', r)};
+    state.turn += 0;
+    revealAround(state,8);
+    return {kind:'sys', text:'You descend deeper. The run answers by tightening its story around you.', meta:tierMetaLabel('Open', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
   }
-  return {kind:'sys', text:'The stairs wait with the patience of a true progression point.', meta:tierMetaLabel('Inspect', r)};
+  return {kind:'sys', text:'The stairs wait with the patience of a true progression point.', meta:tierMetaLabel('Inspect', r), pulse: point ? {x:point.x,y:point.y,kind:'generic'} : null};
 }
 function resolveKeyInteraction(verb, r, room, rng, point, raw){
   if(!point) return {kind:'bad', text:'Whatever key or relic you meant is not actually within reach.', meta:tierMetaLabel('Interact', r)};
   if(verb==='take' || verb==='gather' || verb==='handle' || verb==='inspect'){
-    if(r>=8){ state.map.grid[point.y][point.x]='.'; state.flags.questKeyFound=true; gainItem({name:'Iron Key', qty:1, desc:'A severe key from deeper in the run. It feels more ceremonial than domestic.'}); return {kind:'sys', text:'You take the key and immediately feel the run reorder itself around that decision.', meta:tierMetaLabel('Interact', r)}; }
-    return {kind:'bad', text:'You reach for the key and think better of exposing yourself for a cleaner grab. The room keeps it for the moment.', meta:tierMetaLabel('Interact', r)};
+    if(r>=6){
+      state.map.grid[point.y][point.x]='.';
+      state.flags.questKeyFound=true;
+      gainItem({name:'Iron Key', qty:1, desc:'A severe key from deeper in the run. It feels more ceremonial than domestic.'});
+      return {kind:'sys', text:'You take the key and immediately feel the run reorder itself around that decision.', meta:tierMetaLabel('Interact', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
+    }
+    return {kind:'bad', text:'You reach for the key and think better of exposing yourself for a cleaner grab. The room keeps it for the moment.', meta:tierMetaLabel('Interact', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
   }
-  return {kind:'sys', text:`You study the key from where you stand. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
+  return {kind:'sys', text:`You study the key from where you stand. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r), pulse:{x:point.x,y:point.y,kind:'loot'}};
 }
 function resolveNpcInteraction(verb, r, room, rng, point, raw){
+  const npc=(point&&point.entity) || nearbyEntities('npc',2)[0];
+  if(!npc) return {kind:'bad', text:'There is no one here close enough to answer.', meta:tierMetaLabel('Interact', r)};
   if(verb==='threaten'){
-    const npc=(point&&point.entity) || nearbyEntities('npc',2)[0];
-    if(!npc) return {kind:'bad', text:'You square yourself against an absence.', meta:tierMetaLabel('Interact', r)};
     npc.dialogIndex=(npc.dialogIndex||0)+1;
-    return {kind:r>=12?'sys':'bad', text:r>=12 ? `${npc.name} does not flinch, but they do stop withholding. "Fine," they say, and give you the shortest route they know.` : `${npc.name} watches your threat fail to become leverage. You learn nothing except how calm they are.`, meta:tierMetaLabel('Interact', r)};
+    return {kind:r>=10?'sys':'bad', text:r>=10 ? `${npc.name} does not flinch, but they do stop withholding. "Fine," they say, and give you the shortest route they know.` : `${npc.name} watches your threat fail to become leverage. You learn nothing except how calm they are.`, meta:tierMetaLabel('Interact', r), pulse:{x:npc.x,y:npc.y,kind:'generic'}};
   }
   if(verb==='offer'){
-    const npc=(point&&point.entity) || nearbyEntities('npc',2)[0];
-    if(!npc) return {kind:'bad', text:'There is no one here to receive the offer.', meta:tierMetaLabel('Interact', r)};
-    if(hasItem('Loose Stone')){ removeItem('Loose Stone'); gainItem({name:'Bone Charm', qty:1, desc:'A small ward traded for an unlikely kindness.'}); return {kind:'sys', text:`You offer up something small and material. ${npc.name} trades you a bone charm and a look that says the exchange mattered.`, meta:tierMetaLabel('Interact', r)}; }
-    return {kind:'sys', text:`You offer words or posture, but nothing tangible changes hands. ${npc.name} remembers the attempt anyway.`, meta:tierMetaLabel('Interact', r)};
+    if(hasItem('Loose Stone')){ removeItem('Loose Stone'); gainItem({name:'Bone Charm', qty:1, desc:'A small ward traded for an unlikely kindness.'}); return {kind:'sys', text:`You offer up something small and material. ${npc.name} trades you a bone charm and a look that says the exchange mattered.`, meta:tierMetaLabel('Interact', r), pulse:{x:npc.x,y:npc.y,kind:'loot'}}; }
+    return {kind:'sys', text:`You offer words or posture, and ${npc.name} gives you a clue instead of an object.`, meta:tierMetaLabel('Interact', r), pulse:{x:npc.x,y:npc.y,kind:'generic'}};
   }
   return resolveTalk({raw, target:'npc'}, r, room, rng);
 }
@@ -3583,14 +3594,15 @@ function resolveTargetedInteraction(intent, r, room, rng){
   const point = nearestTargetPointFor(target, room);
 
   if(target==='trap') return resolveTrapInteraction(verb, r, room, rng, point, raw);
-  if(target==='door') return resolveDoorInteraction(verb, r, room, rng, point, raw);
-  if(target==='chest') return resolveChestInteraction(verb, r, room, rng, point, raw);
+  if(target==='door') return resolveDoorInteraction((intent?.type==='open' ? 'open' : verb), r, room, rng, point, raw);
+  if(target==='chest') return resolveChestInteraction((intent?.type==='open' ? 'open' : verb), r, room, rng, point, raw);
   if(target==='water') return resolveWaterInteraction(verb, r, room, rng, point, raw);
-  if(target==='shrine') return resolveShrineInteraction(verb, r, room, rng, point, raw);
+  if(target==='shrine') return resolveShrineInteraction((intent?.type==='use' ? 'use' : verb), r, room, rng, point, raw);
   if(target==='rubble') return resolveRubbleInteraction(verb, r, room, rng, point, raw);
-  if(target==='key') return resolveKeyInteraction(verb, r, room, rng, point, raw);
+  if(target==='key') return resolveKeyInteraction((verb==='inspect' ? 'inspect' : 'take'), r, room, rng, point, raw);
   if(target==='npc') return resolveNpcInteraction(verb, r, room, rng, point, raw);
   if(target==='enemy') return resolveEnemyInteraction(verb, r, room, rng, point, raw);
+  if(target==='stairs') return resolveStairsInteraction((/descend|go down|deeper/.test(String(raw).toLowerCase()) ? 'descend' : verb), r, room, rng, point, raw);
 
   return resolveRoomInteraction(verb, r, room, rng, raw);
 }
