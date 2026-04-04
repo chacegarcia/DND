@@ -2502,6 +2502,13 @@ function updateQuestProgress(result){
   if(state.quest.done) addFactOnce(`Quest complete: ${state.quest.title}`);
 }
 function addFactOnce(f){ if(!state.facts.includes(f)) state.facts.push(f); }
+function addRoomFact(room, fact){
+  if(!room || !fact) return;
+  const rs = ensureRoomState(room);
+  if(!rs.facts) rs.facts = [];
+  if(!rs.facts.includes(fact)) rs.facts.push(fact);
+  addFactOnce(`${room.name}: ${fact}`);
+}
 
 function symbolName(s){ return ({C:'chest',D:'door',W:'water',E:'enemy',T:'trap','^':'shrine',S:'stairs',X:'rubble',O:'opening','n':'npc','k':'key','%':'corpse'})[s] || 'room'; }
 function nearestFeatureCell(symbol,maxD=20){
@@ -2807,6 +2814,7 @@ function loadGame(){
     if(!state.ai) state.ai=loadAiSettings();
     addEntry('sys','The save stirs and accepts your return.','Loaded');
     els.onboard.style.display='none';
+    lastFollowPos = null;
     refreshUI();
     return true;
   }catch(err){ console.error(err); return false; }
