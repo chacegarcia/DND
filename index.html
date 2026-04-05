@@ -148,8 +148,16 @@ button.secondary{background:linear-gradient(180deg,#2d241d,#18120f);color:var(--
 button.danger{background:linear-gradient(180deg,#6a2c22,#391510)}
 button.good{background:linear-gradient(180deg,#2e5a34,#17311a)}
 button:disabled{opacity:.5;cursor:not-allowed}
-.btn-row{display:flex;flex-wrap:wrap;gap:10px}
-.quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn-row.nowrap{flex-wrap:nowrap}
+.ai-box .btn-row.nowrap input#apiKeyInput{flex:1;min-width:120px}
+.panel-head.btn-row-tight{flex-wrap:nowrap;gap:8px;min-width:0}
+.panel-head.btn-row-tight .btn-row{flex-wrap:nowrap;flex-shrink:0}
+.quick-actions{
+  display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding-bottom:2px;
+  scrollbar-width:thin;
+}
+.quick-actions button{flex:0 0 auto;white-space:nowrap}
 .quick-actions button{padding:9px 10px;font-size:.88rem}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .field{display:flex;flex-direction:column;gap:8px}
@@ -157,14 +165,31 @@ button:disabled{opacity:.5;cursor:not-allowed}
 select{
   background:rgba(20,16,13,.88);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:inherit;
 }
-.map-tools{display:flex;flex-wrap:wrap;gap:8px}
+.map-tools{
+  display:flex;flex-wrap:nowrap;gap:8px;align-items:center;
+  padding:6px 8px;margin:0 -4px;
+  border-radius:10px;
+  background:rgba(0,0,0,.12);
+  border:1px solid rgba(229,178,92,.08);
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;
+}
+.map-tools .small{white-space:nowrap;flex-shrink:0}
+.map-panel-head{display:flex;flex-wrap:nowrap;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+.map-panel-head-main{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.map-panel-head-tools{flex-shrink:0}
+.map-stage-wrap{
+  border-radius:14px;
+  padding:8px;
+  background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.1));
+  border:1px solid rgba(229,178,92,.1);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
 .map-stage{
   position:relative;
   width:100%;
   aspect-ratio:1 / 1;
   min-height:360px;
   max-height:460px;
-  border-top:1px solid var(--line);
   background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.04), rgba(0,0,0,.12) 45%, rgba(0,0,0,.42));
   overflow:hidden;cursor:grab;user-select:none;border-radius:12px;
 }
@@ -204,6 +229,9 @@ select{
 .map-legend-overlay-body{
   display:none;
   width:min(320px, calc(100vw - 40px));
+  max-height:min(52vh, 420px);
+  overflow-y:auto;
+  overflow-x:hidden;
   padding:10px;
   border-radius:12px;
   background:linear-gradient(180deg, rgba(19,14,12,.9), rgba(9,7,6,.94));
@@ -214,6 +242,24 @@ select{
   gap:8px;
 }
 .map-legend-overlay.open .map-legend-overlay-body{display:grid}
+.legend-section-title{
+  grid-column:1 / -1;
+  font-size:.68rem;
+  font-weight:800;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin:4px 0 2px;
+  padding-top:6px;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.legend-section-title:first-child{border-top:0;padding-top:0;margin-top:0}
+.legend-chip--note{
+  grid-column:1 / -1;
+  color:var(--muted);
+  font-size:.8rem;
+  border-style:dashed;
+}
 .legend-chip{
   display:flex;
   align-items:center;
@@ -225,7 +271,34 @@ select{
   background:rgba(255,255,255,.03);
   color:#edd6b0;
   font-size:.84rem;
+  transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
+.legend-chip.context-hot{
+  border-color:rgba(232,200,106,.35);
+  background:rgba(232,200,106,.07);
+  box-shadow:inset 0 0 0 1px rgba(232,200,106,.12);
+}
+.map-cell-hint{
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  z-index:5;
+  max-width:calc(100% - 16px);
+  pointer-events:none;
+  padding:5px 10px;
+  border-radius:10px;
+  font-size:.72rem;
+  line-height:1.35;
+  color:#e8dcc8;
+  background:rgba(12,9,8,.82);
+  border:1px solid rgba(229,178,92,.2);
+  box-shadow:0 4px 12px rgba(0,0,0,.25);
+  backdrop-filter:blur(4px);
+  opacity:0;
+  transition:opacity .12s ease;
+}
+.map-cell-hint:not(:empty){opacity:1}
+.map-stage:hover .map-cell-hint:not(:empty){opacity:1}
 .legend-swatch{
   width:14px;
   height:14px;
@@ -395,13 +468,6 @@ select{
   z-index:1;
 }
 
-.dice-history-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  margin-bottom:8px;
-}
 .luck-select{
   appearance:none;
   -webkit-appearance:none;
@@ -417,10 +483,12 @@ select{
 
 .dice-history-head{
   display:flex;
+  flex-wrap:nowrap;
   align-items:center;
   justify-content:space-between;
   gap:8px;
   margin-bottom:8px;
+  min-width:0;
 }
 .quick-roll-btn{
   padding:6px 10px !important;
@@ -429,13 +497,15 @@ select{
   border-radius:999px !important;
 }
 .dice-history-title{
-  margin-bottom:8px;
+  margin:0;
   font-size:.74rem;
   color:#e1bf87;
   text-transform:uppercase;
   letter-spacing:.16em;
   font-weight:900;
   text-align:left;
+  flex-shrink:0;
+  min-width:0;
 }
 .dice-history{
   display:flex;
@@ -458,9 +528,6 @@ select{
   text-shadow:0 1px 6px rgba(0,0,0,.35);
 }
 .dice-history-item:last-child{border-bottom:0}
-.map-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:.9rem;color:var(--muted)}
-.map-legend span{display:flex;align-items:center;gap:8px}
-.swatch{width:14px;height:14px;border-radius:4px;background:#666;border:1px solid rgba(255,255,255,.15)}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ai-box{display:flex;flex-direction:column;gap:10px;min-height:0}
 .toggle-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -564,9 +631,9 @@ select{
 
   <main class="center">
     <section class="panel log-wrap">
-      <div class="panel-head">
+      <div class="panel-head btn-row-tight">
         <h2>Chronicle</h2>
-        <div class="btn-row">
+        <div class="btn-row nowrap">
           <button class="secondary" id="saveBtn">Save</button>
           <button class="secondary" id="loadBtn">Load</button>
           <button class="secondary" id="newRunBtn">New Run</button>
@@ -580,12 +647,12 @@ select{
       <div class="panel-head"><h3 id="speakPanelTitle">Speak to the dungeon</h3><div class="small" id="statusLine">Enter to interact/roll. Shift+Enter for newline. Arrow keys move.</div></div>
       <div class="panel-body map-panel-body" style="display:flex;flex-direction:column;gap:12px">
         <textarea id="actionInput" placeholder="Try: move toward the chest / talk to the keeper / use tonic / combine rope with torch / attack the fiend"></textarea>
-        <div class="btn-row">
+        <div class="btn-row nowrap">
           <button id="actBtn">Roll Action</button>
           <button class="secondary" id="restBtn">Rest</button>
           <button class="secondary" id="listenBtn">Listen</button>
           <button class="secondary" id="searchBtn">Search</button>
-          <span class="small" id="thinking">Suso + the model are shaping this turn…</span>
+          <span class="small" id="thinking" style="flex:1;min-width:120px">Suso + the model are shaping this turn…</span>
         </div>
         <div class="small">Context actions update based on what is around you.</div>
         <div class="suso-lead-hint" id="susoLeadHint" aria-live="polite"></div>
@@ -596,13 +663,13 @@ select{
   </main>
 
   <aside class="right">
-    <section class="panel">
-      <div class="panel-head">
-        <h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;justify-content:space-between">
-          <span>Map</span>
+    <section class="panel map-panel">
+      <div class="panel-head map-panel-head">
+        <div class="map-panel-head-main">
+          <h3 style="margin:0">Map</h3>
           <span class="map-context-label" id="mapContextLabel">—</span>
-        </h3>
-        <div class="btn-row">
+        </div>
+        <div class="map-panel-head-tools btn-row nowrap">
           <button class="secondary" id="tileModeBtn">Tiles</button>
           <button class="secondary" id="asciiModeBtn">ASCII</button>
         </div>
@@ -612,13 +679,16 @@ select{
           <button class="secondary" id="zoomOutBtn">−</button>
           <button class="secondary" id="zoomResetBtn">Reset</button>
           <button class="secondary" id="zoomInBtn">+</button>
-          <span class="small" id="zoomOut">Zoom 1.0x</span><span class="small" id="atlasStatus">Tiles: loading…</span>
+          <span class="small" id="zoomOut">Zoom 1.0x</span>
+          <span class="small" id="atlasStatus">Tiles: loading…</span>
         </div>
+        <div class="map-stage-wrap">
         <div class="map-stage" id="mapStage">
           <canvas id="mapCanvas"></canvas>
           <pre id="asciiMap"></pre>
+          <div class="map-cell-hint" id="mapCellHint" aria-live="polite"></div>
           <div class="map-legend-overlay" id="mapLegendOverlay">
-            <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button">Show Legend</button>
+            <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button" aria-expanded="false" aria-controls="mapLegendOverlayBody">Show legend</button>
             <div class="map-legend-overlay-body" id="mapLegendOverlayBody"></div>
           </div>
           <div class="map-battlebar" id="battleBar">
@@ -632,6 +702,7 @@ select{
               <button class="secondary" id="battleDefendBtn">Defend</button>
             </div>
           </div>
+        </div>
         </div>
         <div class="dice-panel" id="dicePanel">
           <div class="dice-tray" id="diceTray">
@@ -673,13 +744,13 @@ select{
           <option value="aiheavy">AI Heavy</option>
         </select>
         <div class="small" id="aiModeHint">Local Only keeps Suso fully in charge.</div>
-        <div class="btn-row">
+        <div class="btn-row nowrap">
           <input type="password" id="apiKeyInput" placeholder="Paste API key" />
           <button class="secondary" id="showKeyBtn" type="button">Show</button>
         </div>
         <input type="text" id="endpointInput" placeholder="Endpoint" value="https://api.openai.com/v1/responses" />
         <input type="text" id="modelInput" placeholder="Model" value="gpt-5.4-mini" />
-        <div class="btn-row">
+        <div class="btn-row nowrap">
           <button class="secondary" id="saveAiBtn">Save AI Settings</button>
           <button class="secondary" id="clearAiBtn">Clear AI Settings</button>
         </div>
@@ -723,7 +794,7 @@ select{
           </select>
         </div>
       </div>
-      <div class="btn-row">
+      <div class="btn-row nowrap">
         <button id="startRunBtn">Start in Lumen Town</button>
         <button class="secondary" id="loadFromModalBtn">Load Save</button>
       </div>
@@ -754,7 +825,7 @@ select{
           <div class="list-item" id="equipCandidateCard"></div>
         </div>
       </div>
-      <div class="btn-row">
+      <div class="btn-row nowrap">
         <button id="equipReplaceBtn">Equip New Weapon</button>
         <button class="secondary" id="equipKeepBtn">Keep Current</button>
       </div>
@@ -799,7 +870,7 @@ select{
     </div>
     <div class="panel-body">
       <div class="list-item" id="inventoryActionCard"></div>
-      <div class="btn-row" id="inventoryActionButtons"></div>
+      <div class="btn-row nowrap" id="inventoryActionButtons"></div>
       <div class="small" id="inventoryActionHint">Choose what to do with this item.</div>
     </div>
   </div>
@@ -1260,6 +1331,7 @@ const els = {
   mapLegendToggleBtn: document.getElementById('mapLegendToggleBtn'),
   mapLegendOverlayBody: document.getElementById('mapLegendOverlayBody'),
   mapContextLabel: document.getElementById('mapContextLabel'),
+  mapCellHint: document.getElementById('mapCellHint'),
 };
 
 let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false, showApiKey=false, mapLegendOpen=false;
@@ -1298,41 +1370,19 @@ function syncQuickRollBtn(){
 function syncMapLegendToggle(){
   if(!els.mapLegendOverlay || !els.mapLegendToggleBtn) return;
   els.mapLegendOverlay.classList.toggle('open', !!mapLegendOpen);
-  els.mapLegendToggleBtn.textContent = mapLegendOpen ? 'Hide legend' : 'Map legend';
+  els.mapLegendToggleBtn.textContent = mapLegendOpen ? 'Hide legend' : 'Show legend';
+  els.mapLegendToggleBtn.setAttribute('aria-expanded', mapLegendOpen ? 'true' : 'false');
 }
-function legendChip(color, label){
-  return `<div class="legend-chip"><span class="legend-swatch" style="background:${color}"></span> ${escapeHtml(label)}</div>`;
+function legendChip(color, label, opts){
+  opts = opts || {};
+  const cls = ['legend-chip'].concat(opts.classNames || []).filter(Boolean).join(' ');
+  const title = opts.title != null && String(opts.title).trim() ? ` title="${escapeHtml(String(opts.title))}"` : '';
+  return `<div class="${cls}"${title}><span class="legend-swatch" style="background:${color}"></span> ${escapeHtml(label)}</div>`;
 }
+/** Populated next to MAP_TILE_REGISTRY / drawTile (single source for swatches + legend). */
 function refreshMapLegendHtml(){
   if(!els.mapLegendOverlayBody) return;
-  if(isHubWorld()){
-    els.mapLegendOverlayBody.innerHTML = [
-      legendChip('#6a4a7a','s — Mara’s Lanterns (shop)'),
-      legendChip('#5a4030','b — Ironfold Forge'),
-      legendChip('#8a7a50','G — Gate (descend here)'),
-      legendChip('#4a5a68','i — Inn'),
-      legendChip('#4a4c62','h — Covenant Hall'),
-      legendChip('#3d4a50','a — Archives'),
-      legendChip('#2a4a5a','w — Well'),
-      legendChip('#2fa36e','@ — You'),
-    ].join('');
-  }else{
-    els.mapLegendOverlayBody.innerHTML = [
-      legendChip('#75685a','· floor'),
-      legendChip('#4a3d31','# wall'),
-      legendChip('#7c5f3a','D door'),
-      legendChip('#2c6f9e','W water'),
-      legendChip('#9b7a2c','C chest'),
-      legendChip('#8b2f2a','E foe / boss (Depth-/Starved- = elite)'),
-      legendChip('#8d5c96','^ shrine'),
-      legendChip('#6c6c6c','X rubble'),
-      legendChip('#d6d0c2','S stairs'),
-      legendChip('#b89e4a','k key'),
-      legendChip('#2d4a38','n survivor'),
-      legendChip('#5a4030','% fallen'),
-      legendChip('#2fa36e','@ you'),
-    ].join('');
-  }
+  els.mapLegendOverlayBody.innerHTML = typeof buildMapLegendHtml === 'function' ? buildMapLegendHtml() : '<div class="legend-chip legend-chip--note">Legend loading…</div>';
 }
 function updateMapPhaseUi(){
   if(els.mapStage) els.mapStage.classList.toggle('map-stage--hub', !!isHubWorld());
@@ -1345,11 +1395,19 @@ function drawPlayerHighlight(){
   if(!ctx || !state || !state.map) return;
   const px = state.player.x * tileSize, py = state.player.y * tileSize;
   ctx.save();
-  ctx.strokeStyle = isHubWorld() ? 'rgba(160,210,255,0.92)' : 'rgba(255,210,120,0.95)';
-  ctx.lineWidth = 2;
+  const combatNearby = !isHubWorld() && (nearbyEntities('hostile',2).length>0 || !!(els.battleBar && els.battleBar.classList.contains('show')));
+  if(combatNearby){
+    ctx.strokeStyle = 'rgba(220,70,60,0.42)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(px - 1.5, py - 1.5, tileSize + 3, tileSize + 3);
+  }
+  const outer = isHubWorld() ? 'rgba(160,220,255,0.95)' : 'rgba(255,215,130,0.98)';
+  const inner = isHubWorld() ? 'rgba(200,240,255,0.45)' : 'rgba(255,240,200,0.5)';
+  ctx.strokeStyle = outer;
+  ctx.lineWidth = combatNearby ? 2.2 : 2.5;
   ctx.strokeRect(px + 0.5, py + 0.5, tileSize - 1, tileSize - 1);
-  ctx.strokeStyle = isHubWorld() ? 'rgba(200,230,255,0.35)' : 'rgba(255,230,180,0.4)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = inner;
+  ctx.lineWidth = 1.25;
   ctx.strokeRect(px + 2.5, py + 2.5, tileSize - 5, tileSize - 5);
   ctx.restore();
 }
@@ -2075,6 +2133,192 @@ const THEMES = [
 ];
 
 const TILE_INDEX = {'#':[0,0],'.':[1,0],'W':[2,0],'X':[3,0],'D':[0,1],'O':[1,1],'T':[2,1],'C':[3,1],'@':[0,2],'E':[1,2],'S':[3,2],'?':[1,3],'^':[2,3],'%':[3,3]};
+/**
+ * Single source for procedural tile fill colors + map legend copy.
+ * `phase`: where the symbol appears — legend filters by current hub/dungeon and by symbols actually on visible/discovered cells.
+ */
+const MAP_TILE_REGISTRY = {
+  '@': { swatch:'#2fa36e', label:'You — party marker', phase:'both', category:'player', order:1, char:'@',
+    tooltip:'You. Arrow keys move one tile; Enter acts. Drawn over floor.' },
+  '?': { swatch:'#1e1a17', label:'Fog — explored, not in sight', phase:'dungeon', category:'fog', order:2, char:'?',
+    tooltip:'You have been here but cannot see it this turn. Step closer or gain line of sight.' },
+  '#': { swatch:'#3d3228', label:'Wall', phase:'both', category:'terrain', order:10, char:'#',
+    tooltip:'Solid stone. Cannot walk through.' },
+  '.': { swatch:'#75685a', label:'Floor / plaza stone', phase:'both', category:'terrain', order:11, char:'.',
+    tooltip:'Walkable open ground. NPCs may stand here without changing the tile glyph.' },
+  'W': { swatch:'#1e5a7a', label:'Water', phase:'dungeon', category:'hazard', order:30, char:'W',
+    tooltip:'Pool or flood. Drinking, wading, and tests use rolls when adjacent.' },
+  'X': { swatch:'#5a5348', label:'Rubble', phase:'dungeon', category:'terrain', order:12, char:'X',
+    tooltip:'Broken ground — climb, clear, or search with intent.' },
+  'D': { swatch:'#8b6230', label:'Closed door', phase:'dungeon', category:'interactive', order:40, char:'D',
+    tooltip:'Sealed passage. Open, force, listen, or try a key when beside it.' },
+  'O': { swatch:'#c49555', label:'Open door', phase:'dungeon', category:'interactive', order:41, char:'O',
+    tooltip:'Cleared threshold. You can move through.' },
+  'T': { swatch:'#a02818', label:'Trap', phase:'dungeon', category:'hazard', order:31, char:'T',
+    tooltip:'Pressure line or plate. Inspect or disarm before trusting the floor.' },
+  'C': { swatch:'#c9a030', label:'Chest', phase:'dungeon', category:'interactive', order:42, char:'C',
+    tooltip:'Loot container. Inspect or open beside it.' },
+  'E': { swatch:'#a01818', label:'Hostile', phase:'dungeon', category:'threat', order:50, char:'E',
+    tooltip:'Enemy or boss on the grid. Elites often have Depth- or Starved- in their name.' },
+  'S': { swatch:'#e8e0d4', label:'Stairs down', phase:'dungeon', category:'progress', order:60, char:'S',
+    tooltip:'Descend to the next floor when you stand beside and commit with intent.' },
+  '^': { swatch:'#9a6aba', label:'Shrine', phase:'dungeon', category:'interactive', order:43, char:'^',
+    tooltip:'Altar — pray, offer, or temper steel with clear intent.' },
+  'k': { swatch:'#d4b84a', label:'Key (ground)', phase:'dungeon', category:'pickup', order:45, char:'k',
+    tooltip:'Key token on the floor. Claim or use with care when adjacent.' },
+  'q': { swatch:'#d4b84a', label:'Key (alt)', phase:'dungeon', category:'pickup', order:46, char:'q',
+    tooltip:'Alternate key glyph — same idea as k.' },
+  'n': { swatch:'#1e4a32', label:'Survivor / talker', phase:'dungeon', category:'ally', order:20, char:'n',
+    tooltip:'Friendly or neutral figure. Stand beside to speak.' },
+  '%': { swatch:'#4a3528', label:'Body / slain foe', phase:'dungeon', category:'threat', order:51, char:'%',
+    tooltip:'Fallen enemy remains. The danger here is past.' },
+  's': { swatch:'#7a5090', label:'Shop — Mara’s Lanterns', phase:'hub', category:'landmark', order:70, char:'s',
+    tooltip:'Lantern shop tile. Stand beside s to trade.' },
+  'b': { swatch:'#6a4830', label:'Forge — Ironfold', phase:'hub', category:'landmark', order:71, char:'b',
+    tooltip:'Smithy. Stand beside b for sharpening and Brant’s dialogue.' },
+  'G': { swatch:'#d4a848', label:'Gate — Depths', phase:'hub', category:'landmark', order:72, char:'G',
+    tooltip:'Covenant Gate. Stand on G and use Expedition buttons to descend.' },
+  'i': { swatch:'#4a5a68', label:'Inn', phase:'hub', category:'landmark', order:73, char:'i', tooltip:'Rest point — flavor tile in Lumen.' },
+  'h': { swatch:'#4a4c62', label:'Covenant Hall', phase:'hub', category:'landmark', order:74, char:'h', tooltip:'Hall tile — lore and bells.' },
+  'm': { swatch:'#7a6040', label:'Market stall', phase:'hub', category:'landmark', order:75, char:'m', tooltip:'Market cobbles — gossip and goods.' },
+  'a': { swatch:'#3d4a50', label:'Archives', phase:'hub', category:'landmark', order:76, char:'a', tooltip:'Archives building tile.' },
+  'w': { swatch:'#2a5a6a', label:'Well', phase:'hub', category:'landmark', order:77, char:'w', tooltip:'Town well — water and rumor.' }
+};
+const LEGEND_CATEGORY_ORDER = { player:0, ally:1, threat:2, interactive:3, pickup:4, landmark:5, progress:6, terrain:7, hazard:8, fog:9, misc:10 };
+/** Symbols that get a soft ring when adjacent to the player (readable “you can act here”). */
+const MAP_ADJACENT_RING_SYMBOLS = new Set(['C','D','O','T','^','S','k','q','n','E','s','b','G','i','h','m','a','w','W','X']);
+function mapTileSwatch(symbol){
+  return MAP_TILE_REGISTRY[symbol]?.swatch || MAP_TILE_REGISTRY['.']?.swatch || '#75685a';
+}
+function mapLegendPhaseOk(meta, hub){
+  if(!meta) return true;
+  if(meta.phase==='both') return true;
+  return hub ? meta.phase==='hub' : meta.phase==='dungeon';
+}
+function collectLegendContextHot(){
+  const symbols = new Set();
+  if(!state?.player || !state.visible || !state.map?.grid) return { symbols, combatNearby:false, gateAdjacent:false };
+  const px = state.player.x|0, py = state.player.y|0;
+  for(let y=py-1;y<=py+1;y++) for(let x=px-1;x<=px+1;x++){
+    if(y<0||x<0||y>=state.map.h||x>=state.map.w) continue;
+    if(!state.visible[y][x]) continue;
+    if(x===px && y===py) symbols.add('@');
+    else symbols.add(state.map.grid[y][x]);
+  }
+  const combatNearby = !isHubWorld() && (nearbyEntities('hostile',2).length>0 || !!(els.battleBar && els.battleBar.classList.contains('show')));
+  const onGate = isHubWorld() && state.map.grid[py]?.[px]==='G';
+  const gateAdjacent = isHubWorld() && (symbols.has('G') || onGate);
+  return { symbols, combatNearby, gateAdjacent };
+}
+/** Same effective symbol as drawMap uses per cell (player @, fog ?, lit grid). */
+function collectDisplayedMapSymbols(){
+  const out = new Set();
+  if(!state?.map?.grid || !state.visible || !state.discovered) return out;
+  const g = state.map.grid, vis = state.visible, disc = state.discovered;
+  const h = state.map.h|0, w = state.map.w|0;
+  const px = state.player.x|0, py = state.player.y|0;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      if(!vis[y][x] && !disc[y][x]) continue;
+      const sym = (px===x && py===y) ? '@' : (vis[y][x] ? g[y][x] : '?');
+      out.add(sym);
+    }
+  }
+  return out;
+}
+function buildMapLegendHtml(){
+  if(!state?.map?.grid){
+    return '<div class="legend-chip legend-chip--note">Start or load a run to see symbols on your map.</div>';
+  }
+  const hub = isHubWorld();
+  const ctxHot = collectLegendContextHot();
+  const isHotSym = sym=>{
+    if(ctxHot.symbols.has(sym)) return true;
+    if(sym==='E' && ctxHot.combatNearby) return true;
+    if(sym==='G' && ctxHot.gateAdjacent) return true;
+    return false;
+  };
+  const present = collectDisplayedMapSymbols();
+  const symList = [...present].filter(sym=>{
+    const m = MAP_TILE_REGISTRY[sym];
+    if(m) return mapLegendPhaseOk(m, hub);
+    return true;
+  });
+  symList.sort((a,b)=>{
+    const ma = MAP_TILE_REGISTRY[a], mb = MAP_TILE_REGISTRY[b];
+    const ca = LEGEND_CATEGORY_ORDER[(ma||{}).category || 'misc'] ?? 99;
+    const cb = LEGEND_CATEGORY_ORDER[(mb||{}).category || 'misc'] ?? 99;
+    if(ca!==cb) return ca - cb;
+    const oa = (ma||{}).order ?? 500, ob = (mb||{}).order ?? 500;
+    if(oa!==ob) return oa - ob;
+    return String(a).localeCompare(String(b));
+  });
+  const parts = [];
+  if(!symList.length){
+    parts.push('<div class="legend-chip legend-chip--note">Nothing on the map is visible or marked discovered yet.</div>');
+  }
+  let curCat = null;
+  const titleFor = cat=>{
+    if(cat==='player') return 'You';
+    if(cat==='ally') return 'Allies & neutrals';
+    if(cat==='threat') return 'Threats';
+    if(cat==='interactive') return 'Interactives';
+    if(cat==='pickup') return 'Pickups';
+    if(cat==='landmark') return 'Town landmarks';
+    if(cat==='progress') return 'Progress';
+    if(cat==='terrain') return 'Terrain';
+    if(cat==='hazard') return 'Hazards';
+    if(cat==='fog') return 'Fog of war';
+    return 'Other';
+  };
+  for(const sym of symList){
+    const m = MAP_TILE_REGISTRY[sym];
+    const cat = (m||{}).category || 'misc';
+    if(cat !== curCat){
+      curCat = cat;
+      parts.push(`<div class="legend-section-title">${escapeHtml(titleFor(cat))}</div>`);
+    }
+    const ch = m?.char != null ? m.char : sym;
+    const sw = m?.swatch || '#888888';
+    const line = m ? `${ch} — ${m.label}` : `${ch} — unlisted tile`;
+    const tip = m?.tooltip || m?.label || line;
+    const hot = isHotSym(sym);
+    parts.push(legendChip(sw, line, { title: tip, classNames: hot ? ['context-hot'] : [] }));
+  }
+  if(hub){
+    const npcs = (state.entities||[]).filter(e=>e.alive && e.type==='npc' && state.visible[e.y]?.[e.x]);
+    if(npcs.length){
+      parts.push('<div class="legend-section-title">NPCs in sight</div>');
+      const px = state.player.x|0, py = state.player.y|0;
+      for(const e of npcs.sort((a,b)=>String(a.name).localeCompare(String(b.name)))){
+        const role = e.role ? ` (${e.role})` : '';
+        const adj = Math.abs(e.x-px)+Math.abs(e.y-py)<=1;
+        parts.push(legendChip('#3d6b52', `${e.name}${role} — beside you to speak`, {
+          title:`${e.name}${role}. On open floor; not a separate map glyph.`,
+          classNames: adj ? ['context-hot'] : []
+        }));
+      }
+    }
+  } else {
+    const hostiles = (state.entities||[]).filter(e=>e.alive && (e.type==='enemy'||e.type==='boss') && state.visible[e.y]?.[e.x]);
+    if(hostiles.length && !symList.includes('E')){
+      parts.push('<div class="legend-section-title">Hostiles in sight</div>');
+      const px = state.player.x|0, py = state.player.y|0;
+      for(const e of hostiles.slice(0,6)){
+        const adj = Math.abs(e.x-px)+Math.abs(e.y-py)<=1;
+        parts.push(legendChip('#a01818', `${e.name} — grid: E`, {
+          title:`${e.name}. Living hostiles render as E on the tile they occupy.`,
+          classNames: adj || ctxHot.combatNearby ? ['context-hot'] : []
+        }));
+      }
+    }
+  }
+  parts.push(legendChip('#666', 'How this works', {
+    title:'Legend entries match symbols on visible or discovered cells. Gold outline on the map marks interactives next to you. Hover the map for a quick symbol readout.',
+    classNames:['legend-chip--note']
+  }));
+  return parts.join('');
+}
 const WALKABLE = new Set(['.','O','W','S','T','^','k','n','q','s','b','i','h','m','a','w','G']);
 const HUB_THEME = {
   name: 'Lumenreach',
@@ -6179,7 +6423,14 @@ function addRoomFact(room, fact){
   addFactOnce(`${room.name}: ${fact}`);
 }
 
-function symbolName(s){ return ({C:'chest',D:'door',W:'water',E:'enemy',T:'trap','^':'shrine',S:'stairs',X:'rubble',O:'opening','n':'npc','k':'key','%':'corpse',s:'shop',b:'forge',i:'inn',h:'hall',m:'market',a:'archives',w:'well',G:'gate'})[s] || 'room'; }
+function symbolName(s){
+  const m = MAP_TILE_REGISTRY[s];
+  if(m?.label){
+    const w = String(m.label).split(/[—–-]/)[0].trim().toLowerCase();
+    if(w) return w.replace(/\s+/g,' ');
+  }
+  return 'room';
+}
 function nearestFeatureCell(symbol,maxD=20){
   let best=null,b=1e9;
   for(let y=0;y<state.map.h;y++) for(let x=0;x<state.map.w;x++){
@@ -6225,6 +6476,101 @@ function buildAsciiMap(){
   }
   return lines.join('\n');
 }
+function drawAdjacentContextRings(){
+  if(!ctx || !state?.map?.grid || !state?.player || !state.visible) return;
+  const px = state.player.x|0, py = state.player.y|0;
+  ctx.save();
+  ctx.lineJoin = 'round';
+  for(let dy=-1; dy<=1; dy++) for(let dx=-1; dx<=1; dx++){
+    if(!dx && !dy) continue;
+    const x = px+dx, y = py+dy;
+    if(y<0||x<0||y>=state.map.h||x>=state.map.w) continue;
+    if(!state.visible[y][x]) continue;
+    const sym = state.map.grid[y][x];
+    if(!MAP_ADJACENT_RING_SYMBOLS.has(sym)) continue;
+    const ox = x*tileSize, oy = y*tileSize;
+    ctx.strokeStyle = 'rgba(232,200,106,0.48)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(ox+1.2, oy+1.2, tileSize-2.4, tileSize-2.4);
+  }
+  ctx.restore();
+}
+function drawTileReadabilityOverlay(symbol, dx, dy, tx, ty){
+  if(!ctx || !state?.visible || !state.discovered) return;
+  const vis = !!state.visible[ty]?.[tx];
+  ctx.save();
+  if(symbol==='?'){
+    ctx.strokeStyle = 'rgba(200,175,120,0.38)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2,2]);
+    ctx.strokeRect(dx+2, dy+2, tileSize-4, tileSize-4);
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+    ctx.beginPath();
+    ctx.moveTo(dx+3, dy+tileSize-3);
+    ctx.lineTo(dx+tileSize-3, dy+3);
+    ctx.stroke();
+  } else if(vis && symbol!=='.' && symbol!=='#' && symbol!=='@'){
+    ctx.fillStyle = 'rgba(255,252,240,0.055)';
+    ctx.fillRect(dx+1.5, dy+1.5, 4, 3);
+  }
+  if(symbol==='E'){
+    ctx.fillStyle = 'rgba(255,55,55,0.62)';
+    ctx.beginPath();
+    ctx.moveTo(dx+tileSize-4, dy+3);
+    ctx.lineTo(dx+tileSize-0.5, dy+3);
+    ctx.lineTo(dx+tileSize-0.5, dy+7);
+    ctx.closePath();
+    ctx.fill();
+  }
+  if(symbol==='G'){
+    ctx.strokeStyle = 'rgba(244,200,90,0.72)';
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    ctx.moveTo(dx+4, dy+tileSize-3);
+    ctx.quadraticCurveTo(dx+tileSize/2, dy+3.5, dx+tileSize-4, dy+tileSize-3);
+    ctx.stroke();
+  }
+  if(symbol==='s'){
+    ctx.fillStyle = 'rgba(210,160,255,0.55)';
+    ctx.beginPath();
+    ctx.arc(dx+tileSize-4, dy+5, 2, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function mapStageClientToTile(clientX, clientY){
+  if(!els.mapStage || !state?.map) return null;
+  const r = els.mapStage.getBoundingClientRect();
+  const mx = clientX - r.left, my = clientY - r.top;
+  const cx = (mx - mapPanX) / mapZoom;
+  const cy = (my - mapPanY) / mapZoom;
+  const tx = Math.floor(cx / tileSize), ty = Math.floor(cy / tileSize);
+  if(ty<0||tx<0||ty>=state.map.h||tx>=state.map.w) return null;
+  return {tx, ty};
+}
+function updateMapCellHintFromEvent(ev){
+  if(!els.mapCellHint || showAscii || !state?.map?.grid) return;
+  if(drag) return;
+  const hit = mapStageClientToTile(ev.clientX, ev.clientY);
+  if(!hit){
+    els.mapCellHint.textContent = '';
+    return;
+  }
+  const {tx, ty} = hit;
+  const disc = state.discovered[ty][tx], vis = state.visible[ty][tx];
+  if(!disc && !vis){
+    els.mapCellHint.textContent = '';
+    return;
+  }
+  const px = state.player.x|0, py = state.player.y|0;
+  const sym = (tx===px && ty===py) ? '@' : (vis ? state.map.grid[ty][tx] : '?');
+  const m = MAP_TILE_REGISTRY[sym];
+  const ch = m?.char != null ? m.char : sym;
+  const base = m ? `${ch} — ${m.label}` : `${ch} — tile`;
+  const where = vis ? 'in sight' : 'remembered fog';
+  els.mapCellHint.textContent = `${base} · ${where}`;
+}
 function drawMap(){
   const w=state.map.w*tileSize, h=state.map.h*tileSize;
   mapCanvas.width=w; mapCanvas.height=h; ctx.clearRect(0,0,w,h);
@@ -6232,9 +6578,10 @@ function drawMap(){
     for(let x=0;x<state.map.w;x++){
       let symbol = state.player.x===x && state.player.y===y ? '@' : (state.visible[y][x] ? state.map.grid[y][x] : (state.discovered[y][x] ? '?' : null));
       if(!symbol) continue;
-      drawTile(symbol, x*tileSize, y*tileSize);
+      drawTile(symbol, x*tileSize, y*tileSize, x, y);
     }
   }
+  drawAdjacentContextRings();
   drawPlayerHighlight();
   drawPulseFx();
   els.asciiMap.textContent=buildAsciiMap();
@@ -6295,20 +6642,20 @@ function inferPulseFromIntent(intent){
   return {x:state.player.x,y:state.player.y,kind:'generic'};
 }
 function drawTileProcedural(symbol,dx,dy){
-  const fills={
-    '#':'#4a3d31', '.':'#75685a', 'W':'#2a5672', 'X':'#5a4c42',
-    'D':'#856238', 'O':'#a67d48', 'T':'#6e2820', 'C':'#946d30',
-    '@':'#e8c896', 'E':'#7a1818', 'S':'#a8a8a8', '?':'#1e1a17',
-    '^':'#5d4d66', 'n':'#2d4a38', 'k':'#b89e4a', '%':'#5a4030',
-    's':'#6a4a7a', 'b':'#5a4030', 'i':'#4a5a68', 'h':'#4a4c62', 'm':'#6a5a40', 'a':'#3d4a50', 'w':'#2a4a5a', 'G':'#8a7a50'
-  };
   if(symbol==='.'){
     const g = ctx.createLinearGradient(dx, dy, dx + tileSize, dy + tileSize);
-    g.addColorStop(0, '#857566');
-    g.addColorStop(1, '#6a5d4f');
+    if(isHubWorld()){
+      g.addColorStop(0, '#7a6a58');
+      g.addColorStop(1, '#5c5044');
+    } else {
+      g.addColorStop(0, '#857566');
+      g.addColorStop(1, '#6a5d4f');
+    }
     ctx.fillStyle = g;
+  }else if(symbol==='@'){
+    ctx.fillStyle = mapTileSwatch('@');
   }else{
-    ctx.fillStyle = fills[symbol] || fills['.'];
+    ctx.fillStyle = mapTileSwatch(symbol);
   }
   ctx.fillRect(dx,dy,tileSize,tileSize);
   ctx.strokeStyle = symbol==='.' ? 'rgba(0,0,0,.06)' : 'rgba(12,8,6,.22)';
@@ -6350,8 +6697,9 @@ function drawTileProcedural(symbol,dx,dy){
   }else if(symbol==='E'){
     ctx.fillStyle='#1f0606';
     ctx.fillRect(dx+Math.floor(tileSize*.28),dy+3,Math.ceil(tileSize*.44),tileSize-5);
-    ctx.fillStyle='rgba(255,80,80,.25)';
-    ctx.fillRect(dx+Math.floor(tileSize*.35),dy+5,2,2);
+    ctx.fillStyle='rgba(255,80,80,.32)';
+    ctx.fillRect(dx+Math.floor(tileSize*.32),dy+5,2,2);
+    ctx.fillRect(dx+Math.floor(tileSize*.52),dy+5,2,2);
   }else if(symbol==='S'){
     ctx.fillStyle='rgba(255,255,255,.14)';
     for(let i=2;i<tileSize-2;i+=3) ctx.fillRect(dx+2,dy+i,tileSize-4,1);
@@ -6379,14 +6727,42 @@ function drawTileProcedural(symbol,dx,dy){
     ctx.fillRect(dx+2,dy+2,tileSize-4,Math.ceil(tileSize*.24));
     ctx.fillRect(dx+4,dy+Math.floor(tileSize*.55),tileSize-8,Math.ceil(tileSize*.2));
   }else if(symbol==='?'){
-    ctx.fillStyle='rgba(0,0,0,.38)';
+    ctx.fillStyle='rgba(0,0,0,.42)';
     ctx.fillRect(dx,dy,tileSize,tileSize);
-    ctx.fillStyle='rgba(255,220,160,.12)';
-    ctx.fillRect(dx+Math.floor(tileSize*.4),dy+Math.floor(tileSize*.35),2,3);
+    ctx.fillStyle='rgba(255,210,140,.14)';
+    ctx.fillRect(dx+Math.floor(tileSize*.42),dy+Math.floor(tileSize*.32),2,4);
+    ctx.fillStyle='rgba(255,255,255,.06)';
+    ctx.fillRect(dx+Math.floor(tileSize*.35),dy+Math.floor(tileSize*.55),5,1);
+  }else if(symbol==='G'){
+    ctx.fillStyle = mapTileSwatch('G');
+    ctx.fillRect(dx,dy,tileSize,tileSize);
+    ctx.strokeStyle='rgba(12,8,6,.22)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(dx+.5,dy+.5,tileSize-1,tileSize-1);
+    ctx.fillStyle='rgba(255,230,150,.35)';
+    ctx.fillRect(dx+3,dy+3,tileSize-6,2);
+    ctx.strokeStyle='rgba(40,28,10,.5)';
+    ctx.beginPath();
+    ctx.moveTo(dx+4, dy+tileSize-3);
+    ctx.quadraticCurveTo(dx+tileSize/2, dy+4, dx+tileSize-4, dy+tileSize-3);
+    ctx.stroke();
+  }else if(symbol==='s'){
+    ctx.fillStyle = mapTileSwatch('s');
+    ctx.fillRect(dx,dy,tileSize,tileSize);
+    ctx.strokeStyle='rgba(12,8,6,.22)';
+    ctx.strokeRect(dx+.5,dy+.5,tileSize-1,tileSize-1);
+    ctx.fillStyle='rgba(255,240,200,.5)';
+    ctx.beginPath();
+    ctx.arc(dx+tileSize/2, dy+Math.floor(tileSize*.42), 2.5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='rgba(80,40,120,.35)';
+    ctx.fillRect(dx+Math.floor(tileSize*.4), dy+tileSize-5, 3, 4);
   }
 }
-function drawTile(symbol,dx,dy){
+function drawTile(symbol,dx,dy,tx,ty){
   dx = Math.round(dx); dy = Math.round(dy);
+  const gx = tx != null ? tx : Math.round(dx / tileSize);
+  const gy = ty != null ? ty : Math.round(dy / tileSize);
   const atlasCoords = TILE_INDEX[symbol];
   if(atlasReady && !atlasFailed && atlasCoords && atlas.complete){
     try{
@@ -6398,10 +6774,12 @@ function drawTile(symbol,dx,dy){
       );
       ctx.strokeStyle = 'rgba(0,0,0,.1)';
       ctx.strokeRect(dx + .5, dy + .5, tileSize - 1, tileSize - 1);
+      drawTileReadabilityOverlay(symbol, dx, dy, gx, gy);
       return;
     }catch(_){}
   }
   drawTileProcedural(symbol, dx, dy);
+  drawTileReadabilityOverlay(symbol, dx, dy, gx, gy);
 }
 
 
@@ -6416,7 +6794,10 @@ function toggleHint(index){
 window.toggleHint = toggleHint;
 function refreshUI(){
   if(els.diceOverlay) els.diceOverlay.classList.add('show');
-  if(!state) return;
+  if(!state){
+    if(els.mapLegendOverlayBody) els.mapLegendOverlayBody.innerHTML = '<div class="legend-chip legend-chip--note">No active run — start or load to see the map legend.</div>';
+    return;
+  }
   els.playerNameOut.textContent=`${state.name} the ${state.title}`;
   const room=getCurrentRoom();
   els.locationOut.textContent=room ? (isHubWorld() ? `Lumen — ${room.name.replace(/^Lumen Town — /,'')}` : room.name) : 'Between rooms';
@@ -6799,7 +7180,7 @@ els.clearSaveBtn.onclick=()=>{ clearSave(); els.statusLine.textContent='Save cle
 els.startRunBtn.onclick=()=>startNewRun({name:els.nameInput.value,title:els.titleInput.value,tone:els.toneInput.value,risk:els.riskInput.value});
 els.loadFromModalBtn.onclick=()=>{ if(!loadGame()) startNewRun({name:els.nameInput.value,title:els.titleInput.value,tone:els.toneInput.value,risk:els.riskInput.value}); };
 els.tileModeBtn.onclick=()=>{ showAscii=false; updateMapTransform(); };
-els.asciiModeBtn.onclick=()=>{ showAscii=true; updateMapTransform(); };
+els.asciiModeBtn.onclick=()=>{ showAscii=true; if(els.mapCellHint) els.mapCellHint.textContent=''; updateMapTransform(); };
 els.zoomOutBtn.onclick=()=>{ mapZoom=Math.max(.5, +(mapZoom-.1).toFixed(1)); centerMapOnPlayer(); updateMapTransform(); };
 els.zoomInBtn.onclick=()=>{ mapZoom=Math.min(4, +(mapZoom+.1).toFixed(1)); centerMapOnPlayer(); updateMapTransform(); };
 els.zoomResetBtn.onclick=()=>{ mapZoom=1; centerMapOnPlayer(); updateMapTransform(); };
@@ -6830,10 +7211,14 @@ window.addEventListener('keydown', e=>{
   resolveAction(action);
 });
 
-els.mapStage.addEventListener('mousedown', e=>{ drag={x:e.clientX,y:e.clientY,px:mapPanX,py:mapPanY}; els.mapStage.classList.add('dragging'); });
+els.mapStage.addEventListener('mousedown', e=>{ drag={x:e.clientX,y:e.clientY,px:mapPanX,py:mapPanY}; els.mapStage.classList.add('dragging'); if(els.mapCellHint) els.mapCellHint.textContent=''; });
 window.addEventListener('mousemove', e=>{ if(!drag) return; mapPanX=drag.px + (e.clientX-drag.x); mapPanY=drag.py + (e.clientY-drag.y); updateMapTransform(); });
 window.addEventListener('mouseup', ()=>{ drag=null; els.mapStage.classList.remove('dragging'); });
 els.mapStage.addEventListener('wheel', e=>{ e.preventDefault(); mapZoom=Math.max(.5,Math.min(4, +(mapZoom + (e.deltaY<0?.1:-.1)).toFixed(1))); updateMapTransform(); }, {passive:false});
+if(els.mapStage){
+  els.mapStage.addEventListener('mousemove', e=> updateMapCellHintFromEvent(e));
+  els.mapStage.addEventListener('mouseleave', ()=>{ if(els.mapCellHint) els.mapCellHint.textContent=''; });
+}
 els.toggleEnhanceBtn.onclick=()=>{ 
   const ai=state ? {...state.ai} : loadAiSettings();
   ai.enabled=!ai.enabled;
