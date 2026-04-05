@@ -1,28 +1,27 @@
-# LCM Sample Configurator
+# Aillumi's Dungeon — Suso engine
 
-Static **HTML + ES modules** app: Excel-backed foam/wool BOM helper with a Suso NL assistant.
+## Two entry HTML files
 
-## Layout
+| File | What it is |
+|------|------------|
+| **`index.html`** | **Dungeon game** — open this for the full game (map, combat, dice, embedded Suso). |
+| **`lcm-configurator.html`** | **LCM work app** — Excel-backed foam/wool BOM helper + modular Suso (`js/lcm/`, `js/suso/`). |
 
-| Path | Role |
-|------|------|
-| `index.html` | **Host shell** (source of truth for load order): DOM, auth/load, chat, `window.LCM_HOST`, `SUSO_ADAPTER_DEPS` |
-| `js/suso/` | Suso **engine**, **adapters**, **executors**, **session**, **LLM** contract (see `js/suso/README.md`) |
-| `js/lcm/` | **LCM product** logic: wizard, inference, catalog geometry; `wire.js` sets `SUSO_DEPS` |
+## Shared code under `js/`
 
-**Do not** treat `js/dungeon-suso-bundle.iife.js` as source — it is an optional **esbuild output** (`npm run build:suso-iife`, alias `build:dungeon-bundle`). See **`ARCHITECTURE.md`**.
+The **`js/suso/`** and **`js/lcm/`** trees are loaded by **`lcm-configurator.html`** (and by the optional esbuild IIFE). They are **not** the runtime for the monolithic dungeon **`index.html`**.
+
+**Do not** treat `js/dungeon-suso-bundle.iife.js` as source — it is an optional **esbuild output** (`npm run build:suso-iife`). See **`ARCHITECTURE.md`**.
 
 ## Run locally
 
-Serve the folder over HTTP (ES modules), e.g. `python3 -m http.server`, then open `index.html`.
+Serve the repo root over HTTP, then open **`index.html`** (game) or **`lcm-configurator.html`** (LCM), e.g. `python3 -m http.server`.
 
-## Scripts (main app)
+## LCM page script order (reference)
 
 1. Inline host + `LCM_HOST`
-2. `js/lcm/wire.js` — product globals + `window.SUSO_DEPS`
-3. `js/suso/engine/bind.js` — `interpretIntentRichConfigurator`, `SusoEngine`
-4. `js/suso/bind-llm.js` — default `window.SUSO_LLM_ADAPTER`
-5. `js/suso/bind-adapters.js` — `runConfiguratorAdapter`, session, trace
-6. `js/suso/executors-bind.js` — `register*Executor`, `resetSusoExecutors`, harness
+2. `js/lcm/wire.js` — `window.SUSO_DEPS`
+3. `js/suso/engine/bind.js` — `interpretIntentRichConfigurator`
+4. `js/suso/bind-llm.js`, `bind-adapters.js`, `executors-bind.js`
 
-See **`ARCHITECTURE.md`**, `js/suso/README.md`, and `js/lcm/README.md` for boundaries.
+See **`ARCHITECTURE.md`**, **`js/suso/README.md`**, and **`js/lcm/README.md`**.
