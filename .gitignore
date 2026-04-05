@@ -1,0 +1,8 @@
+# Workbook snapshot (product data); keep local only — not for public/game repo
+db/data.json
+
+# esbuild output; bundle is inlined into the standalone dungeon HTML
+js/dungeon-suso-bundle.iife.js
+
+node_modules/
+.DS_Store
