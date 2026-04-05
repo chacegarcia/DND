@@ -4,21 +4,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aillumi's Dungeon — Suso Engine v8 Smarter JS Worldsim</title>
+<title>Lumenreach — Depths &amp; Lumen Town</title>
 <style>
 :root{
-  --bg:#120f0d;
-  --panel:rgba(18,14,12,.84);
-  --panel2:rgba(30,22,18,.72);
-  --line:rgba(201,163,104,.24);
-  --lineStrong:rgba(201,163,104,.48);
-  --ink:#eadbbf;
-  --muted:#cbb18a;
-  --accent:#e5b25c;
-  --danger:#d96b56;
-  --good:#83d08d;
-  --shadow:0 16px 38px rgba(0,0,0,.45);
-  --radius:18px;
+  --bg:#0e0c10;
+  --panel:rgba(16,14,22,.88);
+  --panel2:rgba(28,22,34,.76);
+  --line:rgba(186,168,220,.22);
+  --lineStrong:rgba(214,190,255,.42);
+  --ink:#f0e8dc;
+  --muted:#b8a99c;
+  --accent:#e8c86a;
+  --danger:#e07060;
+  --good:#7fd49a;
+  --shadow:0 18px 42px rgba(0,0,0,.5);
+  --radius:16px;
+  --glow:0 0 24px rgba(232,200,106,.12);
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;font-family:Georgia,serif;background:#000;color:var(--ink);overflow:hidden}
@@ -35,13 +36,38 @@ body{
 .left::-webkit-scrollbar-track,.right::-webkit-scrollbar-track{background:rgba(0,0,0,.14)}
 .center{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:18px;min-height:0;height:100%}
 .panel{
-  background:linear-gradient(180deg, rgba(24,18,15,.88), rgba(14,11,9,.92));
+  background:linear-gradient(165deg, rgba(22,18,28,.92), rgba(12,10,16,.95));
   border:1px solid var(--line);
   border-radius:var(--radius);
-  box-shadow:var(--shadow);
+  box-shadow:var(--shadow), var(--glow);
   overflow:hidden;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
 }
+.lights-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.78rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:#1a1510;background:linear-gradient(135deg,#f4d98c,#c9a24d);
+  padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+}
+.hub-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.hub-actions button{padding:9px 12px;font-size:.88rem}
+.delve-status-wrap{
+  margin-top:12px;padding:12px 14px;border-radius:12px;
+  border:1px solid rgba(232,200,106,.14);
+  background:linear-gradient(135deg, rgba(255,255,255,.03), rgba(0,0,0,.12));
+}
+.delve-status-title{font-size:.82rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.delve-status-detail{font-size:.88rem;color:var(--muted);line-height:1.5}
+.delve-status-detail strong{color:var(--ink);font-weight:600}
+.town-modal-note{font-size:.88rem;color:var(--muted);line-height:1.45;margin-bottom:10px}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.shop-offer{
+  border:1px solid rgba(232,200,106,.15);border-radius:12px;padding:10px 12px;
+  background:rgba(0,0,0,.2);display:flex;flex-direction:column;gap:8px
+}
+.shop-offer strong{font-size:.95rem;color:var(--ink)}
+.shop-offer .price{font-size:.82rem;color:var(--accent)}
 .panel-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0))}
 .panel-body{padding:16px;min-height:0}
 .scroll-body{overflow:auto;min-height:0}
@@ -142,11 +168,20 @@ select{
   background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.04), rgba(0,0,0,.12) 45%, rgba(0,0,0,.42));
   overflow:hidden;cursor:grab;user-select:none;border-radius:12px;
 }
+.map-stage--hub{
+  background:radial-gradient(circle at 45% 30%, rgba(120,90,160,.12), rgba(20,14,22,.5) 50%, rgba(8,6,10,.75));
+  box-shadow:inset 0 0 0 1px rgba(232,200,106,.1);
+}
 #mapCanvas{
   background:rgba(10,7,6,.08);
   image-rendering:pixelated;
   image-rendering:crisp-edges;
   border-radius:4px;
+  box-shadow:0 2px 12px rgba(0,0,0,.35);
+}
+.map-context-label{
+  font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-right:auto;
 }
 
 .map-legend-overlay{
@@ -470,24 +505,38 @@ select{
   <aside class="left">
     <section class="panel title-card collapsible-panel" id="titleCard">
       <div class="panel-head collapsible-head">
-        <h1 style="font-size:1.9rem;margin:0">Aillumi's Dungeon</h1>
+        <h1 style="font-size:1.75rem;margin:0;letter-spacing:.02em">Lumenreach</h1>
         <button class="secondary" id="titleCardToggleBtn" type="button" aria-expanded="true">Collapse</button>
       </div>
       <div class="panel-body collapsible-body" id="titleCardBody" style="display:flex;flex-direction:column;gap:8px">
-        <div class="subtitle" id="premiseText">Suso v2 is weaving a new descent.</div>
+        <div class="subtitle" id="premiseText">Delve the Depths, return to Lumen, spend Lights, descend again.</div>
         <div class="chips" id="runChips"></div>
       </div>
     </section>
-<section class="panel">
+    <section class="panel">
       <div class="panel-head"><h3>Expedition</h3><span class="badge" id="engineBadge">Suso Local</span></div>
       <div class="panel-body stats">
         <div class="stat"><div class="label">Delver</div><div class="value" id="playerNameOut">Unknown</div></div>
         <div class="stat"><div class="label">Location</div><div class="value" id="locationOut">—</div></div>
+        <div class="stat"><div class="label">Lights</div><div class="value"><span class="lights-pill" id="lightsOut">0</span></div></div>
+        <div class="stat"><div class="label">Phase</div><div class="value" id="phaseOut">—</div></div>
         <div class="stat"><div class="label">Level</div><div class="value" id="levelOut">1</div></div>
         <div class="stat"><div class="label">Experience</div><div class="value" id="xpOut">0 / 80</div></div>
         <div class="stat" style="grid-column:1/-1">
           <div class="label">Health</div><div class="value" id="healthOut">10 / 10</div>
           <div class="meter"><span id="healthBar"></span></div>
+        </div>
+        <div class="stat" style="grid-column:1/-1">
+          <div class="hub-actions" id="hubActionRow">
+            <button type="button" class="good" id="enterDepthsBtn" style="display:none">Enter the Depths</button>
+            <button type="button" class="secondary" id="continueDelveBtn" style="display:none">Continue saved delve</button>
+            <button type="button" class="secondary" id="newDelveBtn" style="display:none">New delve (abandon save)</button>
+            <button type="button" id="returnToTownBtn" style="display:none">Return to Lumen Town</button>
+          </div>
+          <div class="delve-status-wrap" id="delveStatusWrap">
+            <div class="delve-status-title" id="delveStatusTitle">Where you are</div>
+            <div class="delve-status-detail" id="delveStatusDetail"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -528,7 +577,7 @@ select{
     </section>
 
     <section class="panel input-panel">
-      <div class="panel-head"><h3>Speak to the dungeon</h3><div class="small" id="statusLine">Enter to interact/roll. Shift+Enter for newline. Arrow keys move.</div></div>
+      <div class="panel-head"><h3 id="speakPanelTitle">Speak to the dungeon</h3><div class="small" id="statusLine">Enter to interact/roll. Shift+Enter for newline. Arrow keys move.</div></div>
       <div class="panel-body map-panel-body" style="display:flex;flex-direction:column;gap:12px">
         <textarea id="actionInput" placeholder="Try: move toward the chest / talk to the keeper / use tonic / combine rope with torch / attack the fiend"></textarea>
         <div class="btn-row">
@@ -549,7 +598,10 @@ select{
   <aside class="right">
     <section class="panel">
       <div class="panel-head">
-        <h3>Map</h3>
+        <h3 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;justify-content:space-between">
+          <span>Map</span>
+          <span class="map-context-label" id="mapContextLabel">—</span>
+        </h3>
         <div class="btn-row">
           <button class="secondary" id="tileModeBtn">Tiles</button>
           <button class="secondary" id="asciiModeBtn">ASCII</button>
@@ -567,18 +619,7 @@ select{
           <pre id="asciiMap"></pre>
           <div class="map-legend-overlay" id="mapLegendOverlay">
             <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button">Show Legend</button>
-            <div class="map-legend-overlay-body" id="mapLegendOverlayBody">
-              <div class="legend-chip"><span class="legend-swatch" style="background:#7c5f3a"></span> Door / structure</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#2c6f9e"></span> Water</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#9b7a2c"></span> Chest / loot</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#8b2f2a"></span> Enemy</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#8d5c96"></span> Shrine</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#6c6c6c"></span> Rubble</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#d6d0c2"></span> Stairs / exit</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#2fa36e"></span> Player</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#b85a3c"></span> Trap</div>
-              <div class="legend-chip"><span class="legend-swatch" style="background:#d4c36a"></span> Key / relic</div>
-            </div>
+            <div class="map-legend-overlay-body" id="mapLegendOverlayBody"></div>
           </div>
           <div class="map-battlebar" id="battleBar">
             <div class="battlebar-info">
@@ -604,12 +645,6 @@ select{
             </div>
             <div class="dice-history" id="diceHistory"></div>
           </div>
-        </div>
-        <div class="map-legend">
-          <span><i class="swatch" style="background:#7c5f3a"></i> doors / structures</span>
-          <span><i class="swatch" style="background:#2c6f9e"></i> water</span>
-          <span><i class="swatch" style="background:#9b7a2c"></i> loot / quest</span>
-          <span><i class="swatch" style="background:#8b2f2a"></i> enemies / danger</span>
         </div>
       </div>
     </section>
@@ -656,9 +691,9 @@ select{
 
 <div class="onboard" id="onboard">
   <div class="modal">
-    <div class="panel-head"><h2>Begin a fresh descent</h2><span class="badge">Suso v3 Hybrid</span></div>
+    <div class="panel-head"><h2>Begin in Lumen Town</h2><span class="badge">Mystery-style delve</span></div>
     <div class="panel-body">
-      <div class="small">This build adds smarter map generation, combat, item use and combine, NPCs, dialogue, local quest generation, and hybrid AI modes where your model can interpret intent and write richer narration while Suso keeps the world-state coherent.</div>
+      <div class="small">A Pokémon Mystery Dungeon–inspired flow: explore the Depths, then return to <strong>Lumen Town</strong> to spend <strong>Lights</strong>, trade, and prepare. The world stays lore-heavy and D&amp;D-flavored — Suso still runs combat, loot, and saves; optional AI can enrich narration.</div>
       <div class="row">
         <div class="field">
           <label>What’s your name?</label>
@@ -689,7 +724,7 @@ select{
         </div>
       </div>
       <div class="btn-row">
-        <button id="startRunBtn">Start New Run</button>
+        <button id="startRunBtn">Start in Lumen Town</button>
         <button class="secondary" id="loadFromModalBtn">Load Save</button>
       </div>
       <div class="footer-note">Keep <code>bg_main.png</code> and <code>dungeon_tiles_atlas_32.png</code> in the same folder as this HTML.</div>
@@ -728,6 +763,34 @@ select{
   </div>
 </div>
 
+<div class="onboard" id="shopModal" style="display:none;z-index:32">
+  <div class="modal" style="max-width:720px">
+    <div class="panel-head" style="padding:18px 22px 0">
+      <h3>Mara’s Lanterns — General Wares</h3>
+      <button class="secondary" id="shopCloseBtn" type="button">Close</button>
+    </div>
+    <div class="panel-body">
+      <p class="town-modal-note"><strong>Mara’s Lanterns</strong> sells honest rope, oil, and tonics — the kind of mercy you can weigh in Lights. She trades like a chronicler: every coin is a story she doesn’t have to finish.</p>
+      <div class="shop-grid" id="shopOfferList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="onboard" id="forgeModal" style="display:none;z-index:32">
+  <div class="modal" style="max-width:560px">
+    <div class="panel-head" style="padding:18px 22px 0">
+      <h3>Ironfold Forge</h3>
+      <button class="secondary" id="forgeCloseBtn" type="button">Close</button>
+    </div>
+    <div class="panel-body">
+      <p class="town-modal-note" id="forgeModalText"><strong>Ironfold Forge</strong> — Brant’s anvil has heard oaths, lies, and good steel. A sharpening here is a covenant: the blade keeps what you paid for.</p>
+      <div class="btn-row">
+        <button type="button" id="forgeSharpenBtn">Sharpen equipped weapon</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="onboard" id="inventoryModal" style="display:none">
   <div class="modal" style="max-width:760px">
     <div class="panel-head" style="padding:18px 22px 0">
@@ -755,6 +818,240 @@ function isSusoDevMode(){
   return false;
 }
 function xpToNextForLevel(lv){ return Math.max(40, 80 + (Math.max(1, lv|0) - 1) * 35); }
+function isHubWorld(){ return !!(state && state.worldPhase === 'hub'); }
+function isDungeonWorld(){ return !!(state && state.worldPhase === 'dungeon'); }
+function gainLights(amount, reason=''){
+  if(!state || !amount || amount <= 0) return;
+  state.lights = (state.lights|0) + amount;
+  if(reason) addEntry('sys', `+${amount} Lights — ${reason}`, 'Economy');
+}
+function spendLights(amount){
+  if(!state || amount <= 0) return false;
+  if((state.lights|0) < amount) return false;
+  state.lights = (state.lights|0) - amount;
+  return true;
+}
+function snapshotDungeonForHub(){
+  const o = {};
+  for(const k of DUNGEON_SNAPSHOT_KEYS){
+    if(state[k] !== undefined) o[k] = JSON.parse(JSON.stringify(state[k]));
+  }
+  o.worldPhase = 'dungeon';
+  return o;
+}
+function generateLumenTownMap(){
+  const w = 21, h = 15;
+  const grid = Array.from({length:h},()=>Array(w).fill('#'));
+  for(let y=3;y<=11;y++) for(let x=3;x<=17;x++) grid[y][x]='.';
+  grid[5][7]='s';
+  grid[5][13]='b';
+  grid[9][4]='i';
+  grid[9][16]='m';
+  grid[4][10]='h';
+  grid[11][10]='a';
+  grid[7][4]='w';
+  grid[8][10]='G';
+  const rooms = [{id:0, x:3, y:3, w:15, h:9, name:'Lumen Town — Old Plaza', tags:new Set(['town','safe','market'])}];
+  const entities = [
+    {id:'tn1', type:'npc', name:'Mara Coinwise', role:'Lantern-merchant', x:6, y:7, hp:99, maxHp:99, alive:true, dialogIndex:0,
+      clue:'Every Light is a vote the Depths haven’t counted yet.',
+      barks:['"Lanterns don’t lie — people do, and I price that."','"Buy rope before you need rope."','"If you hear your name below, don’t answer it."','"Oil is theology: it keeps the dark from sticking."']},
+    {id:'tn2', type:'npc', name:'Brant Ironfold', role:'Master smith', x:6, y:13, hp:99, maxHp:99, alive:true, dialogIndex:0,
+      clue:'Steel is honest if you are.',
+      barks:['"I don’t fix fear — I file it into an edge."','"The Depths love a dull blade; don’t give them one."','"Hammers tell the truth: metal remembers every lie you told it."','"Come back from a delve before you name your weapon."']},
+    {id:'tn3', type:'npc', name:'Sister Elwen', role:'Covenant scribe', x:10, y:4, hp:99, maxHp:99, alive:true, dialogIndex:0,
+      clue:'The covenant remembers names, not excuses.',
+      barks:['"We record returns, not heroes — the Depths do the editing."','"Prayer is a map some people refuse to fold."','"If you bargain with the dark, bring witnesses."']}
+  ];
+  const start = {x:9, y:10};
+  return {w,h,grid,rooms,start,exit:start,entities};
+}
+function buildTownQuest(){
+  return {
+    title: 'Before the covenant stair',
+    steps: ['Trade or listen at Mara’s Lanterns (s)', 'Temper truth at Ironfold (b) if your steel is lying', 'Stand on the Gate tile (G) to descend'],
+    progress: [false, false, false],
+    done: false
+  };
+}
+function applyHubShellFromTownMap(townMap, preserved){
+  const p = preserved.player || {ward:0,level:1,xp:0};
+  return {
+    seed: (Date.now() ^ 0x3b3) >>> 0,
+    theme: HUB_THEME,
+    map: townMap,
+    rooms: townMap.rooms,
+    entities: townMap.entities,
+    player: { x: townMap.start.x, y: townMap.start.y, ward: p.ward|0, level: p.level|0, xp: p.xp|0 },
+    discovered: Array.from({length:townMap.h},()=>Array(townMap.w).fill(true)),
+    visible: Array.from({length:townMap.h},()=>Array(townMap.w).fill(true)),
+    roomState: {},
+    npcs: townMap.entities.filter(e=>e.type==='npc').map(e=>e.id),
+    quest: buildTownQuest(),
+    premise: preserved.premise || `Lumen Town: lantern-lit cobbles, covenant bells, and the hush before the Depths.`,
+    townMemory: Object.assign(defaultTownMemory(), preserved.townMemory || {}),
+    flags: Object.assign({
+      questKeyFound:false, innerGateOpen:false, bossDefeated:false, warded:false, brightTorch:false, usedShrine:false,
+      spokeToNpc:false, questSearched:false, shrineEngaged:false
+    }, preserved.flags || {}, { hubSafe:true, forgeUsedThisVisit:false }),
+    dungeon: { level: 0, seed: preserved.seed|0 },
+    story: { act: 1, actTwoDelivered: false },
+    storyActTwo: null,
+    worldPhase: 'hub',
+    moves: preserved.moves || [],
+    turn: preserved.turn|0,
+    dead: false
+  };
+}
+function exitToLumenTown(reason=''){
+  if(!state || isHubWorld()) return;
+  addEntry('sys', 'Stone gives way to draft and distant bells — the surface negotiates for your attention.', 'Ascent');
+  const lightsWas = state.lights|0;
+  const depthReached = state.dungeon?.level|0;
+  const bossBeat = !!state.flags?.bossDefeated;
+  const snap = snapshotDungeonForHub();
+  const townMap = generateLumenTownMap();
+  const prevTm = Object.assign(defaultTownMemory(), state.townMemory || {});
+  prevTm.returnsFromDepths = (prevTm.returnsFromDepths|0) + 1;
+  prevTm.deepestFloorEver = Math.max(prevTm.deepestFloorEver|0, depthReached);
+  prevTm.lastFloorReturned = depthReached;
+  prevTm.lastBossBeat = bossBeat;
+  const preserved = {
+    name: state.name, title: state.title, tone: state.tone, risk: state.risk,
+    inventory: state.inventory, facts: state.facts, log: state.log, ai: state.ai,
+    player: state.player, health: state.health, maxHealth: state.maxHealth,
+    lights: lightsWas + ECON.returnBonus, premise: `Ascent — Lumenreach. ${reason || 'The surface air tastes like mercy after the Depths.'}`,
+    moves: state.moves, turn: state.turn, seed: state.seed,
+    townMemory: prevTm
+  };
+  Object.assign(state, applyHubShellFromTownMap(townMap, preserved));
+  state.lights = preserved.lights;
+  state.inventory = preserved.inventory;
+  state.facts = preserved.facts;
+  state.log = preserved.log;
+  state.ai = preserved.ai;
+  state.health = preserved.health;
+  state.maxHealth = preserved.maxHealth;
+  state.name = preserved.name;
+  state.title = preserved.title;
+  state.tone = preserved.tone;
+  state.risk = preserved.risk;
+  state.dungeonSnapshot = snap;
+  state.labels = state.labels || { engine: 'Suso Local' };
+  ensureRunSystems(state);
+  revealAround(state, 22);
+  addEntry('sys', `+${ECON.returnBonus} Lights — Lumen’s tithe for a vertical return.`, 'Economy');
+  addEntry('sys', `${preserved.premise}\n\nYour expedition is suspended: dungeon layout, enemies, and floor progress are saved. Your pack, Lights, level, and journal stay on you. Rest and trade — then stand on the Gate (G) to continue or start fresh.`, 'Lumen Town');
+  flashMapStageDescent();
+  refreshUI();
+}
+function enterDungeonFromTown(opts){
+  const cont = opts && opts.continueDelve;
+  if(!state || !isHubWorld()) return;
+  if(!playerOnGateTile()){
+    addEntry('bad', 'The Gate will not answer unless you stand on the cold marker (G). The covenant insists on a deliberate footfall.', 'Gate');
+    refreshUI();
+    return;
+  }
+  const hubLights = state.lights|0;
+  if(cont && state.dungeonSnapshot){
+    const snap = JSON.parse(JSON.stringify(state.dungeonSnapshot));
+    const carryInv = JSON.parse(JSON.stringify(state.inventory||[]));
+    const carryLv = state.player?.level, carryXp = state.player?.xp, carryWard = state.player?.ward;
+    const carryHp = state.health|0;
+    const carryMx = state.maxHealth|0;
+    const carryFacts = [...(state.facts||[])];
+    Object.assign(state, snap);
+    state.inventory = carryInv;
+    state.lights = hubLights;
+    if(state.player){
+      if(carryLv != null) state.player.level = carryLv;
+      if(carryXp != null) state.player.xp = carryXp;
+      if(carryWard != null) state.player.ward = carryWard;
+    }
+    state.health = carryHp;
+    state.maxHealth = carryMx;
+    state.facts = carryFacts.length ? carryFacts : state.facts;
+    state.worldPhase = 'dungeon';
+    state.dungeonSnapshot = null;
+    ensureRunSystems(state);
+    revealAround(state, 6);
+    narrateChapterContinueDelve();
+    addEntry('sys', 'The stair remembers your weight. Your suspended delve resumes — pack, Lights, and level unchanged from town.', 'Depths');
+    markHubStep('gate');
+    flashMapStageDescent();
+    refreshUI();
+    return;
+  }
+  state.dungeonSnapshot = null;
+  const profile = {
+    name: state.name,
+    title: state.title,
+    tone: state.tone,
+    risk: state.risk,
+    carryFromHub: {
+      lights: hubLights,
+      inventory: JSON.parse(JSON.stringify(state.inventory||[])),
+      player: JSON.parse(JSON.stringify(state.player||{})),
+      health: state.health,
+      maxHealth: state.maxHealth,
+      facts: state.facts||[],
+      name: state.name,
+      title: state.title,
+      tone: state.tone,
+      risk: state.risk,
+      townMemory: state.townMemory ? JSON.parse(JSON.stringify(state.townMemory)) : defaultTownMemory()
+    }
+  };
+  const newRun = createRun(profile);
+  Object.assign(state, newRun);
+  state.lights = hubLights;
+  ensureRunSystems(state);
+  narrateChapterNewDelve();
+  addEntry('sys', 'A new underworld assembles — different seed, same hunger. Your town gear and Lights cross the threshold with you.', 'Depths');
+  markHubStep('gate');
+  flashMapStageDescent();
+  refreshUI();
+}
+function abandonDelveAndStartNew(){
+  if(!state) return;
+  state.dungeonSnapshot = null;
+  enterDungeonFromTown({ continueDelve: false });
+}
+function createHubInitialState(profile={}){
+  const townMap = generateLumenTownMap();
+  const name = (profile.name || 'Unknown').trim() || 'Unknown';
+  const title = (profile.title || 'Delver').trim() || 'Delver';
+  const tone = (profile.tone || 'grim').trim();
+  const risk = (profile.risk || 'balanced').trim();
+  const run = {
+    worldPhase: 'hub',
+    lights: ECON.startLights,
+    dungeonSnapshot: null,
+    name, title, tone, risk,
+    maxHealth: 100, health: 100, dead: false,
+    inventory: [makeWeapon('sword','plain'), {name:'Torch', qty:1, desc:'A guttering torch with more faith than oil.'},{name:'Small Tonic', qty:1, desc:'A bitter restorative.'}],
+    facts: [
+      'Lumen Town stands where the first expedition surfaced — bruised, but breathing.',
+      'Lights are the town’s honest currency: memory made spendable.'
+    ],
+    flags: { hubSafe:true, forgeUsedThisVisit:false, questKeyFound:false, innerGateOpen:false, bossDefeated:false, warded:false, brightTorch:false, usedShrine:false, spokeToNpc:false, questSearched:false, shrineEngaged:false },
+    log: [], moves: [],
+    labels: { engine: 'Suso Local' },
+    ai: loadAiSettings(),
+    luck: { mode:'normal', source:null, turnsLeft:0, intensity:1 },
+    context: { lastTarget:null, lastAction:null, lastTool:null, lastRoomId:null, lastNpc:null, lastInteractable:null, lastProgressLead:null, lastTopic:null },
+    lastResolveDebug: null
+  };
+  Object.assign(run, applyHubShellFromTownMap(townMap, { player:{ward:0,level:1,xp:0}, premise: `Lumen Town — cobblestones, lantern-iron, and the hush before the Depths. You are ${title} ${name}, and the dark remembers its debts.`, seed: Date.now(), townMemory: defaultTownMemory() }));
+  run.quest = buildTownQuest();
+  run.premise = `Lumen Town — cobblestones, lantern-iron, and the hush before the Depths. You are ${title} ${name}, and the dark remembers its debts.`;
+  ensureRunSystems(run);
+  revealAround(run, 22);
+  addEntry('sys', run.premise, 'Opening');
+  addEntry('sys', 'Arrow keys move the @ on the map. Visit **s** (Mara’s Lanterns) and **b** (Ironfold). When you are ready, step onto the **G** tile and use Enter the Depths — the Gate only opens for a deliberate footfall.', 'Lumen Town');
+  return run;
+}
 function gainXp(amount, silent){
   if(!state || !amount) return;
   const pl = state.player = state.player || {};
@@ -850,7 +1147,7 @@ let atlasFailed = false;
 atlas.src='dungeon_tiles_atlas_32.png';
 const mapCanvas=document.getElementById('mapCanvas');
 const ctx=mapCanvas.getContext('2d');
-const tileSize=14, atlasTile=32;
+const tileSize=16, atlasTile=32;
 let mapPulse = null;
 let pulseRaf = 0;
 
@@ -869,6 +1166,24 @@ const els = {
   titleCardToggleBtn: document.getElementById('titleCardToggleBtn'),
   playerNameOut: document.getElementById('playerNameOut'),
   locationOut: document.getElementById('locationOut'),
+  lightsOut: document.getElementById('lightsOut'),
+  phaseOut: document.getElementById('phaseOut'),
+  hubActionRow: document.getElementById('hubActionRow'),
+  enterDepthsBtn: document.getElementById('enterDepthsBtn'),
+  continueDelveBtn: document.getElementById('continueDelveBtn'),
+  newDelveBtn: document.getElementById('newDelveBtn'),
+  returnToTownBtn: document.getElementById('returnToTownBtn'),
+  delveStatusWrap: document.getElementById('delveStatusWrap'),
+  delveStatusTitle: document.getElementById('delveStatusTitle'),
+  delveStatusDetail: document.getElementById('delveStatusDetail'),
+  speakPanelTitle: document.getElementById('speakPanelTitle'),
+  shopModal: document.getElementById('shopModal'),
+  shopCloseBtn: document.getElementById('shopCloseBtn'),
+  shopOfferList: document.getElementById('shopOfferList'),
+  forgeModal: document.getElementById('forgeModal'),
+  forgeCloseBtn: document.getElementById('forgeCloseBtn'),
+  forgeSharpenBtn: document.getElementById('forgeSharpenBtn'),
+  forgeModalText: document.getElementById('forgeModalText'),
   levelOut: document.getElementById('levelOut'),
   xpOut: document.getElementById('xpOut'),
   healthOut: document.getElementById('healthOut'),
@@ -941,6 +1256,10 @@ const els = {
   inventoryActionCard: document.getElementById('inventoryActionCard'),
   inventoryActionButtons: document.getElementById('inventoryActionButtons'),
   inventoryActionHint: document.getElementById('inventoryActionHint'),
+  mapLegendOverlay: document.getElementById('mapLegendOverlay'),
+  mapLegendToggleBtn: document.getElementById('mapLegendToggleBtn'),
+  mapLegendOverlayBody: document.getElementById('mapLegendOverlayBody'),
+  mapContextLabel: document.getElementById('mapContextLabel'),
 };
 
 let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false, showApiKey=false, mapLegendOpen=false;
@@ -979,12 +1298,65 @@ function syncQuickRollBtn(){
 function syncMapLegendToggle(){
   if(!els.mapLegendOverlay || !els.mapLegendToggleBtn) return;
   els.mapLegendOverlay.classList.toggle('open', !!mapLegendOpen);
-  els.mapLegendToggleBtn.textContent = mapLegendOpen ? 'Hide Legend' : 'Show Legend';
+  els.mapLegendToggleBtn.textContent = mapLegendOpen ? 'Hide legend' : 'Map legend';
+}
+function legendChip(color, label){
+  return `<div class="legend-chip"><span class="legend-swatch" style="background:${color}"></span> ${escapeHtml(label)}</div>`;
+}
+function refreshMapLegendHtml(){
+  if(!els.mapLegendOverlayBody) return;
+  if(isHubWorld()){
+    els.mapLegendOverlayBody.innerHTML = [
+      legendChip('#6a4a7a','s — Mara’s Lanterns (shop)'),
+      legendChip('#5a4030','b — Ironfold Forge'),
+      legendChip('#8a7a50','G — Gate (descend here)'),
+      legendChip('#4a5a68','i — Inn'),
+      legendChip('#4a4c62','h — Covenant Hall'),
+      legendChip('#3d4a50','a — Archives'),
+      legendChip('#2a4a5a','w — Well'),
+      legendChip('#2fa36e','@ — You'),
+    ].join('');
+  }else{
+    els.mapLegendOverlayBody.innerHTML = [
+      legendChip('#75685a','· floor'),
+      legendChip('#4a3d31','# wall'),
+      legendChip('#7c5f3a','D door'),
+      legendChip('#2c6f9e','W water'),
+      legendChip('#9b7a2c','C chest'),
+      legendChip('#8b2f2a','E foe / boss (Depth-/Starved- = elite)'),
+      legendChip('#8d5c96','^ shrine'),
+      legendChip('#6c6c6c','X rubble'),
+      legendChip('#d6d0c2','S stairs'),
+      legendChip('#b89e4a','k key'),
+      legendChip('#2d4a38','n survivor'),
+      legendChip('#5a4030','% fallen'),
+      legendChip('#2fa36e','@ you'),
+    ].join('');
+  }
+}
+function updateMapPhaseUi(){
+  if(els.mapStage) els.mapStage.classList.toggle('map-stage--hub', !!isHubWorld());
+  if(els.mapContextLabel){
+    if(isHubWorld()) els.mapContextLabel.textContent = 'Lumen Town';
+    else els.mapContextLabel.textContent = `Floor ${state.dungeon && state.dungeon.level != null ? state.dungeon.level : 1} · Depths`;
+  }
+}
+function drawPlayerHighlight(){
+  if(!ctx || !state || !state.map) return;
+  const px = state.player.x * tileSize, py = state.player.y * tileSize;
+  ctx.save();
+  ctx.strokeStyle = isHubWorld() ? 'rgba(160,210,255,0.92)' : 'rgba(255,210,120,0.95)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(px + 0.5, py + 0.5, tileSize - 1, tileSize - 1);
+  ctx.strokeStyle = isHubWorld() ? 'rgba(200,230,255,0.35)' : 'rgba(255,230,180,0.4)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px + 2.5, py + 2.5, tileSize - 5, tileSize - 5);
+  ctx.restore();
 }
 function setTurnBusy(busy, msg=''){
   turnBusy = !!busy;
   if(els.actionInput) els.actionInput.disabled = turnBusy;
-  ['actBtn','restBtn','listenBtn','searchBtn','saveBtn','loadBtn','newRunBtn','clearSaveBtn'].forEach(id=>{
+  ['actBtn','restBtn','listenBtn','searchBtn','saveBtn','loadBtn','newRunBtn','clearSaveBtn','enterDepthsBtn','continueDelveBtn','newDelveBtn','returnToTownBtn'].forEach(id=>{
     if(els[id]) els[id].disabled = turnBusy;
   });
   if(els.thinking) els.thinking.style.display = turnBusy ? 'inline-flex' : 'none';
@@ -1380,19 +1752,21 @@ async function callConfiguredLLM(systemText, payload){
 function mergeAiIntent(baseIntent, aiJson){
   if(!aiJson || typeof aiJson!=='object') return baseIntent;
   const next={...baseIntent};
+  const L = baseIntent._suso?.locks || {};
   const allowedTypes=new Set(['move','inspect','listen','search','open','attack','rest','talk','use','combine','interact','defend']);
-  if(typeof aiJson.type==='string' && allowedTypes.has(aiJson.type)) next.type=aiJson.type;
-  if(typeof aiJson.direction==='string' && DIRS[aiJson.direction]) next.direction=aiJson.direction;
-  if(typeof aiJson.target==='string' && aiJson.target.trim()) next.target=aiJson.target.trim().toLowerCase();
-  if(typeof aiJson.insane==='boolean') next.insane=aiJson.insane;
+  if(typeof aiJson.type==='string' && allowedTypes.has(aiJson.type) && !L.type) next.type=aiJson.type;
+  if(typeof aiJson.direction==='string' && DIRS[aiJson.direction] && !L.direction) next.direction=aiJson.direction;
+  if(typeof aiJson.target==='string' && aiJson.target.trim() && !L.target) next.target=aiJson.target.trim().toLowerCase();
+  if(typeof aiJson.insane==='boolean' && !L.insane) next.insane=aiJson.insane;
   if(typeof aiJson.travel==='boolean') next.travel=aiJson.travel;
   if(typeof aiJson.explicitExit==='boolean') next.explicitExit=aiJson.explicitExit;
   if(typeof aiJson.tone==='string') next.aiTone=aiJson.tone.trim();
   if(typeof aiJson.reasoning==='string') next.aiReasoning=aiJson.reasoning.trim();
   const methods = new Set(['normal','careful','force','stealth']);
   if(typeof aiJson.method==='string' && methods.has(aiJson.method)) next.method=aiJson.method;
-  if(typeof aiJson.topic==='string' && aiJson.topic.trim()) next.topic=aiJson.topic.trim().toLowerCase();
-  if(typeof aiJson.tool==='string' && aiJson.tool.trim()) next.tool=aiJson.tool.trim();
+  if(typeof aiJson.topic==='string' && aiJson.topic.trim() && !L.topic) next.topic=aiJson.topic.trim().toLowerCase();
+  if(typeof aiJson.tool==='string' && aiJson.tool.trim() && !L.tool && !L.resolvedUseItemName) next.tool=aiJson.tool.trim();
+  if(typeof aiJson.resolvedEntityId==='string' && aiJson.resolvedEntityId.trim() && !L.resolvedEntityId) next.resolvedEntityId=aiJson.resolvedEntityId.trim();
   if(next.type==='move' && (next.target==='exit' || next.explicitExit)) next.travel=true;
   return next;
 }
@@ -1701,8 +2075,118 @@ const THEMES = [
 ];
 
 const TILE_INDEX = {'#':[0,0],'.':[1,0],'W':[2,0],'X':[3,0],'D':[0,1],'O':[1,1],'T':[2,1],'C':[3,1],'@':[0,2],'E':[1,2],'S':[3,2],'?':[1,3],'^':[2,3],'%':[3,3]};
-const WALKABLE = new Set(['.','O','W','S','T','^','k','n','q']);
+const WALKABLE = new Set(['.','O','W','S','T','^','k','n','q','s','b','i','h','m','a','w','G']);
+const HUB_THEME = {
+  name: 'Lumenreach',
+  motifs: ['lantern','covenant','depths'],
+  roomNames: ['Lantern Market','Ironfold Yard','The Quiet Well'],
+  enemies: [], npcs: [], bosses: [], quests: [],
+  truths: [
+    'Every Light is a promise the Depths try to break.',
+    'Lumen Town exists because someone once crawled back up and refused to forget.',
+    'The Gate does not open — it inhales.'
+  ],
+  lie: 'The town is only safe because the dungeon allows it.',
+  premise: ''
+};
+const DUNGEON_SNAPSHOT_KEYS = [
+  'seed','theme','tone','risk','map','rooms','player','discovered','visible','entities',
+  'roomState','quest','flags','dungeon','turn','story','storyActTwo','context','luck',
+  'premise','labels','moves','npcs','dead','lastResolveDebug','townMemory'
+];
+const ECON = {
+  returnBonus: 11,
+  killEnemy: 6,
+  killElite: 12,
+  killBoss: 22,
+  chestMin: 3,
+  chestMax: 7,
+  forgeSharpen: 46,
+  startLights: 58,
+  shop: { tonic:13, oil:11, stone:5, torch:7, rope:16, rumor:9, rations:14, wardSalt:24, tea:18 }
+};
+const COVENANT_RUMORS = [
+  'Rumor: The Gate is older than Lumen — the town grew around a wound, not a gift.',
+  'Rumor: Some delvers swear the Depths copy their fears one floor late.',
+  'Rumor: Lights are splinters of memory; spending them is how the town stays honest.',
+  'Rumor: Elite foes are not new species — they are hungers trained by depth.',
+  'Rumor: The covenant’s bells ring clearest when someone comes back wrong.',
+  'Rumor: Below the second circle, water and ash start agreeing about you.',
+  'Rumor: A suspended delve is not mercy — it is the dungeon pausing mid-sentence.'
+];
+function defaultTownMemory(){
+  return { deepestFloorEver: 0, returnsFromDepths: 0, lastFloorReturned: 0, lastBossBeat: false, rumorCursor: 0 };
+}
+function ensureTownMemory(){
+  if(!state) return defaultTownMemory();
+  if(!state.townMemory) state.townMemory = defaultTownMemory();
+  return state.townMemory;
+}
+function nextCovenantRumor(){
+  const tm = ensureTownMemory();
+  const i = (tm.rumorCursor|0) % COVENANT_RUMORS.length;
+  const line = COVENANT_RUMORS[i];
+  tm.rumorCursor = (tm.rumorCursor|0) + 1;
+  return line;
+}
+function descentStrataNarration(level, theme){
+  const name = theme?.name || 'the underworld';
+  const strata = [
+    '',
+    'The air acquires a second weight — not colder, but more deliberate.',
+    'Sound begins to arrive late, as if the stone is chewing it first.',
+    'You pass a threshold where mercy is no longer stocked as a regular item.',
+    'The architecture stops pretending to be accidental; someone wanted witnesses uncomfortable.',
+    'Here, the dungeon’s grammar inverts: doors ask questions before they open.',
+    'Your torchlight looks thinner — not weaker, but more honest about what it cannot reach.'
+  ];
+  const themeLine = {
+    'Flooded Reliquary': 'Water remembers hands that never came back up.',
+    'Ash Vault': 'Ash settles in your throat like a verdict you haven’t read yet.',
+    'Bone Orchard': 'Roots test the seams of your boots for sincerity.',
+    'Iron Saint Crypt': 'Iron hums at a pitch that makes lies feel expensive.'
+  };
+  const extra = themeLine[name] || `The ${name} tightens its story around you.`;
+  const base = level > 0 && level < strata.length ? strata[level] : (level >= strata.length ? `Floor ${level}: the Depths stop numbering and start naming.` : '');
+  const parts = [base, extra].filter(Boolean);
+  return parts.length ? parts.join('\n\n') : '';
+}
+function pickHubNpcBark(npc, rr){
+  const tm = ensureTownMemory();
+  const deep = tm.deepestFloorEver|0;
+  const ret = tm.returnsFromDepths|0;
+  const lastBoss = tm.lastBossBeat;
+  const lastFl = tm.lastFloorReturned|0;
+  const extra = [];
+  if((npc.id||'') === 'tn1'){
+    if(deep >= 4) extra.push('"Four floors down is where most stories stop pretending to be brave."');
+    if(deep >= 2) extra.push('"Deeper than two? Lights aren’t comfort down there — they’re receipts."');
+    if(ret >= 1) extra.push('"The shop remembers your boots. So does the Gate."');
+  }else if((npc.id||'') === 'tn2'){
+    if(lastBoss) extra.push('"Something big stayed down? Good. Steel likes a finished argument."');
+    if(lastFl >= 3) extra.push(`"You came back from floor ${lastFl} — metal remembers that mileage."`);
+    if(deep >= 3) extra.push('"Elites get hungry where the air goes thin. Sharpen before you bargain with them."');
+  }else if((npc.id||'') === 'tn3'){
+    if(deep >= 2) extra.push('"Rumor says the Gate is not a door — it is a witness."');
+    if(ret >= 1) extra.push('"We record returns, not heroes — and yours just added a line."');
+  }
+  const base = (npc.barks && npc.barks.length) ? npc.barks : [npc.clue || '…'];
+  const pool = [...base, ...extra];
+  return pick(rr, pool);
+}
 const DIRS = {north:[0,-1],south:[0,1],west:[-1,0],east:[1,0],up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+function playerOnGateTile(){
+  if(!state?.map?.grid || state.player?.x == null) return false;
+  const c = state.map.grid[state.player.y]?.[state.player.x];
+  return c === 'G';
+}
+function flashMapStageDescent(){
+  if(!els.mapStage) return;
+  els.mapStage.classList.remove('world-flash');
+  void els.mapStage.offsetWidth;
+  els.mapStage.classList.add('world-flash');
+  setTimeout(()=>{ if(els.mapStage) els.mapStage.classList.remove('world-flash'); }, 900);
+}
 
 function rngFactory(seed){ let s=seed>>>0; return ()=>((s=(s*1664525+1013904223)>>>0)/4294967296); }
 function randInt(rng,min,max){ return Math.floor(rng()*(max-min+1))+min; }
@@ -1712,6 +2196,24 @@ function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 function key(x,y){ return `${x},${y}`; }
 function escapeHtml(str){ return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
+function narrateChapterNewDelve(){
+  const rr = rngFactory((state.seed|0) + 777);
+  const pack = pick(rr, [
+    { t:'Chapter — First Footfall', b:'The Gate drinks your warmth and returns only echo. Below, the underworld rehearses your name until it fits.' },
+    { t:'Chapter — The Bargain Stair', b:'Every step trades daylight for distance. The Depths keep a ledger; you are already written in.' },
+    { t:'Chapter — Lantern at the Lip', b:'Lumen’s bells thin to nothing. What listens down here has never needed a map — only a witness.' }
+  ]);
+  addEntry('sys', `${pack.t}\n\n${pack.b}`, 'Descent');
+}
+function narrateChapterContinueDelve(){
+  const rr = rngFactory((state.seed|0) + 1202);
+  const pack = pick(rr, [
+    { t:'Chapter — The Same Wound', b:'Stone remembers your boots. The route you fled still waits — patient as a held breath.' },
+    { t:'Chapter — Unfinished Business', b:'The dungeon does not forgive retreat; it files it. You return as a sequel it already started writing.' },
+    { t:'Chapter — Thread Unbroken', b:'Your suspended path snaps back into place. The map was never gone — only paused.' }
+  ]);
+  addEntry('sys', `${pack.t}\n\n${pack.b}`, 'Descent');
+}
 
 const WEAPON_BASES = {
   fists: {name:'Fists', min:1, max:3, accuracy:0, crit:0, desc:'Nothing but nerve and timing.'},
@@ -1986,8 +2488,14 @@ function attackOutcomeFromRoll(roll, weapon, luck='normal'){
   };
 }
 function enemyDamageValue(enemy, charged=false){
-  const base = enemy?.type==='boss' ? 10 : 6;
-  return charged ? base + 10 : base;
+  const lv = Math.max(1, state?.dungeon?.level|0 || 1);
+  const elite = !!(enemy && enemy.elite);
+  const boss = enemy?.type==='boss';
+  let base = boss
+    ? 10 + Math.floor(lv * 1.1)
+    : 6 + Math.floor((lv - 1) * 0.85) + (elite ? 3 : 0);
+  if(charged) base += 10 + (boss ? 4 : elite ? 2 : 0);
+  return base;
 }
 
 const AFFORDANCES = {
@@ -2000,11 +2508,18 @@ const AFFORDANCES = {
   stairs: ['inspect','descend','open','use','interact'],
   key: ['inspect','take','gather','use','open','interact','search'],
   rubble: ['inspect','climb','clear','gather','search','interact'],
-  enemy: ['attack','inspect','throw','hide','threaten','interact','use']
+  enemy: ['attack','inspect','throw','hide','threaten','interact','use'],
+  forge: ['inspect','interact','use','open','talk'],
+  shop: ['inspect','interact','use','open','talk'],
+  gate: ['inspect','interact','use','open']
 };
 
 function ensureRunSystems(run=state){
   if(!run) return;
+  if(!run.townMemory) run.townMemory = defaultTownMemory();
+  if(run.lights == null) run.lights = 0;
+  if(!run.worldPhase) run.worldPhase = 'dungeon';
+  if(run.dungeonSnapshot === undefined) run.dungeonSnapshot = null;
   if(!run.dungeon) run.dungeon = { level: 1, seed: run.seed || ((Math.random()*1e9)|0) };
   if(!run.context) run.context = {};
   const c = run.context;
@@ -2016,6 +2531,9 @@ function ensureRunSystems(run=state){
   if(c.lastInteractable === undefined) c.lastInteractable = null;
   if(c.lastProgressLead === undefined) c.lastProgressLead = null;
   if(c.lastTopic === undefined) c.lastTopic = null;
+  if(!c.followUp) c.followUp = { lastTarget:null, lastAction:null, lastTool:null, lastTopic:null, lastNpcEntityId:null, lastResolvedEntityId:null, followUpDomain:null, validUntilTurn:-1, roomId:null };
+  if(c.followUp.lastResolvedEntityId === undefined) c.followUp.lastResolvedEntityId = null;
+  if(c.followUp.followUpDomain === undefined) c.followUp.followUpDomain = null;
   if(!run.story) run.story = { act: 1, actTwoDelivered: false };
   else {
     if(run.story.act === undefined) run.story.act = run.dungeon && run.dungeon.level >= 2 ? 2 : 1;
@@ -2049,20 +2567,517 @@ function touchRoomObject(room, kind, patch){
   if(!o) return;
   Object.assign(o, patch);
 }
+
+/**
+ * Suso intent pipeline (mechanical layer)
+ * 1. parseIntent — surface parse (type, target, direction, flags)
+ * 2. interpretIntentRich — normalize + explicit locks + domain tag + scene arbitration + bounded follow-up + entity binding (resolvedEntityId)
+ * 3. resolveAction / processHubWorldTurn — execute (resolvers, dice)
+ * 4. addEntry / narrateStructuredOutcome — narrate
+ * Explicit locks in intent._suso.locks prevent later heuristics (plan, LML, AI) from overwriting pack use and parse targets.
+ * resolvedEntityId mirrors resolvedInventoryItemId: stable ids for NPCs/hostiles and world:/* anchors; pack_pin clears any stale entity binding.
+ */
+const SUSO_FOLLOW_UP_TTL_TURNS = 4;
+const SUSO_USE_VERB_RE = /\b(use|drink|consume|apply|light|quaff|eat|read|activate|equip)\b/i;
+const SUSO_INVENTORY_SUBSTRINGS = [
+  ['covenant tea','Covenant Tea'],['depths rations','Depths Rations'],['ward salt','Ward Salt'],['folded rumor','Folded Rumor'],
+  ['small tonic','Small Tonic'],['bone charm','Bone Charm'],['rope loop','Rope Loop'],['oil flask','Oil Flask'],
+  ['bright torch','Bright Torch'],['flare torch','Flare Torch'],['knotted ward','Knotted Ward'],['thin wire','Thin Wire'],
+  ['loose stone','Loose Stone'],['iron key','Iron Key'],['saint key','Saint Key'],['torch','Torch']
+];
+const SUSO_PACK_REGEX_SYNONYMS = [
+  [/\bpotion\b|\bvial\b|\btonic\b/, 'Small Tonic'],
+  [/\btea\b/, 'Covenant Tea'],
+  [/\brations\b/, 'Depths Rations'],
+  [/\bward salt\b|\bsalt\b/, 'Ward Salt'],
+  [/\bfolded rumor\b|\brumor\b/, 'Folded Rumor'],
+  [/\brope\b/, 'Rope Loop'],
+  [/\boil\b.*\bflask\b|\bflask\b.*\boil\b|\boil flask\b/, 'Oil Flask'],
+  [/\boil\b/, 'Oil Flask'],
+  [/\bcharm\b/, 'Bone Charm'],
+  [/\bthin wire\b|\bwire\b/, 'Thin Wire'],
+  [/\bloose stone\b/, 'Loose Stone'],
+  [/\biron key\b/, 'Iron Key'],
+  [/\bsaint key\b|\bthe saint key\b/, 'Saint Key']
+];
+function susoInitIntentShell(intent, trace){
+  if(!intent._suso) intent._suso = { locks: Object.create(null), trace: trace || [], domain: null };
+  intent._suso.trace = trace || intent._suso.trace || [];
+  return intent;
+}
+function susoLock(intent, key, reason){
+  susoInitIntentShell(intent, []);
+  intent._suso.locks[key] = reason || 'explicit';
+  intent._suso.trace.push({ t:'lock', key, reason: reason || 'explicit' });
+}
+function susoIsLocked(intent, key){
+  return !!(intent._suso && intent._suso.locks[key]);
+}
+function susoSet(intent, key, val, source, trace){
+  const tr = trace || intent._suso?.trace;
+  if(susoIsLocked(intent, key)){
+    if(tr) tr.push({ t:'skip', key, source, reason:'locked' });
+    return false;
+  }
+  intent[key] = val;
+  if(tr) tr.push({ t:'set', key, val, source });
+  return true;
+}
+function susoResolvePackItemCanonical(low, requireUseVerb){
+  if(!low || !state?.inventory?.length) return null;
+  if(requireUseVerb !== false && !SUSO_USE_VERB_RE.test(low)) return null;
+  const invSorted = [...state.inventory].sort((a,b)=>String(b.name||'').length - String(a.name||'').length);
+  for(const it of invSorted){
+    const nm = String(it.name||'').toLowerCase();
+    if(nm.length < 2) continue;
+    if(!hasItem(it.name)) continue;
+    if(low.includes(nm)) return it.name;
+  }
+  for(const [re, canonical] of SUSO_PACK_REGEX_SYNONYMS){
+    if(re.test(low) && hasItem(canonical)) return canonical;
+  }
+  return null;
+}
+function susoClassifyDomain(low, intent){
+  if(intent.fromArrow) return 'navigation';
+  if(intent.insane) return 'meta';
+  if(/\b(attack|fight|hit|stab|slash|defend|guard|brace)\b/.test(low)) return 'combat';
+  if(/\b(talk|ask|speak|greet|question|tell)\b/.test(low)) return 'social';
+  if(/\b(move|go|walk|run|step|leave|exit|enter|travel|head)\b/.test(low) && intent.type==='move') return 'navigation';
+  if(/\b(rest|wait|pause)\b/.test(low)) return 'recovery';
+  if(susoResolvePackItemCanonical(low, true)) return 'pack_use';
+  if(/\b(combine|craft|mix)\b/.test(low)) return 'craft';
+  return 'world';
+}
+function susoApplyExplicitLocksFromParse(intent, low, trace){
+  susoInitIntentShell(intent, trace);
+  if(intent.fromArrow){
+    susoLock(intent, 'type', 'arrow_move');
+    if(intent.direction) susoLock(intent, 'direction', 'arrow_move');
+    return;
+  }
+  if(intent.insane) susoLock(intent, 'insane', 'player_declared');
+  const pack = susoResolvePackItemCanonical(low, true);
+  if(pack){
+    susoLock(intent, 'type', 'pack_item');
+    susoLock(intent, 'resolvedUseItemName', 'pack_item');
+    susoLock(intent, 'tool', 'pack_item');
+    susoLock(intent, 'target', 'pack_item');
+    intent.type = 'use';
+    intent.resolvedUseItemName = pack;
+    intent.resolvedInventoryItemId = pack;
+    intent.tool = pack;
+    intent.target = null;
+    delete intent.resolvedEntityId;
+    intent.entityResolution = null;
+    if(intent._suso?.locks) delete intent._suso.locks.resolvedEntityId;
+    intent._suso.domain = 'pack_use';
+    trace.push({ t:'pack_lock', item: pack });
+    return;
+  }
+  if(intent._parseTarget != null && intent._parseTarget !== undefined){
+    susoLock(intent, 'target', 'parse_surface');
+    trace.push({ t:'target_lock', target: intent._parseTarget });
+  }
+}
+function susoRefineIntentTargets(intent, low, trace){
+  if(!intent || !low) return;
+  if(/\bdisarm\b/.test(low) && !susoIsLocked(intent, 'target') && intent.target == null) susoSet(intent, 'target', 'trap', 'refine', trace);
+  if(/\b(pray|kneel|anoint)\b/.test(low) && intent.type==='use' && !susoIsLocked(intent, 'target') && intent.target == null) susoSet(intent, 'target', 'shrine', 'refine', trace);
+  if(/\b(shrine|altar)\b/.test(low) && /\b(sword|weapon|blade|steel)\b/.test(low)){
+    if(!susoIsLocked(intent, 'type')) susoSet(intent, 'type', 'use', 'refine_weapon_shrine', trace);
+    if(!susoIsLocked(intent, 'target')) susoSet(intent, 'target', 'shrine', 'refine_weapon_shrine', trace);
+  }
+  if(/\b(descend)\b/.test(low) && intent.type==='interact' && !susoIsLocked(intent, 'target') && intent.target == null) susoSet(intent, 'target', 'stairs', 'refine', trace);
+  if(/\b(go down|go deeper)\b/.test(low) && intent.type==='interact' && !susoIsLocked(intent, 'target') && intent.target == null && !/\bexit|leave|get out|out of the room\b/.test(low)) susoSet(intent, 'target', 'stairs', 'refine', trace);
+}
+function susoArbitrateScenePlan(intent, plan, text, trace){
+  if(!plan || plan.confidence < 0.22) return intent;
+  const low = String(text||'').toLowerCase();
+  if(intent.fromArrow) return intent;
+  if(susoIsLocked(intent, 'resolvedUseItemName') || susoResolvePackItemCanonical(low, true)) return intent;
+  if(['move','rest','combine'].includes(intent.type) && plan.confidence < 0.55) return intent;
+
+  intent.susoPlan = plan;
+  if(plan.tool && !susoIsLocked(intent, 'tool')) susoSet(intent, 'tool', plan.tool, 'plan', trace);
+  if(plan.method && plan.method !== 'normal') susoSet(intent, 'method', plan.method, 'plan', trace);
+  if(plan.goal && plan.goal !== 'understand') intent.goal = plan.goal;
+
+  const fillTarget = (!susoIsLocked(intent, 'target') && (intent.target == null || intent.type === 'interact'));
+  if(!fillTarget && plan.confidence < 0.48) return intent;
+
+  const a = plan.action, tg = plan.target;
+  if(a === 'disarm'){ susoSet(intent, 'type', 'interact', 'plan', trace); susoSet(intent, 'target', 'trap', 'plan', trace); }
+  else if(a === 'pray'){ susoSet(intent, 'type', 'use', 'plan', trace); susoSet(intent, 'target', 'shrine', 'plan', trace); }
+  else if(a === 'enhance'){ susoSet(intent, 'type', 'use', 'plan', trace); susoSet(intent, 'target', 'shrine', 'plan', trace); }
+  else if(a === 'open' && tg === 'door'){ susoSet(intent, 'type', 'open', 'plan', trace); susoSet(intent, 'target', 'door', 'plan', trace); }
+  else if(a === 'open' && tg === 'chest'){ susoSet(intent, 'type', 'open', 'plan', trace); susoSet(intent, 'target', 'chest', 'plan', trace); }
+  else if(a === 'force'){ susoSet(intent, 'type', 'open', 'plan', trace); susoSet(intent, 'target', tg || 'door', 'plan', trace); }
+  else if(a === 'descend'){ susoSet(intent, 'type', 'open', 'plan', trace); susoSet(intent, 'target', 'stairs', 'plan', trace); }
+  else if(a === 'talk'){
+    susoSet(intent, 'type', 'talk', 'plan', trace);
+    susoSet(intent, 'target', 'npc', 'plan', trace);
+    const tp = extractNpcTopicFromText(text);
+    if(tp && !susoIsLocked(intent, 'topic')) susoSet(intent, 'topic', tp, 'plan', trace);
+  }
+  else if(a === 'drink' || a === 'wade'){ susoSet(intent, 'type', 'use', 'plan', trace); susoSet(intent, 'target', 'water', 'plan', trace); }
+  else if(a === 'attack'){ susoSet(intent, 'type', 'attack', 'plan', trace); susoSet(intent, 'target', 'enemy', 'plan', trace); }
+  else if(a === 'take' && tg === 'key'){ susoSet(intent, 'type', 'interact', 'plan', trace); susoSet(intent, 'target', 'key', 'plan', trace); }
+  else if(a === 'inspect' && tg){ susoSet(intent, 'type', 'inspect', 'plan', trace); susoSet(intent, 'target', tg, 'plan', trace); }
+  else if(a === 'search'){ susoSet(intent, 'type', 'search', 'plan', trace); }
+  else if(a === 'interact' && tg){ susoSet(intent, 'type', 'interact', 'plan', trace); susoSet(intent, 'target', tg, 'plan', trace); }
+
+  susoRefineIntentTargets(intent, low, trace);
+  trace.push({ t:'arbitrate', winner: a, conf: plan.confidence, reason: plan.reason });
+  return intent;
+}
+function susoFollowUpFresh(room){
+  const fu = state?.context?.followUp;
+  if(!fu || fu.validUntilTurn == null) return false;
+  if((state.turn|0) > fu.validUntilTurn) return false;
+  if(room && fu.roomId != null && room.id != null && fu.roomId !== room.id) return false;
+  return true;
+}
+function susoApplyBoundedFollowUpIntent(text, intent, room, trace){
+  if(!intent || !state) return;
+  susoInitIntentShell(intent, trace);
+  const low = String(text||'').toLowerCase().trim();
+  const fu = state.context.followUp || {};
+  const fresh = susoFollowUpFresh(room);
+
+  const vagueRepeat = fresh && (
+    /^(do it|try again|try it|use it|open it|again|same|repeat|once more|now|continue|proceed|more)$/.test(low)
+    || /^(open it|use it) now$/.test(low)
+    || (low.length < 64 && /\b(do it|try again|try it|use it|open it|once more|same thing|that again)\b/.test(low))
+  );
+  if(vagueRepeat && fu.lastTarget != null && !susoIsLocked(intent, 'target')){
+    susoSet(intent, 'target', fu.lastTarget, 'follow_up', trace);
+    if(fu.lastAction && (intent.type==='interact' || intent.type==='use' || !intent.type)){
+      const la = fu.lastAction;
+      if(['inspect','open','talk','use','attack','search','listen','defend','move'].includes(la) && !susoIsLocked(intent, 'type')){
+        intent.type = la;
+        trace.push({ t:'follow_up_type', from: la });
+      }
+    }
+    if(/^(open it|use it)/.test(low) && !susoIsLocked(intent, 'type')){
+      intent.type = low.startsWith('use') ? 'use' : 'open';
+    }
+    if(fu.lastTool && !susoIsLocked(intent, 'tool')) susoSet(intent, 'tool', fu.lastTool, 'follow_up', trace);
+    if(fu.lastTopic && (intent.type==='talk' || intent.target==='npc') && !susoIsLocked(intent, 'topic')) susoSet(intent, 'topic', fu.lastTopic, 'follow_up', trace);
+  }
+
+  const packCanonEarly = susoResolvePackItemCanonical(low, true);
+  const entityFollowPhrase = fresh && !packCanonEarly && fu.lastResolvedEntityId && (
+    /\b(ask again|tell (her|him) again|talk to (her|him) again|continue (talking )?to (her|him)|buy from (her|him))\b/.test(low)
+    || /^(ask again|talk to her|talk to him)$/i.test(String(text||'').trim())
+  );
+  if(entityFollowPhrase && !susoIsLocked(intent, 'resolvedEntityId')){
+    const ent = (state.entities||[]).find(e=>e.alive && e.id===fu.lastResolvedEntityId);
+    const distOk = ent && Math.abs(ent.x-state.player.x)+Math.abs(ent.y-state.player.y) <= 1;
+    const domainOk = fu.followUpDomain === 'social' || fu.lastAction === 'talk' || intent.type === 'talk';
+    if(ent && distOk && domainOk){
+      intent.resolvedEntityId = fu.lastResolvedEntityId;
+      intent.entityResolution = { mode:'follow_up' };
+      if(!susoIsLocked(intent, 'type')) intent.type = 'talk';
+      if(!susoIsLocked(intent, 'target')) susoSet(intent, 'target', 'npc', 'follow_up_entity', trace);
+      susoLock(intent, 'resolvedEntityId', 'follow_up_entity');
+      trace.push({ t:'entity_pick', id:intent.resolvedEntityId, mode:'follow_up', source:'bounded_memory' });
+    } else if(fu.lastResolvedEntityId){
+      trace.push({ t:'entity_follow_up_reject', id:fu.lastResolvedEntityId, reason:!ent?'stale_id':!distOk?'out_of_range':'domain_mismatch' });
+    }
+  }
+  if(/\bcareful\s+version\b/.test(low) || /\bdo\s+the\s+careful\b/.test(low)){
+    susoSet(intent, 'method', 'careful', 'follow_up', trace);
+    if(fresh && fu.lastTarget != null && !susoIsLocked(intent, 'target')) susoSet(intent, 'target', fu.lastTarget, 'follow_up_careful', trace);
+    if(fresh && fu.lastAction && ['inspect','open','use','search','interact'].includes(fu.lastAction) && !susoIsLocked(intent, 'type')){
+      intent.type = fu.lastAction === 'interact' ? 'interact' : fu.lastAction;
+    }
+  }
+
+  const topic = extractNpcTopicFromText(text) || (/\b(key)\b/.test(low) ? 'key' : /\b(shrine|altar)\b/.test(low) ? 'shrine' : /\b(door|gate|lock)\b/.test(low) ? 'door' : null);
+  if(topic && !susoIsLocked(intent, 'topic')) susoSet(intent, 'topic', topic, 'topic_extract', trace);
+  const packLocked = susoIsLocked(intent, 'resolvedUseItemName');
+  if(!packLocked && topic && (intent.type==='interact' || intent.type==='talk' || intent.target==null) && nearbyEntities('npc', 3).length){
+    if(!susoIsLocked(intent, 'type')) susoSet(intent, 'type', 'talk', 'topic_npc', trace);
+    if(!susoIsLocked(intent, 'target')) susoSet(intent, 'target', 'npc', 'topic_npc', trace);
+  }
+
+  if(fresh && /\b(him|her|them)\b/.test(low) && fu.lastNpcEntityId != null && intent.target == null && !susoIsLocked(intent, 'target')){
+    if(!susoIsLocked(intent, 'type')) intent.type = intent.type==='interact' ? 'talk' : intent.type;
+    susoSet(intent, 'target', 'npc', 'pronoun_follow', trace);
+  }
+}
+function susoEnsurePackPin(intent, low, trace){
+  const pack = susoResolvePackItemCanonical(low, true);
+  if(!pack) return;
+  susoInitIntentShell(intent, trace);
+  intent.type = 'use';
+  intent.resolvedUseItemName = pack;
+  intent.resolvedInventoryItemId = pack;
+  intent.tool = pack;
+  intent.target = null;
+  delete intent.resolvedEntityId;
+  intent.entityResolution = null;
+  if(intent._suso?.locks) delete intent._suso.locks.resolvedEntityId;
+  susoLock(intent, 'type', 'pack_pin');
+  susoLock(intent, 'resolvedUseItemName', 'pack_pin');
+  susoLock(intent, 'tool', 'pack_pin');
+  susoLock(intent, 'target', 'pack_pin');
+  trace.push({ t:'pack_pin', item: pack });
+}
+
+/**
+ * resolvedEntityId: deterministic binding for NPC/hostile/world tiles (parallel to pack item pins).
+ * Runs after pack_pin so inventory verbs cannot be reinterpreted as social targets.
+ */
+function susoEntityManhattan(e){
+  if(!e || !state?.player) return 99;
+  return Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y);
+}
+function susoListNpcCandidates(maxDist){
+  return (state.entities||[]).filter(e=>e.alive && e.type==='npc')
+    .map(e=>({ e, d:susoEntityManhattan(e) }))
+    .filter(x=>x.d<=maxDist)
+    .sort((a,b)=>a.d-b.d || String(a.e.id||'').localeCompare(String(b.e.id||'')));
+}
+function susoListHostileCandidates(maxDist){
+  return (state.entities||[]).filter(e=>e.alive && (e.type==='enemy'||e.type==='boss'))
+    .map(e=>({ e, d:susoEntityManhattan(e) }))
+    .filter(x=>x.d<=maxDist)
+    .sort((a,b)=>a.d-b.d || String(a.e.id||'').localeCompare(String(b.e.id||'')));
+}
+function susoMatchExplicitLivingEntity(low, trace){
+  const rejected = [];
+  const byId = new Map([...susoListNpcCandidates(20),...susoListHostileCandidates(20)].map(x=>[x.e.id,x]));
+  const aliasRows = [
+    { ids:['tn1'], tokens:['mara','coinwise','mara coinwise','shopkeeper','lantern-merchant','lantern merchant'] },
+    { ids:['tn2'], tokens:['brant','ironfold','blacksmith','master smith','smith'] },
+    { ids:['tn3'], tokens:['elwen','sister elwen','covenant scribe','scribe'] }
+  ];
+  for(const row of aliasRows){
+    for(const tok of row.tokens){
+      if((tok==='smith' || tok==='master smith') && /\blocksmith\b/.test(low)) continue;
+      if(!low.includes(tok)) continue;
+      const hit = (state.entities||[]).find(e=>e.alive && row.ids.includes(e.id));
+      if(!hit) continue;
+      for(const [id, x] of byId){
+        if(id!==hit.id) rejected.push({ id, why:'alias_priority', token:tok });
+      }
+      trace.push({ t:'entity_explicit_alias', token:tok, id:hit.id, label:hit.name });
+      return { id:hit.id, label:hit.name, rejected, via:'alias' };
+    }
+  }
+  const living = [...new Map([...susoListNpcCandidates(20),...susoListHostileCandidates(20)].map(x=>[x.e.id,x])).values()]
+    .sort((a,b)=>String(b.e.name||'').length-String(a.e.name||'').length);
+  for(const {e,d} of living){
+    const nm = String(e.name||'').toLowerCase().trim();
+    if(nm.length<3) continue;
+    if(low.includes(nm)){
+      for(const o of living){ if(o.e.id!==e.id) rejected.push({ id:o.e.id, why:'name_substring', chosen:nm }); }
+      trace.push({ t:'entity_explicit_name', id:e.id, match:'full', dist:d });
+      return { id:e.id, label:e.name, rejected, via:'name' };
+    }
+    const parts = nm.split(/\s+/).filter(p=>p.length>=3);
+    for(const p of parts){
+      const re = new RegExp(`\\b${p.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`);
+      if(re.test(low)){
+        for(const o of living){ if(o.e.id!==e.id) rejected.push({ id:o.e.id, why:'name_token', token:p }); }
+        trace.push({ t:'entity_explicit_name', id:e.id, match:p, dist:d });
+        return { id:e.id, label:e.name, rejected, via:'name_token' };
+      }
+    }
+  }
+  if(rejected.length) trace.push({ t:'entity_explicit_miss', rejected });
+  return null;
+}
+function susoWorldEntityCandidates(low, trace){
+  const out = [];
+  const near = nearbyInteractiveContext(2);
+  const adj = near.filter(n=>n.d<=1);
+  const wantForge = /\b(forge|ironfold|anvil)\b/.test(low) && !/\bblacksmith\b/.test(low);
+  const wantShop = /\b(shop|lanterns?|mara'?s|wares|counter)\b/.test(low);
+  const wantGate = /\b(gate)\b/.test(low) && !/\b(inner )?gate\b.*\bkey\b/.test(low);
+  const wantShrine = /\b(shrine|altar)\b/.test(low);
+  const wantChest = /\b(chest|coffer|crate)\b/.test(low);
+  if(wantForge){
+    const f = adj.find(n=>n.kind==='forge');
+    if(f) out.push({ id:'world:forge', kind:'forge', d:f.d, label:f.label });
+    else near.filter(x=>x.kind==='forge').forEach(n=>trace.push({ t:'entity_world_reject', kind:'forge', why:'not_adjacent', dist:n.d, label:n.label }));
+  }
+  if(wantShop){
+    const s = adj.find(n=>n.kind==='shop');
+    if(s) out.push({ id:'world:shop', kind:'shop', d:s.d, label:s.label });
+  }
+  if(wantGate){
+    const g = adj.find(n=>n.kind==='gate');
+    if(g) out.push({ id:'world:gate', kind:'gate', d:g.d, label:g.label });
+  }
+  if(wantShrine){
+    const sh = adj.find(n=>n.kind==='shrine');
+    if(sh) out.push({ id:'world:shrine', kind:'shrine', d:sh.d, label:sh.label });
+  }
+  if(wantChest){
+    const c = adj.find(n=>n.kind==='chest');
+    if(c) out.push({ id:'world:chest', kind:'chest', d:c.d, label:c.label });
+  }
+  return out;
+}
+function susoTryBindWorldEntity(intent, low, trace){
+  const worlds = susoWorldEntityCandidates(low, trace);
+  if(!worlds.length) return false;
+  const socialNpcIntent = (intent.type==='talk' || intent.target==='npc') && /\b(talk|ask|speak|greet|buy|from)\b/.test(low);
+  if(socialNpcIntent) return false;
+  const pick = worlds.sort((a,b)=>a.d-b.d)[0];
+  intent.resolvedEntityId = pick.id;
+  intent.entityResolution = { mode:'explicit', kind:'world', anchor:pick.kind };
+  susoLock(intent, 'resolvedEntityId', 'world_anchor');
+  trace.push({ t:'entity_pick', id:pick.id, mode:'explicit', kind:'world', candidates:worlds.map(w=>w.id) });
+  return true;
+}
+function susoInferProximityNpc(intent, low, trace){
+  const npcs = susoListNpcCandidates(2);
+  const at1 = npcs.filter(x=>x.d<=1);
+  if(!at1.length){
+    trace.push({ t:'entity_infer_skip', reason:'no_adjacent_npc', considered:npcs.map(x=>({id:x.e.id,d:x.d})) });
+    return;
+  }
+  let chosen = null;
+  if(/\b(shopkeeper|merchant|buy|trade|shop|wares|mara)\b/.test(low)){
+    chosen = at1.find(x=>/merchant|lantern/i.test(x.e.role||'') || x.e.id==='tn1') || null;
+    if(!chosen) trace.push({ t:'entity_role_hint', hint:'merchant', unmatched:true });
+  }
+  if(!chosen && /\b(blacksmith|smith|brant|forge)\b/.test(low) && !/\buse\s+forge\b/.test(low)){
+    chosen = at1.find(x=>/smith/i.test(x.e.role||'') || x.e.id==='tn2') || null;
+  }
+  if(!chosen && /\b(scribe|elwen|sister)\b/.test(low)){
+    chosen = at1.find(x=>x.e.id==='tn3' || /scribe/i.test(x.e.role||'')) || null;
+  }
+  if(!chosen) chosen = at1[0];
+  const rejected = at1.filter(x=>x.e.id!==chosen.e.id).map(x=>({ id:x.e.id, why:'not_chosen', dist:x.d }));
+  intent.resolvedEntityId = chosen.e.id;
+  intent.entityResolution = { mode:'inferred', reason:'proximity_npc' };
+  susoLock(intent, 'resolvedEntityId', 'inferred_npc');
+  trace.push({ t:'entity_pick', id:chosen.e.id, mode:'inferred', chosen_dist:chosen.d, candidates:at1.map(x=>({id:x.e.id,d:x.d})), rejected });
+}
+function susoInferProximityHostile(intent, low, trace){
+  const foes = susoListHostileCandidates(1);
+  if(!foes.length){
+    trace.push({ t:'entity_infer_skip', reason:'no_adjacent_hostile' });
+    return;
+  }
+  const chosen = foes[0];
+  const rejected = foes.slice(1).map(x=>({ id:x.e.id, why:'not_nearest' }));
+  intent.resolvedEntityId = chosen.e.id;
+  intent.entityResolution = { mode:'inferred', reason:'proximity_hostile' };
+  susoLock(intent, 'resolvedEntityId', 'inferred_hostile');
+  trace.push({ t:'entity_pick', id:chosen.e.id, mode:'inferred', candidates:foes.map(x=>x.e.id), rejected });
+}
+function susoShouldAttemptNpcBinding(intent, low){
+  if(intent.type==='talk') return true;
+  if(intent.target==='npc' && /\b(talk|ask|speak|greet|tell|question|chat|buy|trade|haggle|from|shopkeeper|merchant|npc|keeper)\b/.test(low)) return true;
+  if(/\b(buy|trade|purchase)\b/.test(low) && /\b(from|with)\b/.test(low) && intent.target==='npc') return true;
+  return false;
+}
+function susoResolveEntityBinding(intent, text, room, trace){
+  if(!intent || !state) return;
+  const low = String(text||'').toLowerCase();
+  trace.push({ t:'entity_resolution_start', domain:intent._suso?.domain, type:intent.type, target:intent.target });
+  if(susoIsLocked(intent, 'resolvedUseItemName') || susoResolvePackItemCanonical(low, true)){
+    trace.push({ t:'entity_skip', reason:'pack_locked_or_item_verb' });
+    return;
+  }
+  if(susoIsLocked(intent, 'resolvedEntityId')){
+    trace.push({ t:'entity_skip', reason:'entity_locked', id:intent.resolvedEntityId });
+    return;
+  }
+
+  const explicit = susoMatchExplicitLivingEntity(low, trace);
+  if(explicit){
+    intent.resolvedEntityId = explicit.id;
+    intent.entityResolution = { mode:'explicit', via:explicit.via, label:explicit.label };
+    susoLock(intent, 'resolvedEntityId', 'explicit_entity');
+    trace.push({ t:'entity_trace', explicit:true, rejected:explicit.rejected||[] });
+    return;
+  }
+
+  if(susoTryBindWorldEntity(intent, low, trace)) return;
+
+  const prayShrine = (intent.target==='shrine' || /\b(pray|kneel|anoint)\b/.test(low)) && /\b(shrine|altar)\b/.test(low);
+  if(prayShrine && intent.type==='use' && !/\b(talk|ask|speak|greet)\b/.test(low)){
+    trace.push({ t:'entity_skip', reason:'shrine_pray_domain' });
+    return;
+  }
+
+  if(susoShouldAttemptNpcBinding(intent, low)){
+    susoInferProximityNpc(intent, low, trace);
+    return;
+  }
+  if(intent.type==='attack' && (intent.target==='enemy' || /\b(attack|strike|hit|fight)\b/.test(low))){
+    susoInferProximityHostile(intent, low, trace);
+  }
+}
+function inferToolFromText(text=''){
+  const low = String(text||'').toLowerCase();
+  const inv = state?.inventory || [];
+  const direct = inv.find(i => low.includes(String(i.name||'').toLowerCase()));
+  if(direct) return direct.name;
+  for(const [k,name] of SUSO_INVENTORY_SUBSTRINGS){
+    if(low.includes(k) && hasItem(name)) return name;
+  }
+  const w = inv.find(i => i.kind==='weapon' && (/\bsword\b/.test(low) && /sword/i.test(i.name) || /\bknife\b/.test(low) && /knife/i.test(i.name) || /\baxe\b/.test(low) && /axe/i.test(i.name)));
+  return w?.name || null;
+}
+function explicitUseInventoryName(low){ return susoResolvePackItemCanonical(low, true); }
+function pinExplicitUseItemIntent(intent, low){
+  susoEnsurePackPin(intent, String(low||'').toLowerCase(), intent._suso?.trace || []);
+}
+
 function updateIntentContext(intent, room=state && getCurrentRoom(state)){
   if(!state) return;
   ensureRunSystems(state);
-  if(intent?.target) state.context.lastTarget = intent.target;
-  if(intent?.action || intent?.type) state.context.lastAction = intent.action || intent.type;
-  if(intent?.tool) state.context.lastTool = intent.tool;
-  if(room?.id != null) state.context.lastRoomId = room.id;
-  if(intent?.topic) state.context.lastTopic = intent.topic;
+  const c = state.context;
+  if(intent?.target) c.lastTarget = intent.target;
+  if(intent?.action || intent?.type) c.lastAction = intent.action || intent.type;
+  if(intent?.tool) c.lastTool = intent.tool;
+  if(room?.id != null) c.lastRoomId = room.id;
+  if(intent?.topic) c.lastTopic = intent.topic;
   const adj = nearbyInteractiveContext(1);
-  if(intent?.target && adj.some(n=>n.kind===intent.target)) state.context.lastInteractable = intent.target;
+  if(intent?.target && adj.some(n=>n.kind===intent.target)) c.lastInteractable = intent.target;
+  let npcId = null;
   if((intent?.type==='talk' || intent?.target==='npc') && intent?.target!=='enemy'){
-    const npc = nearbyEntities('npc', 2)[0];
-    if(npc) state.context.lastNpc = npc.id;
+    if(intent?.resolvedEntityId && !String(intent.resolvedEntityId).startsWith('world:')){
+      npcId = intent.resolvedEntityId;
+      c.lastNpc = intent.resolvedEntityId;
+    } else {
+      const npc = nearbyEntities('npc', 2)[0];
+      if(npc){ c.lastNpc = npc.id; npcId = npc.id; }
+    }
   }
+  let lastResEnt = c.followUp?.lastResolvedEntityId ?? null;
+  let followDom = c.followUp?.followUpDomain ?? null;
+  if(intent?._suso?.domain === 'pack_use' || intent?.resolvedUseItemName){
+    lastResEnt = null;
+    followDom = null;
+    npcId = null;
+    c.lastNpc = null;
+  } else if(intent?.resolvedEntityId && !String(intent.resolvedEntityId).startsWith('world:')){
+    lastResEnt = intent.resolvedEntityId;
+    followDom = (intent.type==='talk' || intent.target==='npc') ? 'social' : followDom;
+  } else if(intent?.resolvedEntityId && String(intent.resolvedEntityId).startsWith('world:')){
+    lastResEnt = intent.resolvedEntityId;
+    followDom = 'world';
+  }
+  c.followUp = {
+    lastTarget: intent?.target ?? null,
+    lastAction: intent?.type ?? intent?.action ?? null,
+    lastTool: intent?.tool ?? null,
+    lastTopic: intent?.topic ?? null,
+    lastNpcEntityId: npcId,
+    lastResolvedEntityId: lastResEnt,
+    followUpDomain: followDom,
+    validUntilTurn: (state.turn|0) + SUSO_FOLLOW_UP_TTL_TURNS,
+    roomId: room?.id ?? null
+  };
 }
 function extractNpcTopicFromText(text){
   const low = String(text||'').toLowerCase();
@@ -2077,46 +3092,22 @@ function extractNpcTopicFromText(text){
 function applyLocalFollowUpIntent(text, intent, room){
   if(!intent || !state) return;
   ensureRunSystems(state);
-  const ctx = state.context;
-  const low = String(text||'').toLowerCase().trim();
-
-  const vagueRepeat = /^(do it|try again|try it|use it|open it|again|same|repeat|once more|now|continue|proceed|more)$/.test(low)
-    || /^(open it|use it) now$/.test(low)
-    || (low.length < 64 && /\b(do it|try again|try it|use it|open it|once more|same thing|that again)\b/.test(low));
-  if(vagueRepeat && ctx.lastTarget){
-    intent.target = ctx.lastTarget;
-    if(ctx.lastAction && (intent.type==='interact' || !intent.type || intent.type==='use')){
-      const la = ctx.lastAction;
-      if(['inspect','open','talk','use','attack','search','listen','defend','move'].includes(la)) intent.type = la;
-    }
-    if(/^(open it|use it)/.test(low)){
-      intent.type = low.startsWith('use') ? 'use' : 'open';
-    }
-    if(ctx.lastTool) intent.tool = ctx.lastTool;
-    if(ctx.lastTopic && (intent.type==='talk' || intent.target==='npc')) intent.topic = ctx.lastTopic;
-  }
-  if(/\bcareful\s+version\b/.test(low) || /\bdo\s+the\s+careful\b/.test(low)){
-    intent.method = 'careful';
-    if(ctx.lastTarget) intent.target = ctx.lastTarget;
-    if(ctx.lastAction && ['inspect','open','use','search','interact'].includes(ctx.lastAction)) intent.type = ctx.lastAction === 'interact' ? 'interact' : ctx.lastAction;
-  }
-
-  const topic = extractNpcTopicFromText(text) || (/\b(key)\b/.test(low) ? 'key' : /\b(shrine|altar)\b/.test(low) ? 'shrine' : /\b(door|gate|lock)\b/.test(low) ? 'door' : null);
-  if(topic){
-    intent.topic = topic;
-    if((intent.type==='interact' || intent.type==='talk' || !intent.target) && nearbyEntities('npc', 3).length){
-      intent.type = 'talk';
-      intent.target = 'npc';
-    }
-  }
-
-  if(/\b(him|her|them)\b/.test(low) && ctx.lastNpc != null && !intent.target){
-    intent.type = intent.type==='interact' ? 'talk' : intent.type;
-    intent.target = 'npc';
-  }
+  const tr = intent._suso?.trace;
+  susoApplyBoundedFollowUpIntent(text, intent, room, tr || []);
 }
 function computeBestNextLead(){
   if(!state) return '';
+  if(isHubWorld()){
+    const onG = playerOnGateTile();
+    if(state.dungeonSnapshot){
+      return onG
+        ? 'On the Gate — Continue resumes your suspended delve; New delve abandons that save (you keep Lights & pack).'
+        : 'Move onto the Gate tile (G) to descend — Continue or New delve only answer from there.';
+    }
+    return onG
+      ? 'On the Gate — Enter the Depths begins a new underworld (your town gear crosses with you).'
+      : 'Prepare at Mara’s (s) and Ironfold (b), then stand on G to descend.';
+  }
   const room = getCurrentRoom();
   const rs = room ? ensureRoomState(room) : null;
   const near = nearbyInteractiveContext(1).map(n=>n.kind);
@@ -2165,21 +3156,6 @@ function computeBestNextLead(){
   if(recent) return `Last truth: ${recent.length > 96 ? recent.slice(0,96)+'…' : recent}`;
   if(state.context?.lastProgressLead) return state.context.lastProgressLead;
   return 'Trace the room’s oldest edges — locks, water, and stairs hide the route.';
-}
-function inferToolFromText(text=''){
-  const low = String(text||'').toLowerCase();
-  const inv = state?.inventory || [];
-  const direct = inv.find(i => low.includes(String(i.name||'').toLowerCase()));
-  if(direct) return direct.name;
-  const pairs = [
-    ['thin wire','Thin Wire'],['loose stone','Loose Stone'],['iron key','Iron Key'],['saint key','Saint Key'],
-    ['torch','Torch'],['rope','Rope Loop'],['oil','Oil Flask'],['charm','Bone Charm'],['tonic','Small Tonic']
-  ];
-  for(const [k,name] of pairs){
-    if(low.includes(k) && hasItem(name)) return name;
-  }
-  const w = inv.find(i => i.kind==='weapon' && (/\bsword\b/.test(low) && /sword/i.test(i.name) || /\bknife\b/.test(low) && /knife/i.test(i.name) || /\baxe\b/.test(low) && /axe/i.test(i.name)));
-  return w?.name || null;
 }
 function buildSceneModel(room){
   ensureRunSystems(state);
@@ -2235,7 +3211,7 @@ function scoreIntentCandidates(text, scene){
   if(/\bsearch|loot|rummage|scavenge\b/.test(t)) add('search', null, 4, 'search');
   if(/\bgrab|take|pick up\b/.test(t) && /\bkey\b/.test(t)) add('take', 'key', 9, 'take key');
   if(/\bdisarm|trap\b/.test(t)) add('inspect', 'trap', 6, 'trap focus');
-  if(/\buse\b/.test(t) && scene.nearby.some(n=>n.kind==='shrine')) add('pray', 'shrine', 5, 'use near shrine');
+  if(/\buse\b/.test(t) && scene.nearby.some(n=>n.kind==='shrine') && !explicitUseInventoryName(t)) add('pray', 'shrine', 5, 'use near shrine');
 
   const vague = /\b(it|that|this|there|try|again|now|something|same|repeat|him|her|them)\b/.test(t)
     || /^(do it|try again|use it|open it|again|same|repeat|now|continue)\b/.test(t.trim());
@@ -2243,7 +3219,6 @@ function scoreIntentCandidates(text, scene){
   if(/\babout\s+(?:the\s+)?(key|door|shrine|water|stairs|trap|chest)\b/.test(t)) add('talk', 'npc', 9, 'topic question');
   if(/\bcareful\s+version\b/.test(t) && scene.lastTarget) add('interact', scene.lastTarget, 9, 'careful repeat');
   if(/^(open it|use it)( now)?$/.test(t.trim()) && scene.lastTarget) add('interact', scene.lastTarget, 8, 'deictic it');
-  if(byKey.size === 0 && scene.lastTarget) add('interact', scene.lastTarget, 4, 'context fallback');
   if(byKey.size === 0 && scene.lastProgressLead && /progress|deeper|next|forward/.test(t)) add('open', 'stairs', 3, 'lead hint');
 
   const arr = [...byKey.values()];
@@ -2288,42 +3263,8 @@ function makeActionPlan(text, scene){
   };
 }
 function mergePlanIntoIntent(intent, plan, text){
-  if(!plan || plan.confidence < 0.22) return intent;
-  const low = String(text||'').toLowerCase();
-  if(intent.fromArrow) return intent;
-  if(['move','rest','combine'].includes(intent.type) && plan.confidence < 0.55) return intent;
-
-  intent.susoPlan = plan;
-  if(plan.tool) intent.tool = plan.tool;
-  if(plan.method && plan.method !== 'normal') intent.method = plan.method;
-  if(plan.goal && plan.goal !== 'understand') intent.goal = plan.goal;
-
-  const fill = !intent.target || intent.type === 'interact';
-  if(!fill && plan.confidence < 0.48) return intent;
-
-  const a = plan.action, tg = plan.target;
-  if(a === 'disarm'){ intent.type = 'interact'; intent.target = 'trap'; }
-  else if(a === 'pray'){ intent.type = 'use'; intent.target = 'shrine'; }
-  else if(a === 'enhance'){ intent.type = 'use'; intent.target = 'shrine'; }
-  else if(a === 'open' && tg === 'door'){ intent.type = 'open'; intent.target = 'door'; }
-  else if(a === 'open' && tg === 'chest'){ intent.type = 'open'; intent.target = 'chest'; }
-  else if(a === 'force'){ intent.type = 'open'; intent.target = tg || 'door'; }
-  else if(a === 'descend'){ intent.type = 'open'; intent.target = 'stairs'; }
-  else if(a === 'talk'){
-    intent.type = 'talk';
-    intent.target = 'npc';
-    const tp = extractNpcTopicFromText(text);
-    if(tp) intent.topic = tp;
-  }
-  else if(a === 'drink' || a === 'wade'){ intent.type = 'use'; intent.target = 'water'; }
-  else if(a === 'attack'){ intent.type = 'attack'; intent.target = 'enemy'; }
-  else if(a === 'take' && tg === 'key'){ intent.type = 'interact'; intent.target = 'key'; }
-  else if(a === 'inspect' && tg){ intent.type = 'inspect'; intent.target = tg; }
-  else if(a === 'search'){ intent.type = 'search'; }
-  else if(a === 'interact' && tg){ intent.type = 'interact'; intent.target = tg; }
-
-  refineIntentTargets(intent, low);
-  return intent;
+  const tr = intent._suso?.trace || [];
+  return susoArbitrateScenePlan(intent, plan, text, tr);
 }
 const OUTCOME_NARRATION = {
   trap_disarm_great: [
@@ -2404,9 +3345,14 @@ function narrateStructuredOutcome(result, rng){
   return result;
 }
 function interpretIntentRich(text){
+  const trace = [];
   const base = parseIntent(text);
   const low = String(text||'').toLowerCase();
   const rich = {...base};
+  susoInitIntentShell(rich, trace);
+
+  susoApplyExplicitLocksFromParse(rich, low, trace);
+
   rich.action =
     /\b(attack|hit|strike|fight|stab|slash|smash)\b/.test(low) ? 'attack' :
     /\b(disarm|disable|jam|clear)\b/.test(low) ? 'disarm' :
@@ -2424,7 +3370,7 @@ function interpretIntentRich(text){
     /\b(force|kick|smash|rip|tear|hard)\b/.test(low) ? 'force' :
     /\b(sneak|quietly|stealth|softly)\b/.test(low) ? 'stealth' :
     'normal';
-  rich.tool = inferToolFromText(text);
+  if(!susoIsLocked(rich, 'tool')) rich.tool = inferToolFromText(text);
   rich.goal =
     /\b(open|unlock|descend|deeper|progress)\b/.test(low) ? 'progress' :
     /\b(loot|take|grab|gather)\b/.test(low) ? 'loot' :
@@ -2432,19 +3378,33 @@ function interpretIntentRich(text){
     /\b(inspect|learn|clue|understand)\b/.test(low) ? 'learn' :
     /\b(survive|defend|brace)\b/.test(low) ? 'survive' :
     'interact';
-  if(!rich.target && state?.context?.lastTarget && /\b(it|that|this|there|now)\b/.test(low)) rich.target = state.context.lastTarget;
-  if(/\b(shrine|altar)\b/.test(low) && /\b(sword|weapon|blade|steel)\b/.test(low)){
-    rich.type = 'use';
-    rich.target = 'shrine';
-    rich.action = 'enhance';
+
+  if(!susoIsLocked(rich, 'target') && !rich.target && state?.context?.lastTarget && /\b(it|that|this|there|now)\b/.test(low)){
+    susoSet(rich, 'target', state.context.lastTarget, 'context_deictic', trace);
   }
-  refineIntentTargets(rich, low);
+  if(/\b(shrine|altar)\b/.test(low) && /\b(sword|weapon|blade|steel)\b/.test(low)){
+    susoSet(rich, 'type', 'use', 'weapon_shrine', trace);
+    susoSet(rich, 'target', 'shrine', 'weapon_shrine', trace);
+    rich.action = 'enhance';
+    susoLock(rich, 'type', 'weapon_shrine');
+    susoLock(rich, 'target', 'weapon_shrine');
+  }
+
+  rich._suso.domain = rich._suso.domain || susoClassifyDomain(low, rich);
+  trace.push({ t:'domain', domain: rich._suso.domain });
+
+  susoRefineIntentTargets(rich, low, trace);
   const room = getCurrentRoom();
   const scene = buildSceneModel(room);
   const plan = makeActionPlan(text, scene);
   mergePlanIntoIntent(rich, plan, text);
   applyLocalFollowUpIntent(text, rich, room);
-  refineIntentTargets(rich, low);
+  susoRefineIntentTargets(rich, low, trace);
+  susoEnsurePackPin(rich, low, trace);
+  susoResolveEntityBinding(rich, text, room, trace);
+
+  rich.intentTrace = trace.slice();
+  if(state) state.lastIntentTrace = rich.intentTrace.slice(-24);
   return rich;
 }
 function canDoAction(target, action){
@@ -2461,7 +3421,7 @@ function rebuildDungeonForLevel(level){
   const nextSeed = ((state.dungeon.seed * 1664525 + 1013904223 + level * 97) >>> 0);
   state.dungeon.seed = nextSeed;
   const rng = rngFactory(nextSeed);
-  const map = generateDungeon(rng, state.theme);
+  const map = generateDungeon(rng, state.theme, level);
   state.map = map;
   state.rooms = map.rooms;
   state.entities = map.entities;
@@ -2561,6 +3521,8 @@ function goToNextFloor(reason=''){
   const to = state.dungeon.level;
   rebuildDungeonForLevel(to);
   addEntry('sys', `You descend to floor ${to}.${reason ? ' ' + reason : ''}`, 'Progress');
+  const strata = descentStrataNarration(to, state.theme);
+  if(strata) addEntry('sys', strata, 'Strata');
   if(from === 1 && to === 2) deliverActTwoStoryBeat(reason);
 }
 function createRun(profile={}){
@@ -2575,7 +3537,7 @@ function createRun(profile={}){
   const title = (profile.title || 'Delver').trim() || 'Delver';
 
   const run = {
-    seed, theme, tone, risk, maxHealth:100, health:100, turn:0, dead:false,
+    seed, theme, tone, risk, lights: 0, maxHealth:100, health:100, turn:0, dead:false,
     name, title,
     inventory:[makeWeapon('sword','plain'), {name:'Torch', qty:1, desc:'A guttering torch with more faith than oil.'},{name:'Small Tonic', qty:1, desc:'A bitter restorative.'}],
     facts:[theme.truths[0], `False comfort: ${theme.lie}`],
@@ -2597,6 +3559,27 @@ function createRun(profile={}){
     storyActTwo: null,
     context:{lastTarget:null,lastAction:null,lastTool:null,lastRoomId:null,lastNpc:null,lastInteractable:null,lastProgressLead:null,lastTopic:null}
   };
+  run.worldPhase = 'dungeon';
+  run.dungeonSnapshot = null;
+  if(profile.carryFromHub){
+    const c = profile.carryFromHub;
+    run.lights = c.lights|0;
+    run.inventory = JSON.parse(JSON.stringify(c.inventory||run.inventory));
+    run.townMemory = c.townMemory ? JSON.parse(JSON.stringify(c.townMemory)) : (run.townMemory || defaultTownMemory());
+    if(c.player){
+      run.player.level = c.player.level != null ? c.player.level : run.player.level;
+      run.player.xp = c.player.xp != null ? c.player.xp : run.player.xp;
+      run.player.ward = c.player.ward != null ? c.player.ward : run.player.ward;
+    }
+    run.health = clamp(c.health|0, 1, run.maxHealth);
+    run.maxHealth = Math.max(c.maxHealth|0, run.maxHealth);
+    const carryFacts = (c.facts||[]).slice(-10);
+    run.facts = [...carryFacts, ...run.facts.filter(f => !carryFacts.includes(f))].slice(-14);
+    if(c.name) run.name = c.name;
+    if(c.title) run.title = c.title;
+    if(c.tone) run.tone = c.tone;
+    if(c.risk) run.risk = c.risk;
+  }
   ensureRunSystems(run);
   revealAround(run,6);
   addEntry('sys', `A new run takes shape.\n\n${run.premise}\n\nQuest: ${run.quest.title}`, 'Opening');
@@ -2606,7 +3589,8 @@ function createRun(profile={}){
   return run;
 }
 
-function generateDungeon(rng, theme){
+function generateDungeon(rng, theme, floorLevel=1){
+  const fl = Math.max(1, floorLevel|0);
   const w=68,h=48;
   const grid = Array.from({length:h},()=>Array(w).fill('#'));
   const rooms=[]; let roomId=0;
@@ -2645,14 +3629,26 @@ function generateDungeon(rng, theme){
     if(!keyPlaced && room.id===midRoom.id){ placeNear(grid,c.x,c.y,'k',rng); keyPlaced=true; }
     if(room.id!==startRoom.id && room.id!==npcRoom.id && room.id!==endRoom.id && rng()<0.42){
       const pos=findOpenInRoom(grid, room, rng);
-      if(pos){ entities.push({id:`e${eid++}`, type:'enemy', name:pick(rng,theme.enemies), x:pos.x,y:pos.y,hp:randInt(rng,3,6), maxHp:6, mood:pick(rng,['lurking','hungry','listening']), alive:true}); grid[pos.y][pos.x]='E'; }
+      if(pos){
+        const elite = rng() < 0.11 + Math.min(0.22, (fl - 1) * 0.045);
+        const baseName = pick(rng,theme.enemies);
+        const name = elite ? `${pick(rng,['Starved ','Depth-','Ragged '])}${baseName}` : baseName;
+        const hpBase = randInt(rng,3,6) + Math.floor((fl - 1) * 1.4) + (elite ? 4 : 0);
+        const maxHp = Math.max(4, hpBase + (elite ? 3 : 0));
+        entities.push({
+          id:`e${eid++}`, type:'enemy', elite, name, x:pos.x,y:pos.y,
+          hp: maxHp, maxHp, mood:pick(rng,['lurking','hungry','listening']), alive:true
+        });
+        grid[pos.y][pos.x]='E';
+      }
     }
   }
 
   const npcPos=findOpenInRoom(grid,npcRoom,rng);
   if(npcPos){ entities.push({id:`n${eid++}`, type:'npc', name:pick(rng,theme.npcs), x:npcPos.x,y:npcPos.y,hp:99,maxHp:99, alive:true, dialogIndex:0, clue:pick(rng,theme.truths)}); grid[npcPos.y][npcPos.x]='n'; }
   const bossPos=findOpenInRoom(grid,endRoom,rng) || boss;
-  entities.push({id:`b${eid++}`, type:'boss', name:pick(rng,theme.bosses), x:bossPos.x, y:bossPos.y, hp:10, maxHp:10, alive:true, mood:'waiting'}); grid[bossPos.y][bossPos.x]='E';
+  const bossHp = 10 + Math.floor((fl - 1) * 6);
+  entities.push({id:`b${eid++}`, type:'boss', name:pick(rng,theme.bosses), x:bossPos.x, y:bossPos.y, hp:bossHp, maxHp:bossHp, alive:true, mood:'waiting'}); grid[bossPos.y][bossPos.x]='E';
 
   for(let i=0;i<18;i++) scatterOnFloor(grid,rng,pick(rng,['.','.','W','X','.']));
 
@@ -2853,7 +3849,8 @@ function findRoomAt(run,x,y){ return run.rooms.find(r => x>=r.x && x<r.x+r.w && 
 function nearestRoom(run,x,y){ let best=null,b=1e9; for(const r of run.rooms){ const c=center(r), d=Math.abs(c.x-x)+Math.abs(c.y-y); if(d<b){b=d;best=r;}} return best; }
 function roomFeatureSummary(run,room){
   const feats = new Set();
-  for(let y=room.y;y<room.y+room.h;y++) for(let x=room.x;x<room.x+room.w;x++){ const c=run.map.grid[y][x]; if(['C','E','W','X','T','D','^','S','n','k'].includes(c)) feats.add(c); }
+  const MARK = ['C','E','W','X','T','D','^','S','n','k','s','b','i','h','m','a','w','G'];
+  for(let y=room.y;y<room.y+room.h;y++) for(let x=room.x;x<room.x+room.w;x++){ const c=run.map.grid[y][x]; if(MARK.includes(c)) feats.add(c); }
   return [...feats];
 }
 function describeRoom(run, room, first=false){
@@ -2874,11 +3871,22 @@ function describeRoom(run, room, first=false){
   const featureText = features.length ? `Nearby, there is ${features.slice(0,3).join(', ')}.` : '';
   const atmosphere = [rs.sounds[0], rs.smells[0], rs.surfaces[0]].filter(Boolean).join(', ');
   const factEcho = rs.facts.length ? `You already know that ${rs.facts[rs.facts.length-1]}.` : '';
-  return `${pick(rr, openers)} ${atmosphere ? `The room answers with ${atmosphere}.` : ''} ${featureText} ${factEcho}`.replace(/\s+/g,' ').trim();
+  const floor = run.worldPhase === 'hub' ? 0 : (run.dungeon?.level|0 || 1);
+  const depthWhisper = run.worldPhase !== 'hub' && floor >= 2
+    ? pick(rr, [
+        `Floor ${floor} makes the room’s older habits feel like threats.`,
+        `This deep, ${room.name} does not pretend the stone is neutral.`,
+        `The ${floor}th layer turns every echo into a kind of verdict.`
+      ])
+    : '';
+  return `${pick(rr, openers)} ${atmosphere ? `The room answers with ${atmosphere}.` : ''} ${depthWhisper ? depthWhisper + ' ' : ''}${featureText} ${factEcho}`.replace(/\s+/g,' ').trim();
 }
 
 function roomFeatureLabel(sym){
-  return ({C:'a chest',D:'a sealed door',W:'standing water',E:'a lurking threat',T:'a hidden trap',X:'broken rubble','^':'a shrine',S:'a stair or gate','n':'a survivor','k':'a glinting key','O':'an opening','%':'a body'})[sym] || 'something in the room';
+  return ({
+    C:'a chest',D:'a sealed door',W:'standing water',E:'a lurking threat',T:'a hidden trap',X:'broken rubble','^':'a shrine',S:'a stair or gate','n':'a survivor','k':'a glinting key','O':'an opening','%':'a body',
+    s:'the lantern shop', b:'the forge', i:'the inn', h:'the covenant hall', m:'a market stall', a:'the archives', w:'the old well', G:'the Gate to the Depths'
+  })[sym] || 'something in the room';
 }
 function makeRoomHiddenDetail(run, room, feats){
   const rr = rngFactory(run.seed + room.id*811 + 17);
@@ -3146,6 +4154,14 @@ function nearbyInteractiveContext(dist=2){
       else if(c==='X') push('rubble','rubble',x,y);
       else if(c==='k') push('key','key',x,y);
       else if(c==='n') push('npc','npc',x,y);
+      else if(c==='s') push('shop','Mara’s Lanterns',x,y);
+      else if(c==='b') push('forge','Ironfold Forge',x,y);
+      else if(c==='i') push('inn','The Weary Hearth',x,y);
+      else if(c==='h') push('hall','Covenant Hall',x,y);
+      else if(c==='m') push('market','market stall',x,y);
+      else if(c==='a') push('archives','archives',x,y);
+      else if(c==='w') push('well','town well',x,y);
+      else if(c==='G') push('gate','Gate to the Depths',x,y);
     }
   }
   out.sort((a,b)=>a.d-b.d);
@@ -3155,6 +4171,8 @@ function localLanguageModelIntent(text, baseIntent){
   const raw=(text||'').trim();
   const t=raw.toLowerCase();
   const intent={...baseIntent};
+  const tr = intent._suso?.trace || (intent.intentTrace ? intent.intentTrace.slice() : []);
+  susoInitIntentShell(intent, tr);
   const nearby=nearbyInteractiveContext(1);
   const nearest=nearby[0]||null;
   const labels=nearby.map(n=>n.kind);
@@ -3167,39 +4185,43 @@ function localLanguageModelIntent(text, baseIntent){
   intent.style = style;
   intent.exactPhrase = raw;
 
-  if(!intent.target){
-    if(/\b(it|that|this|there|them)\b/.test(t) && nearest) intent.target=nearest.kind;
-    else if(labels.includes('enemy') && /\b(hound|beast|creature|enemy|thing|monster)\b/.test(t)) intent.target='enemy';
-    else if(labels.includes('npc') && /\b(person|keeper|survivor|hermit|figure|man|woman)\b/.test(t)) intent.target='npc';
-    else if(labels.includes('door') && /\b(door|gate|way out|exit|entrance)\b/.test(t)) intent.target='door';
-    else if(labels.includes('chest') && /\b(chest|coffer|crate|box|cache)\b/.test(t)) intent.target='chest';
-    else if(labels.includes('water') && /\b(water|pool|puddle|surface|flood)\b/.test(t)) intent.target='water';
-    else if(labels.includes('rubble') && /\b(rubble|stones|debris|collapse|rock)\b/.test(t)) intent.target='rubble';
-    else if(labels.includes('trap') && /\b(trap|wire|plate|mechanism)\b/.test(t)) intent.target='trap';
-    else if(labels.includes('shrine') && /\b(shrine|altar|idol|saint)\b/.test(t)) intent.target='shrine';
-    else if(labels.includes('key') && /\b(key|token|relic)\b/.test(t)) intent.target='key';
-    else if(labels.includes('stairs') && /\b(stairs|steps|descent|ladder)\b/.test(t)) intent.target='stairs';
-    else if(labels.includes('corpse') && /\b(body|corpse|bones|remains|dead)\b/.test(t)) intent.target='corpse';
+  if(!intent.target && !susoIsLocked(intent, 'target')){
+    if(/\b(it|that|this|there|them)\b/.test(t) && nearest) susoSet(intent, 'target', nearest.kind, 'lml_deictic', tr);
+    else if(labels.includes('enemy') && /\b(hound|beast|creature|enemy|thing|monster)\b/.test(t)) susoSet(intent, 'target', 'enemy', 'lml_affordance', tr);
+    else if(labels.includes('npc') && /\b(person|keeper|survivor|hermit|figure|man|woman)\b/.test(t)) susoSet(intent, 'target', 'npc', 'lml_affordance', tr);
+    else if(labels.includes('door') && /\b(door|gate|way out|exit|entrance)\b/.test(t)) susoSet(intent, 'target', 'door', 'lml_affordance', tr);
+    else if(labels.includes('chest') && /\b(chest|coffer|crate|box|cache)\b/.test(t)) susoSet(intent, 'target', 'chest', 'lml_affordance', tr);
+    else if(labels.includes('water') && /\b(water|pool|puddle|surface|flood)\b/.test(t)) susoSet(intent, 'target', 'water', 'lml_affordance', tr);
+    else if(labels.includes('rubble') && /\b(rubble|stones|debris|collapse|rock)\b/.test(t)) susoSet(intent, 'target', 'rubble', 'lml_affordance', tr);
+    else if(labels.includes('trap') && /\b(trap|wire|plate|mechanism)\b/.test(t)) susoSet(intent, 'target', 'trap', 'lml_affordance', tr);
+    else if(labels.includes('shrine') && /\b(shrine|altar|idol|saint)\b/.test(t)) susoSet(intent, 'target', 'shrine', 'lml_affordance', tr);
+    else if(labels.includes('key') && /\b(key|token|relic)\b/.test(t)) susoSet(intent, 'target', 'key', 'lml_affordance', tr);
+    else if(labels.includes('stairs') && /\b(stairs|steps|descent|ladder)\b/.test(t)) susoSet(intent, 'target', 'stairs', 'lml_affordance', tr);
+    else if(labels.includes('corpse') && /\b(body|corpse|bones|remains|dead)\b/.test(t)) susoSet(intent, 'target', 'corpse', 'lml_affordance', tr);
   }
 
-  if(intent.type==='interact'){
-    if(/\b(look|inspect|examine|study|read|trace|check)\b/.test(t)) intent.type='inspect';
-    else if(/\b(listen|hear|press.*ear)\b/.test(t)) intent.type='listen';
-    else if(/\b(search|loot|rummage|scavenge|pat down|check pockets)\b/.test(t)) intent.type='search';
-    else if(/\b(open|unlock|unlatch|push|pull|force)\b/.test(t)) intent.type='open';
-    else if(/\b(attack|fight|stab|slash|hit|smash|kill|punch)\b/.test(t)) intent.type='attack';
-    else if(/\b(talk|ask|greet|question|bargain|speak|lie to)\b/.test(t)) intent.type='talk';
-    else if(/\b(use|drink|consume|equip|apply|touch|offer|pray|kneel)\b/.test(t)) intent.type='use';
-    else if(/\b(combine|craft|tie|bind|merge|mix)\b/.test(t)) intent.type='combine';
+  if(intent.type==='interact' && !susoIsLocked(intent, 'type')){
+    if(/\b(look|inspect|examine|study|read|trace|check)\b/.test(t)) susoSet(intent, 'type', 'inspect', 'lml_verb', tr);
+    else if(/\b(listen|hear|press.*ear)\b/.test(t)) susoSet(intent, 'type', 'listen', 'lml_verb', tr);
+    else if(/\b(search|loot|rummage|scavenge|pat down|check pockets)\b/.test(t)) susoSet(intent, 'type', 'search', 'lml_verb', tr);
+    else if(/\b(open|unlock|unlatch|push|pull|force)\b/.test(t)) susoSet(intent, 'type', 'open', 'lml_verb', tr);
+    else if(/\b(attack|fight|stab|slash|hit|smash|kill|punch)\b/.test(t)) susoSet(intent, 'type', 'attack', 'lml_verb', tr);
+    else if(/\b(talk|ask|greet|question|bargain|speak|lie to)\b/.test(t)) susoSet(intent, 'type', 'talk', 'lml_verb', tr);
+    else if(/\b(use|drink|consume|equip|apply|touch|offer|pray|kneel)\b/.test(t)) susoSet(intent, 'type', 'use', 'lml_verb', tr);
+    else if(/\b(combine|craft|tie|bind|merge|mix)\b/.test(t)) susoSet(intent, 'type', 'combine', 'lml_verb', tr);
   }
   intent.travel = false;
   intent.explicitExit = false;
-  if(!intent.target && nearest && /\b(inspect|look|check|open|attack|talk|use|search|listen|deal with|touch)\b/.test(t)) intent.target = nearest.kind;
+  if(!intent.target && !susoIsLocked(intent, 'target') && nearest && /\b(inspect|look|check|open|attack|talk|use|search|listen|deal with|touch)\b/.test(t) && !intent.resolvedUseItemName && !explicitUseInventoryName(t)){
+    susoSet(intent, 'target', nearest.kind, 'lml_nearest', tr);
+  }
 
   if(baseIntent?.method) intent.method = baseIntent.method;
-  if(baseIntent?.topic) intent.topic = baseIntent.topic;
-  if(baseIntent?.tool) intent.tool = baseIntent.tool;
+  if(baseIntent?.topic && !susoIsLocked(intent, 'topic')) intent.topic = baseIntent.topic;
+  if(baseIntent?.tool && !susoIsLocked(intent, 'tool')) intent.tool = baseIntent.tool;
 
+  pinExplicitUseItemIntent(intent, t);
+  intent.intentTrace = tr;
   return {intent, usedAI:false, localBrain:true, raw:{nearby:nearby.slice(0,5), source:'suso-local-language-model', style}};
 }
 
@@ -3213,11 +4235,13 @@ function parseIntent(text){
     intent.direction=arrowActionToDir(raw);
     intent.travel=false;
     intent.fromArrow=true;
+    intent._parseTarget = intent.target;
     return intent;
   }
 
   if(/\b(fly|divine|god|miracle|absolute fortune|unfathomable)\b/.test(t)) intent.insane=true;
   if(/\b(talk|speak|ask|question|negotiate|chat|say to|tell|confront)\b/.test(t)) intent.type='talk';
+  else if(/\b(buy|trade|purchase|haggle)\b/.test(t) && /\b(from|with)\b/.test(t)) intent.type='talk';
   else if(/\b(combine|craft|mix|merge)\b/.test(t)) intent.type='combine';
   else if(/\b(use|drink|consume|equip|light|apply|enhance|bless|temper|improve|empower|upgrade|pray|offer)\b/.test(t)) intent.type='use';
   else if(/\b(attack|fight|hit|kill|stab|slash|shoot|smash)\b/.test(t)) intent.type='attack';
@@ -3250,6 +4274,7 @@ function parseIntent(text){
   }
 
   refineIntentTargets(intent, t);
+  intent._parseTarget = intent.target;
   return intent;
 }
 function refineIntentTargets(intent, t){
@@ -3268,7 +4293,11 @@ function extractTarget(t){
   if(/\b(chest|coffer|crate|loot)\b/.test(t)) return 'chest';
   if(/\b(water|pool|wine|flood)\b/.test(t)) return 'water';
   if(/\b(enemy|fiend|monster|hostile|creature|boss)\b/.test(t)) return 'enemy';
-  if(/\b(npc|keeper|person|survivor|merchant|speaker)\b/.test(t)) return 'npc';
+  if(/\b(npc|keeper|person|survivor|merchant|speaker|shopkeeper|vendor|clerk)\b/.test(t)) return 'npc';
+  if(/\b(blacksmith|smith)\b/.test(t) && !/\blocksmith\b/.test(t)) return 'npc';
+  if(/\b(guard|gatekeeper|shrine\s*keeper)\b/.test(t)) return 'npc';
+  if(/\bforge\b/.test(t) && /\b(inspect|examine|visit|check|use|open)\b/.test(t)) return 'forge';
+  if(/\b(shop|lanterns?)\b/.test(t) && /\b(inspect|visit|enter|check)\b/.test(t)) return 'shop';
   if(/\b(shrine|altar|idol)\b/.test(t)) return 'shrine';
   if(/\b(trap|pressure plate|tripwire)\b/.test(t)) return 'trap';
   if(/\b(rubble|debris|stones)\b/.test(t)) return 'rubble';
@@ -3465,6 +4494,199 @@ function shouldWarnHollowOutcome(result, intent){
   if(isObservationalIntentType(intent)) return false;
   return true;
 }
+function markHubStep(kind){
+  if(!isHubWorld() || !state.quest || !state.quest.progress || state.quest.done) return;
+  const p = state.quest.progress;
+  if(kind==='shop') p[0] = true;
+  if(kind==='forge') p[1] = true;
+  if(kind==='gate') p[2] = true;
+  state.quest.done = p.every(Boolean);
+  if(state.quest.done) addFactOnce('Lantern errands complete — Lumen approves your preparation.');
+}
+function openShopModal(){
+  if(!els.shopModal || !els.shopOfferList) return;
+  const p = ECON.shop;
+  const offers = [
+    { id:'tonic', name:'Small Tonic', price:p.tonic, desc:'A bitter restorative.', factory:()=>({name:'Small Tonic', qty:1, desc:'A bitter restorative.'}) },
+    { id:'oil', name:'Oil Flask', price:p.oil, desc:'Enough oil for one bright use.', factory:()=>({name:'Oil Flask', qty:1, desc:'Enough oil for one bright use.'}) },
+    { id:'stone', name:'Loose Stone', price:p.stone, desc:'Throw, wedge, or make noise.', factory:()=>({name:'Loose Stone', qty:1, desc:'A fist-sized chunk of masonry.'}) },
+    { id:'torch', name:'Torch', price:p.torch, desc:'More faith than oil.', factory:()=>({name:'Torch', qty:1, desc:'A guttering torch with more faith than oil.'}) },
+    { id:'rope', name:'Rope Loop', price:p.rope, desc:'Reach and leverage.', factory:()=>({name:'Rope Loop', qty:1, desc:'A short loop of tough fiber.'}) },
+    { id:'rumor', name:'Folded Rumor', price:p.rumor, desc:'Covenant hearsay — pin to journal with Use in the Depths.', factory:()=>({name:'Folded Rumor', qty:1, desc:'A scrap about the Gate. Use below to add a fact to your journal.'}) },
+    { id:'rations', name:'Depths Rations', price:p.rations, desc:'Dense travel food — meant for below.', factory:()=>({name:'Depths Rations', qty:1, desc:'Dense travel food. Use in the Depths to recover more than a tonic.'}) },
+    { id:'wardSalt', name:'Ward Salt', price:p.wardSalt, desc:'Crush below for +2 ward.', factory:()=>({name:'Ward Salt', qty:1, desc:'Crush in the Depths to lay a quick ward (+2). Inert in town air.'}) },
+    { id:'tea', name:'Covenant Tea', price:p.tea, desc:'Warm recovery — drink in Lumen only.', factory:()=>({name:'Covenant Tea', qty:1, desc:'Drink in Lumen Town to heal — save tonics for the crawl.'}) }
+  ];
+  els.shopOfferList.innerHTML = offers.map(o=>`
+    <div class="shop-offer">
+      <strong>${escapeHtml(o.name)}</strong>
+      <span class="small">${escapeHtml(o.desc)}</span>
+      <span class="price">${o.price} Lights</span>
+      <button type="button" class="secondary shop-buy-btn" data-shop-id="${escapeHtml(o.id)}">Buy</button>
+    </div>
+  `).join('');
+  els.shopOfferList.querySelectorAll('.shop-buy-btn').forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.dataset.shopId;
+      const o = offers.find(x=>x.id===id);
+      if(!o || !spendLights(o.price)){ addEntry('bad', 'Mara taps the counter. "Not enough Lights — the Depths take first, always."', 'Shop'); refreshUI(); return; }
+      gainItem(o.factory());
+      addEntry('sys', `You trade ${o.price} Lights for ${o.name}.`, 'Shop');
+      markHubStep('shop');
+      refreshUI();
+    };
+  });
+  els.shopModal.style.display = 'flex';
+}
+function closeShopModal(){ if(els.shopModal) els.shopModal.style.display = 'none'; }
+function openForgeModal(){
+  if(!els.forgeModal) return;
+  const w = getEquippedWeapon();
+  const cost = ECON.forgeSharpen;
+  if(els.forgeModalText) els.forgeModalText.innerHTML = `<strong>Ironfold Forge</strong> — Brant studies your ${escapeHtml(w.name)}. A sharpening adds <strong>+1</strong> to min and max damage for <strong>${cost} Lights</strong>. One temper per town visit until you return from a delve.`;
+  if(els.forgeSharpenBtn) els.forgeSharpenBtn.textContent = `Sharpen equipped weapon (${cost} Lights)`;
+  els.forgeModal.style.display = 'flex';
+}
+function closeForgeModal(){ if(els.forgeModal) els.forgeModal.style.display = 'none'; }
+function tryForgeSharpen(){
+  if(!isHubWorld()) return;
+  const cost = ECON.forgeSharpen;
+  if(state.flags.forgeUsedThisVisit){ addEntry('sys', 'Brant shakes his head. "Already done for this visit — come back after another delve."', 'Forge'); refreshUI(); return; }
+  if(!spendLights(cost)){ addEntry('bad', `Brant needs ${cost} Lights before the sparks fly.`, 'Forge'); refreshUI(); return; }
+  const w = getEquippedWeapon();
+  if(!w || w.kind !== 'weapon'){ state.lights += cost; addEntry('bad', 'No weapon equipped to hone.', 'Forge'); refreshUI(); return; }
+  w.min = (w.min|0) + 1;
+  w.max = (w.max|0) + 1;
+  state.flags.forgeUsedThisVisit = true;
+  markHubStep('forge');
+  addEntry('sys', `${w.name} rings truer — edges tuned for the Depths.`, 'Forge');
+  closeForgeModal();
+  refreshUI();
+}
+function syncHubButtons(){
+  if(!els.enterDepthsBtn) return;
+  const hub = isHubWorld();
+  const dun = isDungeonWorld();
+  const onG = hub && playerOnGateTile();
+  els.enterDepthsBtn.style.display = hub ? 'inline-block' : 'none';
+  if(els.continueDelveBtn) els.continueDelveBtn.style.display = hub && state.dungeonSnapshot ? 'inline-block' : 'none';
+  if(els.newDelveBtn) els.newDelveBtn.style.display = hub && state.dungeonSnapshot ? 'inline-block' : 'none';
+  if(els.returnToTownBtn) els.returnToTownBtn.style.display = dun ? 'inline-block' : 'none';
+  if(els.speakPanelTitle) els.speakPanelTitle.textContent = hub ? 'Speak in town' : 'Speak to the dungeon';
+  const gateHint = 'Requires standing on the Gate tile (G).';
+  if(els.enterDepthsBtn) els.enterDepthsBtn.title = gateHint;
+  if(els.continueDelveBtn) els.continueDelveBtn.title = gateHint;
+  if(els.newDelveBtn) els.newDelveBtn.title = gateHint;
+  if(els.enterDepthsBtn) els.enterDepthsBtn.disabled = hub && !onG;
+  if(els.continueDelveBtn) els.continueDelveBtn.disabled = hub && !onG;
+  if(els.newDelveBtn) els.newDelveBtn.disabled = hub && !onG;
+}
+function syncDelveStatus(){
+  if(!els.delveStatusDetail || !els.delveStatusTitle) return;
+  if(isHubWorld()){
+    els.delveStatusTitle.textContent = state.dungeonSnapshot ? 'Lumen Town — suspended delve' : 'Lumen Town — hub';
+    const tm = state.townMemory || defaultTownMemory();
+    const deepNote = (tm.deepestFloorEver|0) >= 1 ? ` Your journal remembers descending to <strong>floor ${tm.deepestFloorEver}</strong>.` : '';
+    if(state.dungeonSnapshot){
+      els.delveStatusDetail.innerHTML = 'A <strong>saved delve</strong> waits. Stand on <strong>G</strong>: <em>Continue</em> resumes the same dungeon; <em>New delve</em> abandons that save but keeps your character, Lights, and pack. Inventory from town always crosses with you.' + deepNote;
+    }else{
+      els.delveStatusDetail.innerHTML = 'No suspended run. Visit <strong>s</strong> (Mara) and <strong>b</strong> (Brant), then stand on <strong>G</strong> and choose <em>Enter the Depths</em> for a <strong>new</strong> underworld.' + deepNote;
+    }
+  }else{
+    const fl = state.dungeon && state.dungeon.level != null ? state.dungeon.level : 1;
+    els.delveStatusTitle.textContent = `Active delve — floor ${fl}`;
+    const qt = state.quest && state.quest.title ? escapeHtml(state.quest.title) : 'Survive';
+    els.delveStatusDetail.innerHTML = `Objective: <strong>${qt}</strong>. <em>Return to Lumen Town</em> suspends this expedition (map & dungeon progress). Your Lights, level, inventory, and journal stay on you.`;
+  }
+}
+async function processHubWorldTurn(text, parsedIntent, arrowMove){
+  setTurnBusy(true, 'The town listens…');
+  await delay(120);
+  const low = String(text||'').toLowerCase();
+  if(arrowMove && parsedIntent.type==='move' && parsedIntent.fromArrow){
+    const room = getCurrentRoom();
+    const result = resolveArrowTravel(parsedIntent.direction, room);
+    applyOutcome(result, null);
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  if(/\bcontinue (my )?delve|resume (the )?depths\b/.test(low)){
+    enterDungeonFromTown({ continueDelve: true });
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  if(/\b(new |fresh )delve|abandon.*(save|delve)\b/.test(low)){
+    if(state.dungeonSnapshot && !confirm('Abandon your saved delve and start a new dungeon?')){ setTurnBusy(false); refreshUI(); return; }
+    abandonDelveAndStartNew();
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  if(/\benter (the )?depths|descend into|start (a )?delve\b/.test(low)){
+    enterDungeonFromTown({ continueDelve: false });
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  const near = nearbyInteractiveContext(1);
+  const kinds = new Set(near.map(n=>n.kind));
+  if(/\b(shop|buy|wares|mara|lantern|buy from the shop)\b/.test(low)){
+    if(kinds.has('shop')){ openShopModal(); markHubStep('shop'); }
+    else addEntry('sys', 'Move beside the lantern shop (s) to trade.', 'Town');
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  if(/\b(forge|blacksmith|ironfold|sharpen|visit the forge)\b/.test(low)){
+    if(kinds.has('forge')){ openForgeModal(); markHubStep('forge'); }
+    else addEntry('sys', 'Move beside Ironfold (b) to speak with Brant.', 'Town');
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  if(kinds.has('gate') && (/\bgate|depths|descend\b/.test(low) || parsedIntent.type==='inspect')){
+    addEntry('sys', playerOnGateTile()
+      ? 'Cold climbs your shins. The Gate is listening — use Enter the Depths, Continue, or New delve while you stand on G.'
+      : 'The Gate is a mouth of worked stone. Step onto the **G** tile first; the covenant does not bargain with shortcuts.', 'Gate');
+    if(playerOnGateTile()) markHubStep('gate');
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  if(parsedIntent.type==='talk' && nearbyEntities('npc',1).length){
+    let npc = null;
+    const pr = parsedIntent.resolvedEntityId;
+    if(pr && !String(pr).startsWith('world:')){
+      npc = state.entities.find(e=>e.alive && e.id===pr && e.type==='npc');
+      if(npc && Math.abs(npc.x-state.player.x)+Math.abs(npc.y-state.player.y)>1){
+        addEntry('bad', `${npc.name} is not beside you — step next to them to speak.`, 'Talk');
+        setTurnBusy(false);
+        refreshUI();
+        return;
+      }
+    }
+    if(!npc) npc = nearbyEntities('npc',1)[0];
+    const rr = rngFactory((state.seed|0) + state.turn * 17 + (npc.id||'').length * 3);
+    const line = pickHubNpcBark(npc, rr);
+    const role = npc.role ? ` (${npc.role})` : '';
+    addEntry('sys', `${npc.name}${role}: “${line}”`, 'Talk');
+    state.flags.spokeToNpc = true;
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  if(parsedIntent.type==='inspect' || parsedIntent.type==='listen'){
+    addEntry('sys', 'Lanterns sway; somewhere a smith hammers a rhythm the Depths pretend not to hear.', 'Town');
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+  addEntry('sys', 'Walk to **s** (shop), **b** (forge), or **G** (gate). Buttons in Expedition enter or leave the Depths.', 'Lumen Town');
+  setTurnBusy(false);
+  refreshUI();
+}
 async function resolveAction(input){
   if(!state || state.dead || turnBusy) return;
   const text=(input||'').trim(); if(!text) return;
@@ -3473,6 +4695,20 @@ async function resolveAction(input){
   const arrowMove = !!parsedIntent.fromArrow;
   addEntry('player', arrowMove ? `Move ${parsedIntent.direction}` : text, arrowMove ? `Arrow move · turn ${state.turn}` : `Action · turn ${state.turn}`);
   refreshUI();
+
+  if(isDungeonWorld() && /\b(return to (lumen|town)|leave the (dungeon|depths)|exit (to )?town|go to (lumen )?town|surface|head back to town)\b/i.test(text)){
+    setTurnBusy(true, 'You find the remembered path upward…');
+    await delay(260);
+    exitToLumenTown('you take the long stair toward lantern-light');
+    setTurnBusy(false);
+    refreshUI();
+    return;
+  }
+
+  if(isHubWorld()){
+    await processHubWorldTurn(text, parsedIntent, arrowMove);
+    return;
+  }
 
   if(parsedIntent.type==='move' && !arrowMove){
     setTurnBusy(true, 'Suso reorients the rules of the run…');
@@ -3500,6 +4736,7 @@ async function resolveAction(input){
 
   const interpreted = await maybeInterpretIntent(text, parsedIntent);
   const intent = Object.assign({}, parsedIntent, interpreted.intent || {});
+  pinExplicitUseItemIntent(intent, String(text||'').toLowerCase());
   const roomEarly = getCurrentRoom();
   updateIntentContext(intent, roomEarly);
   pushMoveMemory(`${intent.type}${intent.target?` → ${intent.target}`:''}${intent.direction?` ${intent.direction}`:''}${intent.insane?' [insane]':''}${intent.travel?' [travel]':''}${interpreted.usedAI?' [ai]':''}`);
@@ -3563,6 +4800,8 @@ async function resolveAction(input){
     method: intent.method || 'normal',
     tool: intent.tool || null,
     topic: intent.topic || null,
+    resolvedEntityId: intent.resolvedEntityId || null,
+    entityResolution: intent.entityResolution || null,
     resolver: result.resolver || pipelineResolver,
     successLevel: result.successLevel || null,
     baseRoll: baseRoll,
@@ -3657,6 +4896,14 @@ function resolveArrowTravel(dir, room){
   else if(cell==='X') txt+=' Rubble narrows the route. Use the text box if you want to clear, search, or climb it carefully.';
   else if(cell==='^') txt+=' A shrine stands here. Prayer, offerings, or inspection will require a roll.';
   else if(cell==='k') txt+=' Something key-like glints here. Use the text box to claim it carefully.';
+  else if(cell==='s') txt+=' A lanterned shop-front — Mara’s prices are honest, if not kind.';
+  else if(cell==='b') txt+=' Heat rolls from Ironfold — Brant’s hammer speaks in sparks.';
+  else if(cell==='G') txt+=' The Gate breathes cold from the Depths. Use the Expedition buttons when you are ready.';
+  else if(cell==='w') txt+=' The well remembers every bucket raised in hope.';
+  else if(cell==='i') txt+=' The inn’s shutters promise sleep you may not yet deserve.';
+  else if(cell==='h') txt+=' Covenant Hall keeps minutes the town pretends not to need.';
+  else if(cell==='m') txt+=' A market stall offers gossip cheaper than bread.';
+  else if(cell==='a') txt+=' The archives smell like ink, dust, and old warnings.';
   const newRoom=getCurrentRoom();
   if(newRoom && newRoom.id!==room.id) txt += ' ' + describeRoom(state,newRoom,false);
   return {kind:'sys', text:txt.trim(), meta:'Arrow move', entered:newRoom && newRoom.id!==room.id};
@@ -3716,7 +4963,7 @@ function pathfindTo(tx,ty){
     const [x,y]=q.shift(); if(x===tx && y===ty) break;
     for(const [dx,dy] of Object.values(DIRS).slice(0,4)){
       const nx=x+dx, ny=y+dy, c=state.map.grid[ny]?.[nx]; if(c==null) continue;
-      const pass=WALKABLE.has(c) || ['D','E','C','S','^','X','W','T','n','k','%','O'].includes(c) || (nx===tx && ny===ty);
+      const pass=WALKABLE.has(c) || ['D','E','C','S','^','X','W','T','n','k','%','O','G','s','b','i','h','m','a','w'].includes(c) || (nx===tx && ny===ty);
       if(!pass) continue;
       const ent=findEntityAt(nx,ny);
       if(ent && ent.type!=='npc' && !(nx===tx&&ny===ty)) continue;
@@ -3786,13 +5033,31 @@ function resolveMoveRandom(r, room, rng){
 }
 
 function resolveInspect(intent, r, room, rng){
-  const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
+  const rawIn = intent?.raw || '';
+  const lowIn = rawIn.toLowerCase();
+  if(intent?.resolvedEntityId==='world:forge' || intent?.target==='forge'){
+    const pt = adjacentTargetPointFor('forge', room, intent);
+    if(!pt) return {kind:'bad', text:'No forge tile is adjacent. In Lumen, stand beside Ironfold (b).', meta:tierMetaLabel('Inspect', r)};
+    const hub = isHubWorld();
+    return {kind:'sys', text: hub ? 'You read Ironfold the way a smith reads weather: heat, ash, and the memory of oaths hammered into steel.' : 'You find no traveling forge here — only the idea of heat, quickly cooling.', meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
+  }
+  if(intent?.resolvedEntityId==='world:shop' || intent?.target==='shop'){
+    const pt = adjacentTargetPointFor('shop', room, intent);
+    if(!pt) return {kind:'bad', text:'No shop-front is adjacent. In Lumen, stand beside Mara’s tile (s).', meta:tierMetaLabel('Inspect', r)};
+    return {kind:'sys', text:'Lanterns, rope, and tonics sit in rows that remember every return from the Depths.', meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
+  }
+  if(intent?.resolvedEntityId==='world:gate' || (intent?.target==='gate' && /\bgate\b/.test(lowIn))){
+    const pt = adjacentTargetPointFor('gate', room, intent);
+    if(!pt) return {kind:'bad', text:'The Gate is not beside you. Step onto **G** in Lumen first.', meta:tierMetaLabel('Inspect', r)};
+    return {kind:'sys', text:'Worked stone breathes cold upward — the Gate listens for deliberate footfalls, not curiosity.', meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
+  }
+  const target = intent?.target || inferAmbientTarget(rawIn, room, rng);
   if(!target){
     revealAround(state,7);
     if(r>=6) state.flags.questSearched = true;
     return {kind:'sys', text:`You slow down and let ${room.name} stop being background. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
   }
-  const pt = adjacentTargetPointFor(target, room);
+  const pt = adjacentTargetPointFor(target, room, intent);
   if(!pt) return {kind:'bad', text:`No ${target} is adjacent (same tile or one step away). Move beside it to inspect it properly.`, meta:tierMetaLabel('Inspect', r)};
   const eff = effectiveRollForIntent(intent, r, room, target);
   if(target==='door') return resolveDoorInteraction('inspect', eff, room, rng, pt, intent?.raw||'');
@@ -3811,7 +5076,7 @@ function resolveInspect(intent, r, room, rng){
 function resolveListen(intent, r, room, rng){
   const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
   if(target){
-    const pt = adjacentTargetPointFor(target, room);
+    const pt = adjacentTargetPointFor(target, room, intent);
     if(!pt) return {kind:'bad', text:`You cannot place your attention on the ${target} from here. Move one step closer.`, meta:tierMetaLabel('Listen', r)};
     if(target==='door') return resolveDoorInteraction('listen', effectiveRollForIntent(intent, r, room, 'door'), room, rng, pt, intent?.raw||'');
     if(target==='water') return resolveWaterInteraction('inspect', effectiveRollForIntent(intent, r, room, 'water'), room, rng, pt, intent?.raw||'');
@@ -3821,7 +5086,7 @@ function resolveListen(intent, r, room, rng){
 function resolveSearch(intent, r, room, rng){
   const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
   if(target && ['chest','trap','rubble','water','key'].includes(target)){
-    const pt = adjacentTargetPointFor(target, room);
+    const pt = adjacentTargetPointFor(target, room, intent);
     if(!pt) return {kind:'bad', text:`You cannot search that ${target} from here. Move adjacent first.`, meta:tierMetaLabel('Search', r)};
     const raw = intent?.raw||'';
     const v = /\bdisarm\b/.test(raw) && target==='trap' ? 'disarm' : (target==='rubble' ? 'gather' : 'inspect');
@@ -3839,7 +5104,7 @@ function resolveSearch(intent, r, room, rng){
 function resolveOpen(intent, r, room, rng){
   const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
   if(!target) return {kind:'bad', text:'Open what? Move beside a door, chest, or stairs and try again.', meta:tierMetaLabel('Open', r)};
-  const pt = adjacentTargetPointFor(target, room);
+  const pt = adjacentTargetPointFor(target, room, intent);
   if(!pt) return {kind:'bad', text:`Nothing matching that is adjacent. Move beside the ${target} first.`, meta:tierMetaLabel('Open', r)};
   const raw = intent?.raw||'';
   const eff = effectiveRollForIntent(intent, r, room, target);
@@ -3850,7 +5115,17 @@ function resolveOpen(intent, r, room, rng){
   return {kind:'bad', text:'There is nothing obvious here to open.', meta:tierMetaLabel('Open', r)};
 }
 function resolveAttack(intent, r, room, rng){
-  const foe=nearbyEntities('hostile',1)[0];
+  let foe=null;
+  if(intent?.resolvedEntityId){
+    const e = state.entities.find(x=>x.alive && x.id===intent.resolvedEntityId && (x.type==='enemy'||x.type==='boss'));
+    if(e){
+      if(manhattanFromPlayer(e.x,e.y)>1){
+        return {kind:'bad', text:`${e.name} is not in melee reach. Step beside your target first.`, meta:tierMetaLabel('Attack', r), combat:true};
+      }
+      foe = e;
+    }
+  }
+  if(!foe) foe=nearbyEntities('hostile',1)[0];
   if(!foe) return {kind:'bad', text:'Nothing hostile is in melee reach. Step onto an adjacent tile beside your target first.', meta:tierMetaLabel('Attack', r)};
   const weapon = getEquippedWeapon();
   const luck = getEffectiveLuckMode();
@@ -3875,6 +5150,8 @@ function resolveAttack(intent, r, room, rng){
     foe.alive=false;
     state.map.grid[foe.y][foe.x]='%';
     txt += ` ${foe.name} falls and stays fallen.`;
+    const lightGain = foe.type==='boss' ? ECON.killBoss : (foe.type==='enemy' && foe.elite ? ECON.killElite : foe.type==='enemy' ? ECON.killEnemy : ECON.killElite);
+    gainLights(lightGain, `scraped from ${foe.name}`);
     addLootMaybe(rng, foe.type==='boss');
     if(foe.type==='boss'){
       state.flags.bossDefeated=true;
@@ -3975,7 +5252,18 @@ function resolveNpcTopicDialogue(npc, topic, r, room, rng, raw){
   };
 }
 function resolveTalk(intent, r, room, rng){
-  const npc=nearbyEntities('npc',1)[0] || state.entities.find(e=>e.type==='npc' && e.alive && Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)<=1);
+  let npc=null;
+  const rid = intent?.resolvedEntityId;
+  if(rid && !String(rid).startsWith('world:')){
+    const e = state.entities.find(x=>x.alive && x.id===rid && x.type==='npc');
+    if(e){
+      if(manhattanFromPlayer(e.x,e.y)>1){
+        return {kind:'bad', text:`${e.name} is not close enough to hear you. Move beside them first.`, meta:tierMetaLabel('Talk', r), blocked:true};
+      }
+      npc = e;
+    }
+  }
+  if(!npc) npc=nearbyEntities('npc',1)[0] || state.entities.find(e=>e.type==='npc' && e.alive && Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y)<=1);
   if(!npc) return {kind:'bad', text:'No one is close enough to talk to. Move next to the NPC first.', meta:tierMetaLabel('Talk', r), blocked:true};
   const topic = intent?.topic || extractNpcTopicFromText(intent?.raw||'');
   if(topic) return resolveNpcTopicDialogue(npc, topic, r, room, rng, intent?.raw||'');
@@ -3998,6 +5286,109 @@ function resolveTalk(intent, r, room, rng){
   if(r>=8) state.flags.spokeToNpc = true;
   return {kind:'sys', text:'', successLevel: seed==='npc_talk_success' ? 'success' : seed==='npc_talk_fail' ? 'fail' : 'partial', changed:true, progression:false, discoveries:[spoken], textSeed:seed, meta:tierMetaLabel('Talk', r), pulse:{x:npc.x,y:npc.y,kind:'generic'}};
 }
+function dispatchPackItemUse(itemName, r, room, rng){
+  const k = String(itemName||'').toLowerCase();
+  if(k === 'covenant tea'){
+    if(!isHubWorld()) return {kind:'bad', text:'The tea wants hearth and bells — drink it in Lumen, not in grit.', meta:`Use · ${r}`};
+    removeItem(itemName);
+    healPlayer(18, 'The covenant tea unclenches what the dungeon tightened.');
+    return {kind:'sys', text:'Warmth spreads honestly — a town mercy, not a cave trick.', meta:`Use · ${r}`};
+  }
+  if(k === 'depths rations'){
+    if(isHubWorld()) return {kind:'bad', text:'Save the travel meal for stone that remembers hunger — use rations in the Depths.', meta:`Use · ${r}`};
+    removeItem(itemName);
+    healPlayer(10, 'You eat the Depths rations.');
+    return {kind:'sys', text:'The meal is dense and unromantic — exactly what a long crawl respects.', meta:`Use · ${r}`};
+  }
+  if(k === 'ward salt'){
+    if(isHubWorld()) return {kind:'bad', text:'Ward salt wants fear worked into stone — use it below.', meta:`Use · ${r}`};
+    removeItem(itemName);
+    state.player.ward = (state.player.ward|0) + 2;
+    state.flags.warded = true;
+    return {kind:'sys', text:'You crush ward salt; the next violence arrives through a thinner veil.', meta:`Use · ${r}`};
+  }
+  if(k === 'folded rumor'){
+    removeItem(itemName);
+    const line = nextCovenantRumor();
+    addFactOnce(line);
+    return {kind:'sys', text:`You read the scrap until it sticks: ${line}`, meta:`Use · ${r}`, changed:true};
+  }
+  if(k === 'small tonic'){
+    removeItem(itemName);
+    healPlayer(3,'The tonic burns and then steadies.');
+    return {kind:'sys', text:'You swallow the tonic and the room stops swimming quite so much.', meta:`Use · ${r}`};
+  }
+  if(k === 'torch' || k === 'bright torch' || k === 'flare torch'){
+    state.flags.brightTorch = true;
+    revealAround(state, 8);
+    const msg = k === 'flare torch'
+      ? 'You snap the flare torch higher; seams and edges flinch into view for a breath.'
+      : k === 'bright torch'
+        ? 'You steady the bright torch; the run admits more of its geometry.'
+        : 'You nurse the torch brighter. The edges of the room surrender a little more truth.';
+    return {kind:'sys', text:msg, meta:`Use · ${r}`};
+  }
+  if(k === 'oil flask'){
+    removeItem(itemName);
+    state.flags.brightTorch = true;
+    revealAround(state, 8);
+    return {kind:'sys', text:'You feed your light with oil. The run around you becomes easier to read.', meta:`Use · ${r}`};
+  }
+  if(k === 'bone charm'){
+    removeItem(itemName);
+    state.player.ward = (state.player.ward|0) + 2;
+    state.flags.warded = true;
+    return {kind:'sys', text:'You crush the bone charm in your fist. A thin ward settles over you.', meta:`Use · ${r}`};
+  }
+  if(k === 'rope loop'){
+    const trap = adjacentFeatureCell('T');
+    if(trap){
+      state.map.grid[trap.y][trap.x] = '.';
+      return {kind:'sys', text:'You brace the rope and spoil the trap under your hands before it can answer your weight.', meta:`Use · ${r}`};
+    }
+    return {kind:'bad', text:'No trap lies adjacent to tie off against. Move beside one first.', meta:`Use · ${r}`};
+  }
+  if(k === 'thin wire'){
+    if(nearbyEntities('hostile',2).length){
+      const foe = nearbyEntities('hostile',2)[0];
+      foe.hp = Math.max(0, foe.hp - 2);
+      removeItem(itemName);
+      let txt = `You snap the Thin Wire into ${foe.name}'s space and steal 2 health from its momentum.`;
+      if(foe.hp <= 0){
+        foe.alive = false;
+        state.map.grid[foe.y][foe.x] = '%';
+        txt += ` ${foe.name} collapses under the improvised trap.`;
+      }
+      return {kind:'sys', text:txt, meta:`Use · ${r}`, combat:true, changed:true};
+    }
+    const trap = adjacentFeatureCell('T');
+    if(trap){
+      state.map.grid[trap.y][trap.x] = '.';
+      removeItem(itemName);
+      return {kind:'sys', text:'You use the Thin Wire to spoil the trap mechanism before it can answer you.', meta:`Use · ${r}`};
+    }
+    return {kind:'bad', text:'There is nothing nearby for the Thin Wire to matter against.', meta:`Use · ${r}`};
+  }
+  if(k === 'loose stone'){
+    const foe = nearbyEntities('hostile',3)[0];
+    if(foe){
+      foe.hp = Math.max(0, foe.hp - 1);
+      removeItem(itemName);
+      let txt = `You throw the Loose Stone and clip ${foe.name} for 1 damage.`;
+      if(foe.hp <= 0){
+        foe.alive = false;
+        state.map.grid[foe.y][foe.x] = '%';
+        txt += ` ${foe.name} falls from the improvised hit.`;
+      }
+      return {kind:'sys', text:txt, meta:`Use · ${r}`, combat:true, changed:true};
+    }
+    return {kind:'bad', text:'You weigh the Loose Stone in your hand, but there is nothing immediate to use it on.', meta:`Use · ${r}`};
+  }
+  if(k === 'iron key' || k === 'saint key'){
+    return {kind:'bad', text:'Keys answer locks and gates beside you — move next to the door and open or inspect it instead.', meta:`Use · ${r}`};
+  }
+  return null;
+}
 function resolveUse(intent, r, room, rng){
   const rawUse = String(intent.raw||'').toLowerCase();
   const equipMatch = rawUse.match(/\b(equip|wield|draw)\s+(.+)/);
@@ -4009,16 +5400,24 @@ function resolveUse(intent, r, room, rng){
     }
     return {kind:'bad', text:'No weapon in your pack matches that name closely enough to equip.', meta:tierMetaLabel('Use', r)};
   }
+  const resolved = intent.resolvedUseItemName || explicitUseInventoryName(rawUse);
+  if(resolved){
+    if(!hasItem(resolved)){
+      return {kind:'bad', text:`You mean to use ${resolved}, but it is not in your pack.`, meta:`Use · ${r}`};
+    }
+    const out = dispatchPackItemUse(resolved, r, room, rng);
+    if(out) return out;
+  }
   const t=intent.target || '';
-  if(/tonic/.test(t) || (!intent.target && hasItem('Small Tonic'))){
+  if(/tonic/.test(t)){
     if(!hasItem('Small Tonic')) return {kind:'bad', text:'You pat yourself down for a tonic you do not have.', meta:`Use · ${r}`};
     removeItem('Small Tonic'); healPlayer(3,'The tonic burns and then steadies.');
     return {kind:'sys', text:'You swallow the tonic and the room stops swimming quite so much.', meta:`Use · ${r}`};
   }
-  if(/torch/.test(t) || (!intent.target && hasItem('Torch'))){
-    if(!hasItem('Torch')) return {kind:'bad', text:'No torch answers your hand.', meta:`Use · ${r}`};
-    state.flags.brightTorch=true;
-    return {kind:'sys', text:'You nurse the torch brighter. The edges of the room surrender a little more truth.', meta:`Use · ${r}`};
+  if(/torch/.test(t)){
+    if(!hasItem('Torch') && !hasItem('Bright Torch') && !hasItem('Flare Torch')) return {kind:'bad', text:'No torch answers your hand.', meta:`Use · ${r}`};
+    const lit = hasItem('Flare Torch') ? 'Flare Torch' : hasItem('Bright Torch') ? 'Bright Torch' : 'Torch';
+    return dispatchPackItemUse(lit, r, room, rng);
   }
   if(/charm/.test(t)){
     if(!hasItem('Bone Charm')) return {kind:'bad', text:'You do not have a charm to invoke.', meta:`Use · ${r}`};
@@ -4073,7 +5472,7 @@ function resolveInteract(intent, r, room, rng){
     return {kind:'bad', text:'Nothing here matches that intent. Move beside a feature or name what you mean.', meta:tierMetaLabel('Interact', r)};
   }
   const verb=inferInteractionVerb(raw, target);
-  const targetPoint=adjacentTargetPointFor(target, room);
+  const targetPoint=adjacentTargetPointFor(target, room, merged);
   if(!targetPoint && target!=='room'){
     return {kind:'bad', text:`The ${target} is not adjacent (same tile or one step away). Move closer, then try again.`, meta:tierMetaLabel('Interact', r)};
   }
@@ -4160,9 +5559,29 @@ function adjacentFeatureCell(symbols){
   }
   return best;
 }
-function adjacentTargetPointFor(target, room){
+function adjacentTargetPointFor(target, room, intent){
+  intent = intent || null;
   const doorSyms=['D','O'];
   const map={door:doorSyms, chest:['C'], water:['W'], trap:['T'], shrine:['^'], rubble:['X'], key:['k'], stairs:['S']};
+  if(intent?.resolvedEntityId){
+    const wid = String(intent.resolvedEntityId);
+    if(wid.startsWith('world:')){
+      const sym = { 'world:forge':'b','world:shop':'s','world:gate':'G','world:shrine':'^','world:chest':'C' }[wid];
+      if(sym){
+        const cell = adjacentFeatureCell(sym);
+        if(cell) return {x:cell.x,y:cell.y,entity:null,worldRef:wid};
+      }
+    } else if((target==='npc' || intent.type==='talk') && intent.resolvedEntityId){
+      const e = state.entities.find(x=>x.alive && x.id===intent.resolvedEntityId && x.type==='npc');
+      if(e && manhattanFromPlayer(e.x,e.y)<=1) return {x:e.x,y:e.y,entity:e};
+    } else if(target==='enemy' || intent.type==='attack'){
+      const e = state.entities.find(x=>x.alive && x.id===intent.resolvedEntityId && (x.type==='enemy'||x.type==='boss'));
+      if(e && manhattanFromPlayer(e.x,e.y)<=1) return {x:e.x,y:e.y,entity:e};
+    }
+  }
+  if(target==='forge') return adjacentFeatureCell('b');
+  if(target==='shop') return adjacentFeatureCell('s');
+  if(target==='gate') return adjacentFeatureCell('G');
   if(target==='npc'){
     const n=nearbyEntities('npc',1)[0];
     return n ? {x:n.x,y:n.y,entity:n} : null;
@@ -4363,6 +5782,7 @@ function resolveChestInteraction(verb, r, room, rng, point, raw){
     const item = pick(rng, rewards);
     if(item.name==='Iron Key') state.flags.questKeyFound = true;
     gainItem(item);
+    gainLights(randInt(rng, ECON.chestMin, ECON.chestMax), 'salvaged from the chest');
     const seed = r>=16 ? 'chest_open_great' : 'chest_open_success';
     return {kind:'sys', text:'', successLevel: r>=16 ? 'great' : 'success', changed:true, progression:false, rewards:[item.name], textSeed:seed, meta:tierMetaLabel('Open', r), pulse:lootPulse};
   }
@@ -4498,7 +5918,15 @@ function resolveKeyInteraction(verb, r, room, rng, point, raw){
   return {kind:'sys', text:`You study the key from where you stand. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r), pulse};
 }
 function resolveNpcInteraction(verb, r, room, rng, point, raw, intent=null){
-  const npc=(point&&point.entity) || nearbyEntities('npc',1)[0];
+  let npc=(point&&point.entity) || null;
+  if(intent?.resolvedEntityId && !String(intent.resolvedEntityId).startsWith('world:')){
+    const e = state.entities.find(x=>x.alive && x.id===intent.resolvedEntityId && x.type==='npc');
+    if(e){
+      if(manhattanFromPlayer(e.x,e.y)>1) return {kind:'bad', text:`${e.name} is not close enough to answer from here.`, meta:tierMetaLabel('Interact', r)};
+      npc = e;
+    }
+  }
+  if(!npc) npc=nearbyEntities('npc',1)[0];
   if(!npc) return {kind:'bad', text:'There is no one here close enough to answer.', meta:tierMetaLabel('Interact', r)};
   const topic = intent?.topic || extractNpcTopicFromText(raw||'');
   const intentLike = { raw: raw||'', target:'npc', topic };
@@ -4518,6 +5946,14 @@ function resolveNpcInteraction(verb, r, room, rng, point, raw, intent=null){
   return resolveTalk({raw:raw||'', target:'npc', topic}, r, room, rng);
 }
 function resolveEnemyInteraction(verb, r, room, rng, point, raw){
+  const rawLow = String(raw||'').toLowerCase();
+  const foeInspect = nearbyEntities('hostile',1)[0];
+  if(foeInspect && (verb==='inspect' || /inspect|read|assess|study/.test(rawLow))){
+    const floor = state.dungeon?.level|0 || 1;
+    const tag = foeInspect.elite ? ' Elite — more Lights if it falls; meaner damage if it doesn’t.' : '';
+    const charge = foeInspect.charging ? ' It is winding a heavy blow.' : '';
+    return {kind:'sys', text:`You read ${foeInspect.name}: HP ${foeInspect.hp}/${foeInspect.maxHp||foeInspect.hp}. Floor ${floor} strain.${tag}${charge}`, meta:tierMetaLabel('Interact', r)};
+  }
   if(verb==='hide'){
     if(r>=13){ addFactOnce('A hostile lost your exact position for a moment.'); return {kind:'sys', text:'You break line and let the room swallow you for a second. The hostile has to hunt instead of simply knowing.', meta:tierMetaLabel('Interact', r)}; }
     return {kind:'bad', text:'You try to hide from something already reading your shape. It keeps you in mind.', meta:tierMetaLabel('Interact', r)};
@@ -4550,7 +5986,7 @@ function resolveTargetedInteraction(intent, r, room, rng){
   if(!target){
     return withResolver({kind:'bad', text:'Nothing relevant is close enough. Move next to the object or creature first.', meta:tierMetaLabel('Interact', r), blocked:true}, 'resolveTargetedInteraction');
   }
-  const point = adjacentTargetPointFor(target, room);
+  const point = adjacentTargetPointFor(target, room, intent);
   if(!point){
     return withResolver({kind:'bad', text:`The ${target} is not adjacent (same tile or one step away). Move beside it before you spend a roll on it.`, meta:tierMetaLabel('Interact', r), blocked:true}, 'resolveTargetedInteraction');
   }
@@ -4563,6 +5999,9 @@ function resolveTargetedInteraction(intent, r, room, rng){
     return withResolver(res, name);
   };
 
+  if(target==='forge' || target==='shop' || target==='gate'){
+    return wrap(resolveInspect(intent, r, room, rng), 'resolveInspect');
+  }
   if(target==='trap') return wrap(resolveTrapInteraction(verb, eff, room, rng, point, raw), 'resolveTrapInteraction');
   if(target==='door') return wrap(resolveDoorInteraction(verb, eff, room, rng, point, raw), 'resolveDoorInteraction');
   if(target==='chest') return wrap(resolveChestInteraction(verb, eff, room, rng, point, raw), 'resolveChestInteraction');
@@ -4638,6 +6077,7 @@ function applyOutcome(result, baseRoll){
 }
 
 function afterPlayerTurn(rng){
+  if(isHubWorld()) return;
   const hostiles = state.entities.filter(e=>e.alive && (e.type==='enemy'||e.type==='boss'));
   for(const e of hostiles){
     const dist=Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y);
@@ -4703,7 +6143,7 @@ function bfsStepEntity(sx,sy,tx,ty){
     for(const [dx,dy] of Object.values(DIRS).slice(0,4)){
       const nx=x+dx, ny=y+dy, c=state.map.grid[ny]?.[nx];
       if(c==null) continue;
-      const pass=WALKABLE.has(c) || ['.','O','W','S','T','^','k','n'].includes(c) || (nx===tx&&ny===ty);
+      const pass=WALKABLE.has(c) || ['.','O','W','S','T','^','k','n','G','s','b','i','h','m','a','w'].includes(c) || (nx===tx&&ny===ty);
       if(!pass) continue;
       const k=key(nx,ny); if(came.has(k)) continue;
       came.set(k,[x,y]); q.push([nx,ny]);
@@ -4739,7 +6179,7 @@ function addRoomFact(room, fact){
   addFactOnce(`${room.name}: ${fact}`);
 }
 
-function symbolName(s){ return ({C:'chest',D:'door',W:'water',E:'enemy',T:'trap','^':'shrine',S:'stairs',X:'rubble',O:'opening','n':'npc','k':'key','%':'corpse'})[s] || 'room'; }
+function symbolName(s){ return ({C:'chest',D:'door',W:'water',E:'enemy',T:'trap','^':'shrine',S:'stairs',X:'rubble',O:'opening','n':'npc','k':'key','%':'corpse',s:'shop',b:'forge',i:'inn',h:'hall',m:'market',a:'archives',w:'well',G:'gate'})[s] || 'room'; }
 function nearestFeatureCell(symbol,maxD=20){
   let best=null,b=1e9;
   for(let y=0;y<state.map.h;y++) for(let x=0;x<state.map.w;x++){
@@ -4795,6 +6235,7 @@ function drawMap(){
       drawTile(symbol, x*tileSize, y*tileSize);
     }
   }
+  drawPlayerHighlight();
   drawPulseFx();
   els.asciiMap.textContent=buildAsciiMap();
   updateMapTransform();
@@ -4858,7 +6299,8 @@ function drawTileProcedural(symbol,dx,dy){
     '#':'#4a3d31', '.':'#75685a', 'W':'#2a5672', 'X':'#5a4c42',
     'D':'#856238', 'O':'#a67d48', 'T':'#6e2820', 'C':'#946d30',
     '@':'#e8c896', 'E':'#7a1818', 'S':'#a8a8a8', '?':'#1e1a17',
-    '^':'#5d4d66', 'n':'#2d4a38', 'k':'#b89e4a', '%':'#5a4030'
+    '^':'#5d4d66', 'n':'#2d4a38', 'k':'#b89e4a', '%':'#5a4030',
+    's':'#6a4a7a', 'b':'#5a4030', 'i':'#4a5a68', 'h':'#4a4c62', 'm':'#6a5a40', 'a':'#3d4a50', 'w':'#2a4a5a', 'G':'#8a7a50'
   };
   if(symbol==='.'){
     const g = ctx.createLinearGradient(dx, dy, dx + tileSize, dy + tileSize);
@@ -4977,7 +6419,7 @@ function refreshUI(){
   if(!state) return;
   els.playerNameOut.textContent=`${state.name} the ${state.title}`;
   const room=getCurrentRoom();
-  els.locationOut.textContent=room ? room.name : 'Between rooms';
+  els.locationOut.textContent=room ? (isHubWorld() ? `Lumen — ${room.name.replace(/^Lumen Town — /,'')}` : room.name) : 'Between rooms';
   els.healthOut.textContent=`${state.health} / ${state.maxHealth}`;
   els.healthBar.style.width=`${(state.health/state.maxHealth)*100}%`;
   const pl = state.player || {};
@@ -4986,6 +6428,12 @@ function refreshUI(){
   if(els.levelOut) els.levelOut.textContent = String(lv);
   if(els.xpOut) els.xpOut.textContent = `${pl.xp|0} / ${needXp}`;
   els.engineBadge.textContent = state.ai.enabled ? `Suso + ${aiModeLabel(state.ai)}` : 'Suso Local';
+  if(els.lightsOut) els.lightsOut.textContent = String(state.lights|0);
+  if(els.phaseOut) els.phaseOut.textContent = isHubWorld() ? 'Town hub' : `Delve · floor ${state.dungeon && state.dungeon.level!=null ? state.dungeon.level : '—'}`;
+  syncHubButtons();
+  syncDelveStatus();
+  updateMapPhaseUi();
+  refreshMapLegendHtml();
   const equipped = getEquippedWeapon();
   if(els.equipmentList){
     els.equipmentList.innerHTML = `<div class="list-item">${weaponSummaryHtml(equipped)}</div>`;
@@ -5006,7 +6454,7 @@ function refreshUI(){
   els.factsList.innerHTML = state.facts.slice(-10).map(f=>`<div class="list-item">${escapeHtml(f)}</div>`).join('') || '<div class="list-item">Nothing yet.</div>';
   els.questList.innerHTML = `<div class="list-item"><strong>${escapeHtml(state.quest.title)}</strong><div class="small">${state.quest.done?'Completed':'Active'}</div></div>` + state.quest.steps.map((s,i)=>`<div class="list-item quest-step"><div class="dot ${state.quest.progress[i]?'done':''}"></div><div>${escapeHtml(s)}</div></div>`).join('');
   const nearbyCtx = nearbyInteractiveContext(1).sort((a,b)=>a.d-b.d);
-  const hostiles=nearbyEntities('hostile',6).map(e=>`${e.name} · HP ${e.hp}${e.maxHp?`/${e.maxHp}`:''}`);
+  const hostiles=nearbyEntities('hostile',6).map(e=>`${e.name}${e.elite?' · elite':''} · HP ${e.hp}${e.maxHp?`/${e.maxHp}`:''}`);
   const npcs=nearbyEntities('npc',6).map(e=>`${e.name} · willing to talk`);
   const features=roomFeatureSummary(state, room).map(s=>symbolName(s));
   const nearbyReadable = nearbyCtx.map(n=>`${n.label || n.kind} · ${n.d<=1?'within reach':`nearby (${n.d})`}`);
@@ -5029,7 +6477,8 @@ function refreshUI(){
     ? `${state.premise}\n\n${state.storyActTwo}`
     : state.premise;
   const luckChip = state.luck && state.luck.turnsLeft>0 ? `${state.luck.mode==='lucky' ? 'Blessed' : 'Cursed'} · ${state.luck.turnsLeft} turn${state.luck.turnsLeft===1?'':'s'}` : null;
-  els.runChips.innerHTML=[state.theme.name,state.tone,`Risk: ${state.risk}`, luckChip, `Seed ${String(state.seed).slice(-6)}`].filter(Boolean).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('');
+  const themeName = state.theme && state.theme.name ? state.theme.name : 'Lumenreach';
+  els.runChips.innerHTML=[themeName,state.tone,`Risk: ${state.risk}`,`Lights ${state.lights|0}`, luckChip, `Seed ${String(state.seed).slice(-6)}`].filter(Boolean).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('');
   const posKey = `${state.player.x},${state.player.y}`;
   if(lastFollowPos !== posKey){
     lastFollowPos = posKey;
@@ -5044,7 +6493,11 @@ function refreshUI(){
     if(isSusoDevMode()){
       els.susoDevOverlay.style.display = 'block';
       const d = state.lastResolveDebug;
-      els.susoDevOverlay.textContent = d ? [
+      const tr = state.lastIntentTrace;
+      const traceLines = Array.isArray(tr) && tr.length
+        ? ['--- intent trace (last turn) ---', ...tr.slice(-14).map(x => typeof x === 'string' ? x : JSON.stringify(x))]
+        : [];
+      els.susoDevOverlay.textContent = (d ? [
         `action: ${d.action}`,
         `target: ${d.target}`,
         `method: ${d.method}`,
@@ -5054,7 +6507,7 @@ function refreshUI(){
         `successLevel: ${d.successLevel}`,
         `baseRoll: ${d.baseRoll}`,
         `effRoll: ${d.effRoll}`
-      ].join('\n') : '(no resolution yet)';
+      ] : ['(no resolution yet)']).concat(traceLines).join('\n');
     }else els.susoDevOverlay.style.display = 'none';
   }
   syncMapLegendToggle();
@@ -5092,6 +6545,25 @@ function refreshUI(){
   els.toggleEnhanceBtn.textContent = state.ai.enabled ? 'Disable' : 'Enable';
 }
 function contextActionPool(){
+  if(isHubWorld()){
+    const rr=rngFactory(state.seed + state.turn*31 + state.player.x*17 + state.player.y*29);
+    const pool=[];
+    const add=(label, text=label, priority=0)=> pool.push({label, text, priority, r:rr()});
+    const onG = playerOnGateTile();
+    if(onG){
+      add('Enter the Depths (new dungeon)', 'enter the depths', 14);
+      if(state.dungeonSnapshot) add('Continue saved delve', 'continue delve', 13);
+      if(state.dungeonSnapshot) add('New delve — abandon save', 'new delve', 10);
+    }else{
+      add('Go to Gate (G) to descend', 'inspect the gate', 12);
+    }
+    add('Buy supplies', 'buy from the shop', 9);
+    add('Visit forge', 'visit the forge', 9);
+    add('Talk to someone nearby', 'talk to the nearest person', 7);
+    add('Inspect plaza', 'inspect the plaza', 4);
+    add('Listen', 'listen carefully', 3);
+    return pool.sort((a,b)=> b.priority-a.priority || a.r-b.r).slice(0,8);
+  }
   const rr=rngFactory(state.seed + state.turn*31 + state.player.x*17 + state.player.y*29);
   const pool=[];
   const seen = new Set();
@@ -5159,6 +6631,7 @@ function contextActionPool(){
   add('Inspect the room', 'inspect the room', 3);
   add('Search nearby', 'search nearby', 4);
   add('Listen carefully', 'listen carefully', 4);
+  if(isDungeonWorld()) add('Return to Lumen Town', 'return to lumen town', 5);
 
   if(state.inventory.some(i=>/key/i.test(i.name))) add('Use a key here', 'use a key here', 5);
   if(state.inventory.some(i=>/torch|lantern/i.test(i.name))) add('Light your torch', 'use torch', 3);
@@ -5270,7 +6743,7 @@ function updateMapTransform(){
   els.zoomOut.textContent=`Zoom ${mapZoom.toFixed(1)}x`;
 }
 function startNewRun(profile){
-  state=createRun(profile); els.onboard.style.display='none';
+  state=createHubInitialState(profile); els.onboard.style.display='none';
   mapZoom=1; mapPanX=12; mapPanY=12; showAscii=false; lastFollowPos=null; refreshAiFields(); refreshUI(); centerMapOnPlayer(); updateMapTransform();
 }
 
@@ -5407,10 +6880,115 @@ atlas.onerror=()=>{
 };
 
 refreshAiFields();
+if(els.enterDepthsBtn) els.enterDepthsBtn.onclick = ()=> enterDungeonFromTown({ continueDelve: false });
+if(els.continueDelveBtn) els.continueDelveBtn.onclick = ()=> enterDungeonFromTown({ continueDelve: true });
+if(els.newDelveBtn) els.newDelveBtn.onclick = ()=>{
+  if(!state || !state.dungeonSnapshot) return;
+  if(!confirm('Abandon your saved delve and generate a new dungeon?')) return;
+  state.dungeonSnapshot = null;
+  enterDungeonFromTown({ continueDelve: false });
+};
+if(els.returnToTownBtn) els.returnToTownBtn.onclick = ()=> exitToLumenTown('you retrace the path toward warmth');
+if(els.shopCloseBtn) els.shopCloseBtn.onclick = ()=> closeShopModal();
+if(els.forgeCloseBtn) els.forgeCloseBtn.onclick = ()=> closeForgeModal();
+if(els.forgeSharpenBtn) els.forgeSharpenBtn.onclick = ()=> tryForgeSharpen();
 if(els.atlasStatus){
   els.atlasStatus.textContent = atlasReady ? 'Tiles: loaded' : (atlasFailed ? 'Tiles missing → fallback' : 'Tiles: loading…');
 }
 if(!loadGame()) els.onboard.style.display='flex';
+
+function runSusoIntentRegressionHarness(){
+  const saved = typeof state !== 'undefined' ? state : null;
+  const grid = Array.from({length: 24}, () => Array(24).fill('.'));
+  grid[10][11] = '^';
+  grid[10][9] = 'b';
+  const disc = Array.from({length: 24}, () => Array(24).fill(true));
+  state = {
+    turn: 3,
+    seed: 999001,
+    worldPhase: 'hub',
+    name: 'Tester',
+    title: 'Delver',
+    dungeon: { level: 1, seed: 999001 },
+    player: { x: 10, y: 10, ward: 0, level: 1, xp: 0 },
+    map: { grid, w: 24, h: 24 },
+    rooms: [{ id: 7, x: 0, y: 0, w: 24, h: 24, name: 'Test hall', tags: new Set() }],
+    entities: [
+      { id:'tn1', type:'npc', name:'Mara Coinwise', role:'Lantern-merchant', x:11, y:10, hp:99, maxHp:99, alive:true, dialogIndex:0, clue:'hint', memory:{topics:{}} },
+      { id:'tn2', type:'npc', name:'Brant Ironfold', role:'Master smith', x:10, y:9, hp:99, maxHp:99, alive:true, dialogIndex:0, clue:'hint', memory:{topics:{}} }
+    ],
+    inventory: [
+      { name: 'Torch', qty: 1, desc: 't' },
+      { name: 'Small Tonic', qty: 1, desc: 't' }
+    ],
+    context: {},
+    flags: {},
+    facts: [],
+    log: [],
+    moves: [],
+    health: 100,
+    maxHealth: 100,
+    dead: false,
+    discovered: disc,
+    visible: disc,
+    theme: { name: 'Harness', roomNames: ['Hall'], enemies: ['x'], npcs: ['y'], bosses: ['z'], motifs: ['a'], quests: [], truths: ['t'], lie: 'l' },
+    tone: 'grim',
+    risk: 'balanced',
+    lights: 0,
+    labels: { engine: 'Suso Local' },
+    ai: { enabled: false, mode: 'local' },
+    luck: { mode: 'normal', source: null, turnsLeft: 0, intensity: 1 },
+    roomState: {},
+    quest: { title: 't', steps: ['a'], progress: [false], done: false }
+  };
+  ensureRunSystems(state);
+  state.context.followUp = {
+    lastTarget: 'door', lastAction: 'open', lastTool: null, lastTopic: null, lastNpcEntityId: null, lastResolvedEntityId: null, followUpDomain: null,
+    validUntilTurn: 100, roomId: 7
+  };
+  const cases = [
+    { cmd: 'use torch', ok: i => i.type === 'use' && i.resolvedUseItemName === 'Torch' && i.target == null && !i.resolvedEntityId },
+    { cmd: 'drink tonic', ok: i => i.type === 'use' && i.resolvedUseItemName === 'Small Tonic' },
+    { cmd: 'pray at the shrine', ok: i => i.type === 'use' && i.target === 'shrine' && !i.resolvedUseItemName && (!i.resolvedEntityId || String(i.resolvedEntityId).startsWith('world:')) },
+    { cmd: 'open the door', ok: i => i.target === 'door' },
+    { cmd: 'use it', ok: i => i.target === 'door' && i.type === 'open' },
+    { cmd: 'talk to Mara', ok: i => i.resolvedEntityId === 'tn1' && (i.entityResolution && i.entityResolution.mode === 'explicit') },
+    { cmd: 'talk to npc', ok: i => i.resolvedEntityId === 'tn1' && i.entityResolution && i.entityResolution.mode === 'inferred' },
+    { cmd: 'buy from shopkeeper', ok: i => i.type === 'talk' && i.resolvedEntityId === 'tn1' },
+    { cmd: 'inspect forge', ok: i => i.resolvedEntityId === 'world:forge' },
+    { cmd: 'ask Brant again', ok: i => i.resolvedEntityId === 'tn2' },
+    { cmd: 'use torch near shrine', ok: i => i.resolvedUseItemName === 'Torch' && !i.resolvedEntityId },
+    { cmd: 'use torch near Mara', ok: i => i.resolvedUseItemName === 'Torch' && i.target == null },
+    { cmd: 'pray at shrine near npc', ok: i => i.target === 'shrine' && i.type === 'use' && i.resolvedEntityId !== 'tn1' && i.resolvedEntityId !== 'tn2' }
+  ];
+  const errors = [];
+  for(const c of cases){
+    const i = interpretIntentRich(c.cmd);
+    if(!c.ok(i)) errors.push({ cmd: c.cmd, type: i.type, target: i.target, resolved: i.resolvedUseItemName, entity: i.resolvedEntityId, locks: i._suso && i._suso.locks, er: i.entityResolution });
+  }
+  state.context.followUp = {
+    lastTarget: 'npc', lastAction: 'talk', lastTool: null, lastTopic: null, lastNpcEntityId: 'tn1', lastResolvedEntityId: 'tn1', followUpDomain: 'social',
+    validUntilTurn: 100, roomId: 7
+  };
+  const cont = interpretIntentRich('continue talking to her');
+  if(!(cont.resolvedEntityId === 'tn1' && cont.entityResolution && cont.entityResolution.mode === 'follow_up')){
+    errors.push({ cmd: 'continue talking to her', type: cont.type, entity: cont.resolvedEntityId, er: cont.entityResolution });
+  }
+  state.context.followUp = {
+    lastTarget: 'npc', lastAction: 'talk', lastTool: null, lastTopic: null, lastNpcEntityId: 'tn1', lastResolvedEntityId: 'tn1', followUpDomain: 'social',
+    validUntilTurn: 2, roomId: 999
+  };
+  state.turn = 5;
+  const stale = interpretIntentRich('continue talking to her');
+  if(stale.resolvedEntityId === 'tn1'){
+    errors.push({ cmd: 'continue talking to her (stale room)', expect:'no_entity_lock', got: stale.resolvedEntityId });
+  }
+  state = saved;
+  const pass = errors.length === 0;
+  console.log(pass ? '[Suso intent harness] OK' : '[Suso intent harness] FAIL', errors);
+  return { pass, errors };
+}
+window.runSusoIntentRegressionHarness = runSusoIntentRegressionHarness;
 })();
 </script>
 </body>
