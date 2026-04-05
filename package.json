@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build:suso-iife": "node scripts/embed-dungeon-bundle.mjs",
     "build:dungeon-bundle": "node scripts/embed-dungeon-bundle.mjs"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com-aillumi-dungeon:chacegarcia/DND.git"
+    "url": "https://github.com/chacegarcia/DND.git"
   },
   "keywords": [],
   "author": "",

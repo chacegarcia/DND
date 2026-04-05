@@ -1,6 +1,6 @@
 /**
- * Bundled into the standalone dungeon HTML: full js/ tree (LCM + Suso) for agent parity with index.html.
- * window.LCM_HOST is injected via esbuild banner before any module runs.
+ * Optional IIFE bundle entry (npm run build:dungeon-bundle → js/dungeon-suso-bundle.iife.js).
+ * Full app: index.html + js/suso/. window.LCM_HOST is injected via esbuild banner before any module runs.
  */
 import "./lcm/wire.js";
 import * as SusoEngine from "./suso/engine/index.js";
@@ -22,7 +22,7 @@ if (!window.SUSO_ADAPTER_DEPS) {
   window.SUSO_ADAPTER_DEPS = {
     getCurrentMode: () => (window.LCM_HOST && window.LCM_HOST.currentMode) || null,
     exportTestBOM: function () {
-      console.warn("[Suso] exportTestBOM: standalone dungeon has no LCM export UI.");
+      console.warn("[Suso] exportTestBOM: IIFE bundle has no LCM export UI (use index.html).");
     },
     triggerResetClick: function () {},
     validateForExport: () => ({ ok: true, msg: "" }),

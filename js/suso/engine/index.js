@@ -15,6 +15,18 @@ export {
 } from "./domain.js";
 export { susoInitIntentShell, susoNormalizeConfiguratorRequest } from "./intent-shell.js";
 export { susoRouteConfiguratorInterpretation } from "./router.js";
+export {
+  registerDocumentQueryExecutor,
+  registerNavigationExecutor,
+  registerFilterExecutor,
+  registerConfiguratorExecutor,
+  registerGameExecutor,
+  resetSusoExecutors,
+  getSusoExecutorRegistry,
+  buildCanonicalConfigurator,
+  normalizeAdapterExecution,
+  susoAttachExecutionToRouted,
+} from "./executors.js";
 
 import { susoCollectPhraseMatches } from "./phrase-scan.js";
 import { susoBuildConfiguratorSemanticSlots } from "./semantic-slots.js";
@@ -65,6 +77,11 @@ export function interpretIntentRichConfigurator(text, deps) {
     adapter: routed.adapter,
     kind: routed.kind,
     rule: routed.rule,
+    execution: routed.execution && {
+      stub: routed.execution.stub,
+      executorRegistered: routed.execution.executorRegistered,
+      delegate: routed.execution.delegate,
+    },
   });
   rich.intentTrace = trace;
   return rich;

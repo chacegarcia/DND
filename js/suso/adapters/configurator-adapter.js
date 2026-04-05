@@ -18,6 +18,19 @@ export function createConfiguratorAdapter(deps) {
     const p = routed.payload || {};
 
     if (k === "document_query") {
+      const ex = routed.execution;
+      if (ex && !ex.stub && ex.executorRegistered && ex.result != null) {
+        const r = ex.result;
+        const text =
+          typeof r === "string"
+            ? r
+            : r && typeof r.text === "string"
+              ? r.text
+              : typeof r === "object"
+                ? JSON.stringify(r)
+                : String(r);
+        return { text, executed: true, stub: false, fromHostExecutor: true };
+      }
       return runDocumentQueryAdapter(routed, deps);
     }
     if (k === "export_bom") {

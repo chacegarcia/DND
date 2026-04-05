@@ -1,7 +1,7 @@
 # Workbook snapshot (product data); keep local only — not for public/game repo
 db/data.json
 
-# esbuild output; bundle is inlined into the standalone dungeon HTML
+# Optional esbuild IIFE (npm run build:dungeon-bundle); not source — do not commit
 js/dungeon-suso-bundle.iife.js
 
 node_modules/

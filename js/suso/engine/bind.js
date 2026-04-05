@@ -1,6 +1,7 @@
 /**
- * Binds engine entry to window after the main app script defines window.SUSO_DEPS.
- * Must load after the inline script that sets SUSO_DEPS.{ inferFieldsFromText, getCurrentMode }.
+ * Binds Suso engine entry to window (loaded from index.html after js/lcm/wire.js).
+ * Requires window.SUSO_DEPS = { inferFieldsFromText, getCurrentMode }.
+ * Executor registration lives in js/suso/executors-bind.js (separate module).
  */
 import * as SusoEngine from "./index.js";
 

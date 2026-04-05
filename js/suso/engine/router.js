@@ -1,5 +1,6 @@
 import { susoPickAdapterConfigurator } from "./domain.js";
 import { susoNormalizeConfiguratorRequest } from "./intent-shell.js";
+import { susoAttachExecutionToRouted } from "./executors.js";
 
 /**
  * @param {object} deps — injected LCM/runtime hooks (not part of pure phrase/domain stack).
@@ -19,11 +20,17 @@ export function susoRouteConfiguratorInterpretation(intent, text, low, trace, de
       raw: text,
       questionType: sem.questionType,
       attributes: sem.attributes.slice ? sem.attributes.slice() : [],
+      attribute: (sem.attributes && sem.attributes[0]) || null,
       document: sem.document || null,
+      source: sem.document || null,
+      targetItem: sem.targetItem || null,
+      comparison: !!sem.comparison,
+      qualifiers: (sem.domainCue || []).slice(),
       execution: { stub: true, note: "Wire workbook / data-sheet resolver (Excel graph, embeddings, or RAG)." },
     };
     const routed = susoNormalizeConfiguratorRequest(adapter, "document_query", intent._suso.domain, pick.rule, payload);
     trace.push({ t: "routing", adapter, kind: routed.kind, rule: pick.rule, domain: intent._suso.domain });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
 
@@ -31,11 +38,13 @@ export function susoRouteConfiguratorInterpretation(intent, text, low, trace, de
   if (base.action === "export_bom") {
     const routed = susoNormalizeConfiguratorRequest("configurator", "export_bom", intent._suso.domain, "intent_export", { raw: text });
     trace.push({ t: "routing", adapter: "configurator", kind: "export_bom", rule: "intent_export" });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
   if (base.action === "reset_form") {
     const routed = susoNormalizeConfiguratorRequest("configurator", "reset_form", intent._suso.domain, "intent_reset", { raw: text });
     trace.push({ t: "routing", adapter: "configurator", kind: "reset_form", rule: "intent_reset" });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
   if (base.action === "explain_invalid") {
@@ -44,11 +53,13 @@ export function susoRouteConfiguratorInterpretation(intent, text, low, trace, de
       modeHint: deps.getCurrentMode(),
     });
     trace.push({ t: "routing", adapter: "configurator", kind: "explain_invalid_state", rule: "why_invalid" });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
   if (base.action === "validate") {
     const routed = susoNormalizeConfiguratorRequest("configurator", "validate_form", intent._suso.domain, "validate", { raw: text });
     trace.push({ t: "routing", adapter: "configurator", kind: "validate_form", rule: "validate" });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
   if (base.action === "ask_options") {
@@ -56,11 +67,13 @@ export function susoRouteConfiguratorInterpretation(intent, text, low, trace, de
     if (/\bwheel/.test(low)) topic = "foam_wheel_sizes";
     const routed = susoNormalizeConfiguratorRequest("configurator", "ask_options", intent._suso.domain, "options_question", { raw: text, topic });
     trace.push({ t: "routing", adapter: "configurator", kind: "ask_options", rule: "options_question", topic });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
   if (base.action === "ask_compatibility") {
     const routed = susoNormalizeConfiguratorRequest("configurator", "ask_compatibility", intent._suso.domain, "compatibility_question", { raw: text });
     trace.push({ t: "routing", adapter: "configurator", kind: "ask_compatibility", rule: "compatibility_question" });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
 
@@ -75,5 +88,6 @@ export function susoRouteConfiguratorInterpretation(intent, text, low, trace, de
   };
   const routed = susoNormalizeConfiguratorRequest("configurator", "set_fields", intent._suso.domain, "fill_partial", payload);
   trace.push({ t: "routing", adapter: "configurator", kind: "set_fields", rule: "fill_partial", confidence: payload.confidence });
+  susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
   return routed;
 }
