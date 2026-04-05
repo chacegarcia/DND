@@ -9,7 +9,6 @@ Static **HTML + ES modules** app: Excel-backed foam/wool BOM helper with a Suso 
 | `index.html` | **Host shell** (source of truth for load order): DOM, auth/load, chat, `window.LCM_HOST`, `SUSO_ADAPTER_DEPS` |
 | `js/suso/` | Suso **engine**, **adapters**, **executors**, **session**, **LLM** contract (see `js/suso/README.md`) |
 | `js/lcm/` | **LCM product** logic: wizard, inference, catalog geometry; `wire.js` sets `SUSO_DEPS` |
-| `experimental/tfjs-gpt-lab/` | Offline TF.js experiments — **not** used at runtime |
 
 **Do not** treat `js/dungeon-suso-bundle.iife.js` as source — it is an optional **esbuild output** (`npm run build:suso-iife`, alias `build:dungeon-bundle`). See **`ARCHITECTURE.md`**.
 

@@ -1,3 +1,0 @@
-name = "db-updater"
-main = "src/index.js"
-compatibility_date = "2026-02-19"
