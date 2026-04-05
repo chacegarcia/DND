@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Lumenreach — Depths &amp; Lumen Town</title>
+<title>Aillumi's Dungeon — Depths &amp; Lumen Town</title>
 <style>
 :root{
   --bg:#0e0c10;
@@ -49,6 +49,16 @@ body{
   color:#1a1510;background:linear-gradient(135deg,#f4d98c,#c9a24d);
   padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.2);
   box-shadow:0 2px 8px rgba(0,0,0,.25);
+  transition: box-shadow .25s ease, filter .25s ease;
+}
+.lights-pill.lights-uneasy{
+  animation: lights-breathe 2.4s ease-in-out infinite;
+  filter: saturate(1.15) hue-rotate(-8deg);
+  box-shadow:0 0 12px rgba(201,162,77,.35), 0 2px 8px rgba(0,0,0,.28);
+}
+@keyframes lights-breathe{
+  0%,100%{ opacity:1; }
+  50%{ opacity:.88; }
 }
 .hub-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .hub-actions button{padding:9px 12px;font-size:.88rem}
@@ -56,10 +66,25 @@ body{
   margin-top:12px;padding:12px 14px;border-radius:12px;
   border:1px solid rgba(232,200,106,.14);
   background:linear-gradient(135deg, rgba(255,255,255,.03), rgba(0,0,0,.12));
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
 }
 .delve-status-title{font-size:.82rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
-.delve-status-detail{font-size:.88rem;color:var(--muted);line-height:1.5}
+.delve-status-detail{
+  font-size:.88rem;color:var(--muted);line-height:1.5;
+  overflow-wrap:break-word;word-wrap:break-word;overflow-x:hidden;
+  max-height:min(260px, 38vh);
+  overflow-y:auto;
+  padding-right:4px;
+  min-width:0;
+}
 .delve-status-detail strong{color:var(--ink);font-weight:600}
+.game-title{
+  font-size:1.65rem;margin:0;letter-spacing:.02em;line-height:1.15;
+  min-width:0;flex:1 1 auto;overflow-wrap:break-word;word-wrap:break-word;
+}
+.collapsible-head .game-title{margin-right:8px}
 .town-modal-note{font-size:.88rem;color:var(--muted);line-height:1.45;margin-bottom:10px}
 .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .shop-offer{
@@ -80,9 +105,11 @@ h1,h2,h3{margin:0}
 
 .collapsible-head{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:10px;
+  flex-wrap:wrap;
+  min-width:0;
 }
 .collapsible-panel .collapsible-body{
   overflow:hidden;
@@ -95,7 +122,7 @@ h1,h2,h3{margin:0}
 .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);font-size:.84rem;color:var(--muted)}
 .badge{font-size:.74rem;color:#271a10;background:#efc07a;padding:5px 8px;border-radius:999px;font-weight:700}
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.stat{padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:14px}
+.stat{padding:10px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;min-width:0}
 .stat .label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .stat .value{margin-top:6px;font-size:1.05rem}
 .meter{height:10px;background:#221913;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.05);margin-top:8px}
@@ -278,6 +305,11 @@ select{
   background:rgba(232,200,106,.07);
   box-shadow:inset 0 0 0 1px rgba(232,200,106,.12);
 }
+.legend-chip:focus-visible{
+  outline:2px solid rgba(232,200,106,.65);
+  outline-offset:2px;
+}
+.legend-chip--note:focus-visible{outline:none}
 .map-cell-hint{
   position:absolute;
   right:8px;
@@ -572,7 +604,7 @@ select{
   <aside class="left">
     <section class="panel title-card collapsible-panel" id="titleCard">
       <div class="panel-head collapsible-head">
-        <h1 style="font-size:1.75rem;margin:0;letter-spacing:.02em">Lumenreach</h1>
+        <h1 class="game-title">Aillumi's Dungeon</h1>
         <button class="secondary" id="titleCardToggleBtn" type="button" aria-expanded="true">Collapse</button>
       </div>
       <div class="panel-body collapsible-body" id="titleCardBody" style="display:flex;flex-direction:column;gap:8px">
@@ -686,10 +718,10 @@ select{
         <div class="map-stage" id="mapStage">
           <canvas id="mapCanvas"></canvas>
           <pre id="asciiMap"></pre>
-          <div class="map-cell-hint" id="mapCellHint" aria-live="polite"></div>
-          <div class="map-legend-overlay" id="mapLegendOverlay">
-            <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button" aria-expanded="false" aria-controls="mapLegendOverlayBody">Show legend</button>
-            <div class="map-legend-overlay-body" id="mapLegendOverlayBody"></div>
+          <div class="map-cell-hint" id="mapCellHint" role="status" aria-live="polite" aria-atomic="true" aria-label="Map tile description"></div>
+          <div class="map-legend-overlay" id="mapLegendOverlay" role="region" aria-label="Map symbol legend">
+            <button class="secondary map-legend-toggle" id="mapLegendToggleBtn" type="button" aria-expanded="false" aria-controls="mapLegendOverlayBody" title="Show or hide the symbol legend">Show legend</button>
+            <div class="map-legend-overlay-body" id="mapLegendOverlayBody" role="group" aria-label="Legend entries match map symbols"></div>
           </div>
           <div class="map-battlebar" id="battleBar">
             <div class="battlebar-info">
@@ -895,12 +927,36 @@ function gainLights(amount, reason=''){
   if(!state || !amount || amount <= 0) return;
   state.lights = (state.lights|0) + amount;
   if(reason) addEntry('sys', `+${amount} Lights — ${reason}`, 'Economy');
+  plotLightsEconomyCue('gain', amount, reason);
 }
 function spendLights(amount){
   if(!state || amount <= 0) return false;
   if((state.lights|0) < amount) return false;
   state.lights = (state.lights|0) - amount;
+  plotLightsEconomyCue('spend', amount, '');
   return true;
+}
+/** Throttled unease: Lights feel less like coin and more like tally as the story advances. */
+function plotLightsEconomyCue(dir, amount, reason){
+  if(!state) return;
+  const arc = ensureStoryArc(state);
+  const st = arc.stage|0;
+  if(st < 2) return;
+  arc.lightsCueCount = (arc.lightsCueCount|0) + 1;
+  if((arc.lightsCueCount % 4) !== 0) return;
+  const rng = rngFactory((state.seed|0) + (state.turn|0) * 41 + (arc.lightsCueCount|0) + (dir === 'gain' ? 17 : 29));
+  const gainLines = [
+    'The Lights settle into your count with a weight that feels borrowed — as if someone else’s remainder slid into your purse.',
+    'Each one slots into place with a soft click, like a bead on an abacus you did not choose to hold.'
+  ];
+  const spendLines = [
+    'The Lights leave your hand too cleanly — like a debt settling without your signature on the line.',
+    'For a heartbeat the trade feels wrong: comfort, priced in a missing name you will not find on any receipt.'
+  ];
+  let pool = (dir === 'gain' ? gainLines : spendLines).slice();
+  if(st >= 3) pool.push('The movement feels watched — not by eyes, by arithmetic.');
+  if(st >= 4) pool.push('Somewhere a ledger you cannot see inscribes the motion — gain or spend, the column moves.');
+  addEntry('sys', pick(rng, pool), 'Economy');
 }
 function snapshotDungeonForHub(){
   const o = {};
@@ -961,6 +1017,7 @@ function applyHubShellFromTownMap(townMap, preserved){
     quest: buildTownQuest(),
     premise: preserved.premise || `Lumen Town: lantern-lit cobbles, covenant bells, and the hush before the Depths.`,
     townMemory: Object.assign(defaultTownMemory(), preserved.townMemory || {}),
+    storyArc: Object.assign(defaultStoryArc(), preserved.storyArc || {}),
     flags: Object.assign({
       questKeyFound:false, innerGateOpen:false, bossDefeated:false, warded:false, brightTorch:false, usedShrine:false,
       spokeToNpc:false, questSearched:false, shrineEngaged:false
@@ -991,9 +1048,10 @@ function exitToLumenTown(reason=''){
     name: state.name, title: state.title, tone: state.tone, risk: state.risk,
     inventory: state.inventory, facts: state.facts, log: state.log, ai: state.ai,
     player: state.player, health: state.health, maxHealth: state.maxHealth,
-    lights: lightsWas + ECON.returnBonus, premise: `Ascent — Lumenreach. ${reason || 'The surface air tastes like mercy after the Depths.'}`,
+    lights: lightsWas + ECON.returnBonus, premise: `Ascent — Aillumi's Dungeon / Lumen Town. ${reason || 'The surface air tastes like mercy after the Depths.'}`,
     moves: state.moves, turn: state.turn, seed: state.seed,
-    townMemory: prevTm
+    townMemory: prevTm,
+    storyArc: state.storyArc ? JSON.parse(JSON.stringify(state.storyArc)) : defaultStoryArc()
   };
   Object.assign(state, applyHubShellFromTownMap(townMap, preserved));
   state.lights = preserved.lights;
@@ -1012,9 +1070,30 @@ function exitToLumenTown(reason=''){
   ensureRunSystems(state);
   revealAround(state, 22);
   addEntry('sys', `+${ECON.returnBonus} Lights — Lumen’s tithe for a vertical return.`, 'Economy');
+  plotLightsEconomyCue('gain', ECON.returnBonus, 'ascent');
   addEntry('sys', `${preserved.premise}\n\nYour expedition is suspended: dungeon layout, enemies, and floor progress are saved. Your pack, Lights, level, and journal stay on you. Rest and trade — then stand on the Gate (G) to continue or start fresh.`, 'Lumen Town');
+  ensureStoryArc(state);
+  const arcA = ensureStoryArc(state);
+  const stA = arcA.stage|0;
+  if(stA >= 2 && !arcA.beatsSeen.ascent_suspicion_once){
+    arcA.beatsSeen.ascent_suspicion_once = true;
+    addEntry('sys', 'The bells welcome you back with the wrong kind of calm — as if your return closed a line someone else opened.', 'Mystery');
+  }
+  advancePlotNarrative(state, 'ascent');
+  plotOnReturnToTownHub();
   flashMapStageDescent();
   refreshUI();
+}
+function plotOnReturnToTownHub(){
+  if(!state) return;
+  const arc = ensureStoryArc(state);
+  const tm = ensureTownMemory();
+  const deep = tm.deepestFloorEver|0;
+  if(arc.beatsSeen.signature_tally_vault && !arc.beatsSeen.counted_self_revelation && deep >= 4){
+    arc.beatsSeen.counted_self_revelation = true;
+    addEntry('sys', 'Back under Lumen’s bells, the tally vault returns to you uninvited: one gap in the stone looked like your silhouette — not prophecy, bookkeeping.', 'Revelation');
+    addFactOnce('You were already in the ledger — a line waiting for your boots to close it.');
+  }
 }
 function enterDungeonFromTown(opts){
   const cont = opts && opts.continueDelve;
@@ -1071,7 +1150,8 @@ function enterDungeonFromTown(opts){
       title: state.title,
       tone: state.tone,
       risk: state.risk,
-      townMemory: state.townMemory ? JSON.parse(JSON.stringify(state.townMemory)) : defaultTownMemory()
+      townMemory: state.townMemory ? JSON.parse(JSON.stringify(state.townMemory)) : defaultTownMemory(),
+      storyArc: state.storyArc ? JSON.parse(JSON.stringify(state.storyArc)) : defaultStoryArc()
     }
   };
   const newRun = createRun(profile);
@@ -1372,12 +1452,16 @@ function syncMapLegendToggle(){
   els.mapLegendOverlay.classList.toggle('open', !!mapLegendOpen);
   els.mapLegendToggleBtn.textContent = mapLegendOpen ? 'Hide legend' : 'Show legend';
   els.mapLegendToggleBtn.setAttribute('aria-expanded', mapLegendOpen ? 'true' : 'false');
+  els.mapLegendToggleBtn.setAttribute('aria-label', mapLegendOpen ? 'Hide map symbol legend' : 'Show map symbol legend');
 }
 function legendChip(color, label, opts){
   opts = opts || {};
   const cls = ['legend-chip'].concat(opts.classNames || []).filter(Boolean).join(' ');
-  const title = opts.title != null && String(opts.title).trim() ? ` title="${escapeHtml(String(opts.title))}"` : '';
-  return `<div class="${cls}"${title}><span class="legend-swatch" style="background:${color}"></span> ${escapeHtml(label)}</div>`;
+  const tip = opts.title != null && String(opts.title).trim() ? String(opts.title) : '';
+  const title = tip ? ` title="${escapeHtml(tip)}"` : '';
+  const aria = (opts.ariaLabel || tip) ? ` aria-label="${escapeHtml(String(opts.ariaLabel || tip))}"` : '';
+  const focus = opts.noFocus ? '' : ' tabindex="0"';
+  return `<div class="${cls}"${focus}${aria}${title}><span class="legend-swatch" style="background:${color}" aria-hidden="true"></span> ${escapeHtml(label)}</div>`;
 }
 /** Populated next to MAP_TILE_REGISTRY / drawTile (single source for swatches + legend). */
 function refreshMapLegendHtml(){
@@ -2134,56 +2218,152 @@ const THEMES = [
 
 const TILE_INDEX = {'#':[0,0],'.':[1,0],'W':[2,0],'X':[3,0],'D':[0,1],'O':[1,1],'T':[2,1],'C':[3,1],'@':[0,2],'E':[1,2],'S':[3,2],'?':[1,3],'^':[2,3],'%':[3,3]};
 /**
- * Single source for procedural tile fill colors + map legend copy.
- * `phase`: where the symbol appears — legend filters by current hub/dungeon and by symbols actually on visible/discovered cells.
+ * Single source for procedural tile fill, legend, hints, inspect copy, and room narration phrasing.
+ * Optional fields: shortLabel, nearbyPhrase, inspectLead, stepNote, adjacentFail, inspect (string | {hub,dungeon}), aiToken, tooltip.
+ * `phase`: hub | dungeon | both — legend filters by world + visible/discovered cells.
  */
 const MAP_TILE_REGISTRY = {
-  '@': { swatch:'#2fa36e', label:'You — party marker', phase:'both', category:'player', order:1, char:'@',
-    tooltip:'You. Arrow keys move one tile; Enter acts. Drawn over floor.' },
-  '?': { swatch:'#1e1a17', label:'Fog — explored, not in sight', phase:'dungeon', category:'fog', order:2, char:'?',
-    tooltip:'You have been here but cannot see it this turn. Step closer or gain line of sight.' },
-  '#': { swatch:'#3d3228', label:'Wall', phase:'both', category:'terrain', order:10, char:'#',
-    tooltip:'Solid stone. Cannot walk through.' },
-  '.': { swatch:'#75685a', label:'Floor / plaza stone', phase:'both', category:'terrain', order:11, char:'.',
-    tooltip:'Walkable open ground. NPCs may stand here without changing the tile glyph.' },
-  'W': { swatch:'#1e5a7a', label:'Water', phase:'dungeon', category:'hazard', order:30, char:'W',
-    tooltip:'Pool or flood. Drinking, wading, and tests use rolls when adjacent.' },
-  'X': { swatch:'#5a5348', label:'Rubble', phase:'dungeon', category:'terrain', order:12, char:'X',
-    tooltip:'Broken ground — climb, clear, or search with intent.' },
-  'D': { swatch:'#8b6230', label:'Closed door', phase:'dungeon', category:'interactive', order:40, char:'D',
-    tooltip:'Sealed passage. Open, force, listen, or try a key when beside it.' },
-  'O': { swatch:'#c49555', label:'Open door', phase:'dungeon', category:'interactive', order:41, char:'O',
-    tooltip:'Cleared threshold. You can move through.' },
-  'T': { swatch:'#a02818', label:'Trap', phase:'dungeon', category:'hazard', order:31, char:'T',
-    tooltip:'Pressure line or plate. Inspect or disarm before trusting the floor.' },
-  'C': { swatch:'#c9a030', label:'Chest', phase:'dungeon', category:'interactive', order:42, char:'C',
-    tooltip:'Loot container. Inspect or open beside it.' },
-  'E': { swatch:'#a01818', label:'Hostile', phase:'dungeon', category:'threat', order:50, char:'E',
-    tooltip:'Enemy or boss on the grid. Elites often have Depth- or Starved- in their name.' },
-  'S': { swatch:'#e8e0d4', label:'Stairs down', phase:'dungeon', category:'progress', order:60, char:'S',
-    tooltip:'Descend to the next floor when you stand beside and commit with intent.' },
-  '^': { swatch:'#9a6aba', label:'Shrine', phase:'dungeon', category:'interactive', order:43, char:'^',
-    tooltip:'Altar — pray, offer, or temper steel with clear intent.' },
-  'k': { swatch:'#d4b84a', label:'Key (ground)', phase:'dungeon', category:'pickup', order:45, char:'k',
-    tooltip:'Key token on the floor. Claim or use with care when adjacent.' },
-  'q': { swatch:'#d4b84a', label:'Key (alt)', phase:'dungeon', category:'pickup', order:46, char:'q',
-    tooltip:'Alternate key glyph — same idea as k.' },
-  'n': { swatch:'#1e4a32', label:'Survivor / talker', phase:'dungeon', category:'ally', order:20, char:'n',
-    tooltip:'Friendly or neutral figure. Stand beside to speak.' },
-  '%': { swatch:'#4a3528', label:'Body / slain foe', phase:'dungeon', category:'threat', order:51, char:'%',
-    tooltip:'Fallen enemy remains. The danger here is past.' },
-  's': { swatch:'#7a5090', label:'Shop — Mara’s Lanterns', phase:'hub', category:'landmark', order:70, char:'s',
-    tooltip:'Lantern shop tile. Stand beside s to trade.' },
-  'b': { swatch:'#6a4830', label:'Forge — Ironfold', phase:'hub', category:'landmark', order:71, char:'b',
-    tooltip:'Smithy. Stand beside b for sharpening and Brant’s dialogue.' },
-  'G': { swatch:'#d4a848', label:'Gate — Depths', phase:'hub', category:'landmark', order:72, char:'G',
-    tooltip:'Covenant Gate. Stand on G and use Expedition buttons to descend.' },
-  'i': { swatch:'#4a5a68', label:'Inn', phase:'hub', category:'landmark', order:73, char:'i', tooltip:'Rest point — flavor tile in Lumen.' },
-  'h': { swatch:'#4a4c62', label:'Covenant Hall', phase:'hub', category:'landmark', order:74, char:'h', tooltip:'Hall tile — lore and bells.' },
-  'm': { swatch:'#7a6040', label:'Market stall', phase:'hub', category:'landmark', order:75, char:'m', tooltip:'Market cobbles — gossip and goods.' },
-  'a': { swatch:'#3d4a50', label:'Archives', phase:'hub', category:'landmark', order:76, char:'a', tooltip:'Archives building tile.' },
-  'w': { swatch:'#2a5a6a', label:'Well', phase:'hub', category:'landmark', order:77, char:'w', tooltip:'Town well — water and rumor.' }
+  '@': { swatch:'#2fa36e', shortLabel:'You', label:'You — party marker', phase:'both', category:'player', order:1, char:'@', aiToken:'player',
+    tooltip:'Party marker (you). Arrow keys move; Enter acts.' },
+  '?': { swatch:'#1e1a17', shortLabel:'Explored fog', label:'Explored fog — not in sight', phase:'dungeon', category:'fog', order:2, char:'?',
+    tooltip:'You mapped this tile earlier; it is out of sight until you can see it again.',
+    nearbyPhrase:'explored fog (out of sight)' },
+  '#': { swatch:'#3d3228', shortLabel:'Wall', label:'Wall — blocked', phase:'both', category:'terrain', order:10, char:'#',
+    tooltip:'Solid stone. Not walkable.', nearbyPhrase:'a stone wall' },
+  '.': { swatch:'#75685a', shortLabel:'Floor', label:'Floor — walkable', phase:'both', category:'terrain', order:11, char:'.',
+    tooltip:'Walkable ground. NPCs can stand here without changing the glyph.', nearbyPhrase:'open floor' },
+  'W': { swatch:'#1e5a7a', shortLabel:'Water', label:'Water — pool', phase:'dungeon', category:'hazard', order:30, char:'W',
+    tooltip:'Pool or flood. Drinking and wading use rolls when adjacent.', nearbyPhrase:'standing water',
+    inspectLead:'You read the water instead of trusting it.', stepNote:' Water here — drink or wade with a roll if you mean to test it.' },
+  'X': { swatch:'#5a5348', shortLabel:'Rubble', label:'Rubble — rough ground', phase:'dungeon', category:'terrain', order:12, char:'X',
+    tooltip:'Broken ground — climb, clear, or search with intent.', nearbyPhrase:'fallen rubble',
+    inspectLead:'You pick a careful line through the rubble.', stepNote:' Rubble narrows the path — clear, search, or climb with intent.' },
+  'D': { swatch:'#8b6230', shortLabel:'Closed door', label:'Door — closed', phase:'dungeon', category:'interactive', order:40, char:'D',
+    tooltip:'Sealed passage. Open, force, listen, or use a key when beside it.', nearbyPhrase:'a closed door',
+    inspectLead:'You study the door, hinges, and what the lock wants.', stepNote:' A locked door blocks the way — open, force, inspect, or use a key from the text box.' },
+  'O': { swatch:'#c49555', shortLabel:'Open door', label:'Door — open', phase:'dungeon', category:'interactive', order:41, char:'O',
+    tooltip:'Open threshold — you can move through.', nearbyPhrase:'an open doorway' },
+  'T': { swatch:'#a02818', shortLabel:'Trap', label:'Trap — hazard', phase:'dungeon', category:'hazard', order:31, char:'T',
+    tooltip:'Trip line or plate. Inspect or disarm before you commit your weight.', nearbyPhrase:'a trap',
+    inspectLead:'You map the trap’s patience without assuming it is asleep.', stepNote:' A trap line or plate is visible — inspect or disarm before you step.' },
+  'C': { swatch:'#c9a030', shortLabel:'Chest', label:'Chest — loot', phase:'dungeon', category:'interactive', order:42, char:'C',
+    tooltip:'Loot container. Inspect or open when beside it.', nearbyPhrase:'a chest',
+    inspectLead:'You inspect the chest seams, weight, and temper.', stepNote:' A chest is at your feet — inspect, pry, or open from the text box.' },
+  'E': { swatch:'#a01818', shortLabel:'Hostile', label:'Hostile — threat', phase:'dungeon', category:'threat', order:50, char:'E', aiToken:'hostile',
+    tooltip:'Living enemy or boss on this tile (glyph E).', nearbyPhrase:'a hostile presence',
+    inspectLead:'You read stance, reach, and what the fight will cost.', stepNote:' A hostile is in reach — attack, defend, or inspect from the text box.' },
+  'S': { swatch:'#e8e0d4', shortLabel:'Stairs', label:'Stairs — deeper', phase:'dungeon', category:'progress', order:60, char:'S',
+    tooltip:'Descend to the next floor when beside the stairs and commit with intent.', nearbyPhrase:'stairs downward',
+    inspectLead:'You study the stairs and the air pressure beyond them.', stepNote:' Stairs lead deeper — descend or inspect from the text box.' },
+  '^': { swatch:'#9a6aba', shortLabel:'Shrine', label:'Shrine — altar', phase:'dungeon', category:'interactive', order:43, char:'^',
+    tooltip:'Altar: pray, offer, or temper gear with clear intent.', nearbyPhrase:'a shrine',
+    inspectLead:'You study the shrine instead of trusting it.', stepNote:' A shrine stands here — pray, offer, enhance gear, or inspect with a roll.' },
+  'k': { swatch:'#d4b84a', shortLabel:'Key', label:'Key — on ground', phase:'dungeon', category:'pickup', order:45, char:'k',
+    tooltip:'Key token on the floor. Take or use when adjacent.', nearbyPhrase:'a key on the ground',
+    inspectLead:'You inspect the key without claiming it carelessly.', stepNote:' Something key-like glints here — take or inspect carefully.' },
+  'q': { swatch:'#d4b84a', shortLabel:'Key', label:'Key — alt glyph', phase:'dungeon', category:'pickup', order:46, char:'q',
+    tooltip:'Same role as k — alternate glyph.', nearbyPhrase:'a key token',
+    inspectLead:'You inspect the key without claiming it carelessly.', stepNote:' Something key-like glints here — take or inspect carefully.' },
+  'n': { swatch:'#1e4a32', shortLabel:'Ally NPC', label:'Ally — talker', phase:'dungeon', category:'ally', order:20, char:'n',
+    tooltip:'Survivor or neutral — stand beside to speak.', nearbyPhrase:'someone you can talk to',
+    inspectLead:'You take the measure of them before words commit you.', stepNote:' Someone stands nearby — talk or inspect from the text box.' },
+  '%': { swatch:'#4a3528', shortLabel:'Remains', label:'Remains — slain foe', phase:'dungeon', category:'threat', order:51, char:'%',
+    tooltip:'Fallen hostile — danger past, story present.', nearbyPhrase:'a corpse',
+    inspectLead:'You read what the remains admit about the fight.', stepNote:' A body lies here — inspect if you need detail.' },
+  's': { swatch:'#7a5090', shortLabel:'Lantern shop', label:'Shop — Mara’s Lanterns', phase:'hub', category:'landmark', order:70, char:'s',
+    tooltip:'Mara’s Lanterns — stand beside s to trade.', nearbyPhrase:'Mara’s Lanterns shop',
+    adjacentFail:'No shop tile (s) is beside you. In Lumen, stand next to Mara’s Lanterns.',
+    inspect:{ hub:'Lanterns, rope, and tonics sit in rows that remember every return from the Depths.', dungeon:'No shop-front here — only the memory of trade, thinning as you move on.' },
+    stepNote:' Mara’s Lanterns — trade from the text box when you are beside the shop.' },
+  'b': { swatch:'#6a4830', shortLabel:'Ironfold forge', label:'Forge — Ironfold', phase:'hub', category:'landmark', order:71, char:'b',
+    tooltip:'Ironfold forge — stand beside b for Brant and sharpening.', nearbyPhrase:'Ironfold forge',
+    adjacentFail:'No forge tile (b) is beside you. In Lumen, stand next to Ironfold.',
+    inspect:{ hub:'You read Ironfold the way a smith reads weather: heat, ash, and the memory of oaths hammered into steel.', dungeon:'No traveling forge here — only the idea of heat, quickly cooling.' },
+    stepNote:' Heat rolls from Ironfold — interact from the text box when you are beside the forge.' },
+  'G': { swatch:'#d4a848', shortLabel:'Depths Gate', label:'Gate — Covenant Depths', phase:'hub', category:'landmark', order:72, char:'G',
+    tooltip:'Covenant Gate to the Depths — stand on G; use Expedition UI to descend.', nearbyPhrase:'the Covenant Depths Gate',
+    adjacentFail:'The Depths Gate (G) is not beside you. In Lumen, stand on the Gate tile first.',
+    inspect:{ hub:'Worked stone breathes cold upward — the Gate listens for deliberate footfalls, not curiosity.', dungeon:'This is not the Covenant Gate — the real descent waits on tile G in Lumen.' },
+    stepNote:' The Covenant Gate yawns toward the Depths — use Expedition controls when you stand here.' },
+  'i': { swatch:'#4a5a68', shortLabel:'Inn', label:'Inn — rest', phase:'hub', category:'landmark', order:73, char:'i',
+    tooltip:'Inn facade — flavor and rest hooks.', nearbyPhrase:'the inn', stepNote:' The inn’s shutters promise sleep you may not yet deserve.' },
+  'h': { swatch:'#4a4c62', shortLabel:'Covenant Hall', label:'Hall — bells', phase:'hub', category:'landmark', order:74, char:'h',
+    tooltip:'Covenant Hall — lore and bells.', nearbyPhrase:'the Covenant Hall',
+    stepNote:' Covenant Hall keeps minutes the town pretends not to need.' },
+  'm': { swatch:'#7a6040', shortLabel:'Market', label:'Market — stall', phase:'hub', category:'landmark', order:75, char:'m',
+    tooltip:'Market cobbles — gossip and goods.', nearbyPhrase:'a market stall',
+    stepNote:' A market stall offers gossip cheaper than bread.' },
+  'a': { swatch:'#3d4a50', shortLabel:'Archives', label:'Archives', phase:'hub', category:'landmark', order:76, char:'a',
+    tooltip:'Archives building.', nearbyPhrase:'the archives',
+    stepNote:' The archives smell like ink, dust, and old warnings.' },
+  'w': { swatch:'#2a5a6a', shortLabel:'Well', label:'Well — town', phase:'hub', category:'landmark', order:77, char:'w',
+    tooltip:'Town well — water and rumor.', nearbyPhrase:'the old well', stepNote:' The well remembers every bucket raised in hope.' }
 };
+const WORLD_TARGET_SYMBOL = { forge:'b', shop:'s', gate:'G' };
+function mapTileEntry(sym){ return MAP_TILE_REGISTRY[sym] || null; }
+function mapTileShortLabel(sym){
+  const m = mapTileEntry(sym);
+  if(!m) return 'tile';
+  if(m.shortLabel) return m.shortLabel;
+  const lab = String(m.label||'');
+  const seg = lab.split(/[—–]/)[0].trim();
+  return seg || lab;
+}
+function mapTileLegendLine(sym){
+  const m = mapTileEntry(sym);
+  const ch = m?.char != null ? m.char : sym;
+  if(!m) return `${ch} — unlisted tile`;
+  const body = m.shortLabel || m.label;
+  return `${ch} — ${body}`;
+}
+function mapTileTooltipFull(sym){
+  const m = mapTileEntry(sym);
+  return m?.tooltip || m?.label || mapTileLegendLine(sym);
+}
+function mapTileWorldInspect(sym){
+  const m = mapTileEntry(sym);
+  const ins = m?.inspect;
+  if(!ins) return '';
+  if(typeof ins === 'string') return ins;
+  const hub = isHubWorld();
+  return hub ? (ins.hub || ins.default || '') : (ins.dungeon || ins.default || '');
+}
+function mapTileAdjacentFail(sym){
+  const m = mapTileEntry(sym);
+  return m?.adjacentFail || '';
+}
+function mapTileInspectLead(sym, fallback){
+  const m = mapTileEntry(sym);
+  return m?.inspectLead || fallback;
+}
+function mapTileStepNote(sym){
+  const m = mapTileEntry(sym);
+  return m?.stepNote || '';
+}
+function worldSymbolFromTarget(target){
+  return WORLD_TARGET_SYMBOL[target] || '';
+}
+function formatMapCellHint(tx, ty, sym, vis){
+  const m = mapTileEntry(sym);
+  const ch = m?.char != null ? m.char : sym;
+  const core = m ? mapTileShortLabel(sym) : 'tile';
+  const visTag = vis ? 'In sight' : 'Explored fog';
+  let extra = '';
+  if(vis){
+    const ent = findEntityAt(tx, ty);
+    if(ent?.name && (ent.type==='npc' || ent.type==='enemy' || ent.type==='boss')){
+      extra = ent.type==='npc' ? ` · ${ent.name}` : ` · ${ent.name} (hostile)`;
+    }
+  }
+  return `${ch} ${core} · ${visTag}${extra}`;
+}
+function symbolName(s){
+  const m = mapTileEntry(s);
+  if(m?.aiToken) return m.aiToken;
+  const sl = mapTileShortLabel(s);
+  if(sl && sl !== 'tile') return sl.toLowerCase();
+  return 'room';
+}
 const LEGEND_CATEGORY_ORDER = { player:0, ally:1, threat:2, interactive:3, pickup:4, landmark:5, progress:6, terrain:7, hazard:8, fog:9, misc:10 };
 /** Symbols that get a soft ring when adjacent to the player (readable “you can act here”). */
 const MAP_ADJACENT_RING_SYMBOLS = new Set(['C','D','O','T','^','S','k','q','n','E','s','b','G','i','h','m','a','w','W','X']);
@@ -2276,14 +2456,13 @@ function buildMapLegendHtml(){
     const cat = (m||{}).category || 'misc';
     if(cat !== curCat){
       curCat = cat;
-      parts.push(`<div class="legend-section-title">${escapeHtml(titleFor(cat))}</div>`);
+      parts.push(`<div class="legend-section-title" role="presentation">${escapeHtml(titleFor(cat))}</div>`);
     }
-    const ch = m?.char != null ? m.char : sym;
     const sw = m?.swatch || '#888888';
-    const line = m ? `${ch} — ${m.label}` : `${ch} — unlisted tile`;
-    const tip = m?.tooltip || m?.label || line;
+    const line = m ? mapTileLegendLine(sym) : `${sym} — unlisted tile`;
+    const tip = m ? mapTileTooltipFull(sym) : line;
     const hot = isHotSym(sym);
-    parts.push(legendChip(sw, line, { title: tip, classNames: hot ? ['context-hot'] : [] }));
+    parts.push(legendChip(sw, line, { title: tip, ariaLabel: tip, classNames: hot ? ['context-hot'] : [] }));
   }
   if(hub){
     const npcs = (state.entities||[]).filter(e=>e.alive && e.type==='npc' && state.visible[e.y]?.[e.x]);
@@ -2294,7 +2473,8 @@ function buildMapLegendHtml(){
         const role = e.role ? ` (${e.role})` : '';
         const adj = Math.abs(e.x-px)+Math.abs(e.y-py)<=1;
         parts.push(legendChip('#3d6b52', `${e.name}${role} — beside you to speak`, {
-          title:`${e.name}${role}. On open floor; not a separate map glyph.`,
+          title:`${e.name}${role}. People use the floor tile; there is no separate NPC glyph.`,
+          ariaLabel:`${e.name}${role}. NPC on floor; no extra map symbol.`,
           classNames: adj ? ['context-hot'] : []
         }));
       }
@@ -2306,22 +2486,25 @@ function buildMapLegendHtml(){
       const px = state.player.x|0, py = state.player.y|0;
       for(const e of hostiles.slice(0,6)){
         const adj = Math.abs(e.x-px)+Math.abs(e.y-py)<=1;
-        parts.push(legendChip('#a01818', `${e.name} — grid: E`, {
-          title:`${e.name}. Living hostiles render as E on the tile they occupy.`,
+        parts.push(legendChip('#a01818', `${e.name} — map: E`, {
+          title:`${e.name}. Hostiles use glyph E on their tile.`,
+          ariaLabel:`${e.name}. Hostile, shown as E.`,
           classNames: adj || ctxHot.combatNearby ? ['context-hot'] : []
         }));
       }
     }
   }
   parts.push(legendChip('#666', 'How this works', {
-    title:'Legend entries match symbols on visible or discovered cells. Gold outline on the map marks interactives next to you. Hover the map for a quick symbol readout.',
-    classNames:['legend-chip--note']
+    title:'Symbols match visible or explored cells. Gold rings mark interactives beside you. Tile hint (bottom-right) follows the pointer; legend chips are keyboard-focusable.',
+    ariaLabel:'Legend matches the map. Gold rings show interactives next to you. Use keyboard focus on chips for full descriptions.',
+    classNames:['legend-chip--note'],
+    noFocus:true
   }));
   return parts.join('');
 }
 const WALKABLE = new Set(['.','O','W','S','T','^','k','n','q','s','b','i','h','m','a','w','G']);
 const HUB_THEME = {
-  name: 'Lumenreach',
+  name: "Aillumi's Dungeon",
   motifs: ['lantern','covenant','depths'],
   roomNames: ['Lantern Market','Ironfold Yard','The Quiet Well'],
   enemies: [], npcs: [], bosses: [], quests: [],
@@ -2336,7 +2519,7 @@ const HUB_THEME = {
 const DUNGEON_SNAPSHOT_KEYS = [
   'seed','theme','tone','risk','map','rooms','player','discovered','visible','entities',
   'roomState','quest','flags','dungeon','turn','story','storyActTwo','context','luck',
-  'premise','labels','moves','npcs','dead','lastResolveDebug','townMemory'
+  'premise','labels','moves','npcs','dead','lastResolveDebug','townMemory','storyArc'
 ];
 const ECON = {
   returnBonus: 11,
@@ -2356,8 +2539,183 @@ const COVENANT_RUMORS = [
   'Rumor: Elite foes are not new species — they are hungers trained by depth.',
   'Rumor: The covenant’s bells ring clearest when someone comes back wrong.',
   'Rumor: Below the second circle, water and ash start agreeing about you.',
-  'Rumor: A suspended delve is not mercy — it is the dungeon pausing mid-sentence.'
+  'Rumor: A suspended delve is not mercy — it is the dungeon pausing mid-sentence.',
+  'Rumor: Mara’s scales sometimes agree before you set the weight — as if the number existed first.',
+  'Rumor: Elwen’s chronicle has pages that ring hollow unless read beside the Gate.',
+  'Rumor: The forge’s true customer isn’t steel — it’s the story you tell yourself about returning.'
 ];
+/**
+ * Overarching mystery spine — delivered by repetition, not dumps.
+ * Central truth: Lights are not “minted” in Lumen; they are tally-strips for what the Depths kept when a return was incomplete.
+ * The Depths are built from what could not surface whole — memory, names, vows, prior lives — and Lumen’s comfort is continuity skimmed from that loss.
+ * The covenant is doctrine and mechanism: it manages descent, return, and the conversion of remainder into spendable proof.
+ * Mara prices what cannot be priced; Brant files steel that remembers weight no forge in town lifted;
+ * Elwen’s chronicle has pages the bells skip — omission dressed as piety.
+ */
+const PLOT_CORE = {
+  thesis: 'Lights are not neutral currency — they tally what the Depths kept. Lumen’s comfort is continuity extracted from incomplete returns; the covenant is part of the machine that meters descent and names what comes back.',
+  stages: {
+    1: 'Surface covenant: descend, return, trade. The loop feels honest.',
+    2: 'Contradictions: Lights reconcile like a ledger, the Gate like a witness, and the stone like a palimpsest.',
+    3: 'Pattern: the Depths are made of what did not return whole — and the crawl keeps signing the same hand.',
+    4: 'Threshold: the town’s morning is borrowed against a debt collected in strata you are not supposed to read.',
+    5: 'Covenant fracture: you still do not hold the whole ledger — only proof the loop already counted someone like you.'
+  }
+};
+function defaultStoryArc(){
+  return {
+    stage: 1,
+    newDelveCount: 0,
+    beatsSeen: Object.create(null),
+    lastStageNotified: 1,
+    personalHookTier: 0,
+    lightsCueCount: 0
+  };
+}
+function ensureStoryArc(run=state){
+  if(!run) return defaultStoryArc();
+  if(!run.storyArc) run.storyArc = defaultStoryArc();
+  if(!run.storyArc.beatsSeen) run.storyArc.beatsSeen = Object.create(null);
+  if(run.storyArc.personalHookTier == null) run.storyArc.personalHookTier = 0;
+  if(run.storyArc.lightsCueCount == null) run.storyArc.lightsCueCount = 0;
+  return run.storyArc;
+}
+function targetPlotStage(run){
+  if(!run) return 1;
+  const tm = run.townMemory || defaultTownMemory();
+  const a = tm.returnsFromDepths|0;
+  const d = tm.deepestFloorEver|0;
+  if(a >= 4 && d >= 4) return 5;
+  if(a >= 3 && d >= 3) return 4;
+  if(a >= 2 && d >= 2) return 3;
+  if(a >= 1 || d >= 2) return 2;
+  return 1;
+}
+function advancePlotNarrative(run, why=''){
+  if(!run) return;
+  const arc = ensureStoryArc(run);
+  const t = targetPlotStage(run);
+  const next = Math.min(5, Math.max(arc.stage|0, t));
+  const prev = arc.stage|0;
+  arc.stage = next;
+  if(next > prev){
+    const line = plotStageChronicleLine(next, why);
+    if(line) addEntry('sys', line, 'Mystery');
+  }
+  if(next >= 3 && prev < 3 && !arc.beatsSeen.midgame_realization){
+    arc.beatsSeen.midgame_realization = true;
+    addEntry('sys', 'The suspicion finally hardens into something you cannot unhear: Lumen does not mint Lights — it spends what the Depths kept when something came back wrong. The covenant is not only protection; it is the clausework that makes that trade feel holy.', 'Revelation');
+    addFactOnce('Realization: incomplete returns become Lights — the town eats continuity skimmed from loss.');
+  }
+  if(next >= 4 && !arc.beatsSeen.reveal_partial){
+    arc.beatsSeen.reveal_partial = true;
+    addFactOnce('Covenant truth (partial): every Light is a line item for what stayed below — spending them moves a debt the surface pretends not to owe.');
+    addEntry('sys', 'The chronicle and the map finally share a grammar: strata are not scenery — they are what could not be carried up as a whole person, a whole name, a whole vow.', 'Revelation');
+  }
+  if(next >= 5 && !arc.beatsSeen.reveal_core){
+    arc.beatsSeen.reveal_core = true;
+    addFactOnce('Core truth: Lights are receipts. The Gate witnesses descent; the covenant converts remainder into coin the town can live on.');
+    addEntry('sys', `${PLOT_CORE.thesis}\n\nYou do not have the whole ledger — only proof the loop was never innocent.`, 'Revelation');
+  }
+  arc.lastStageNotified = next;
+}
+function plotStageChronicleLine(stage, why){
+  if(stage===2) return 'Unease — Mara’s scales balance continuity; Elwen’s pages skip where the bells should ring. Someone is smoothing the seam between doctrine and tally.';
+  if(stage===3) return 'Pattern — the Depths do not invent; they archive. Memory, names, and vows leave a geology when they cannot surface intact.';
+  if(stage===4) return 'Threshold — enough returns have passed that Lumen’s mercy looks like liquidity: comfort financed by what never came back whole.';
+  if(stage===5) return 'Covenant fracture — the loop still works, but you feel it now: you are not outside the ledger you have been reading.';
+  return '';
+}
+function plotFloorMilestone(run, floor){
+  if(!run || floor < 2) return;
+  const arc = ensureStoryArc(run);
+  const key = 'floor_'+floor;
+  if(arc.beatsSeen[key]) return;
+  arc.beatsSeen[key] = true;
+  if(floor===2 && !arc.beatsSeen.personal_strata_2){
+    arc.beatsSeen.personal_strata_2 = true;
+    if((arc.personalHookTier|0) < 1){ arc.personalHookTier = 1; }
+    addEntry('sys', 'Second circle: the walls carry scratches too practiced to be one traveler’s fear — repetition without pride, like a habit carved in stone.', 'Strata');
+  }
+  if(floor===3){
+    addEntry('sys', 'Third circle: contradictions stack — the theme insists, the map rhymes, and the dungeon feels authored by what failed to return.', 'Strata');
+    if(!arc.beatsSeen.personal_tally_hint){
+      arc.beatsSeen.personal_tally_hint = true;
+      if((arc.personalHookTier|0) < 2){ arc.personalHookTier = 2; }
+      addFactOnce('A descent tally near your route stops at a count that feels like it already knew you.');
+    }
+    if(targetPlotStage(run) >= 2 && !arc.beatsSeen.floor3_doctrine_chime){
+      arc.beatsSeen.floor3_doctrine_chime = true;
+      addEntry('sys', 'The passage widens into a space that was a counting-house before it was a room — shelves carved into stone, grooves where wax tablets sat, nothing left but the habit of enumeration.', 'Strata');
+    }
+  } else if(floor>=4){
+    addEntry('sys', 'Deep strata: you are not grinding for loot — you are walking through what people left behind when they could not carry themselves whole up the stair.', 'Strata');
+    if(floor===4 && !arc.beatsSeen.signature_tally_vault){
+      arc.beatsSeen.signature_tally_vault = true;
+      if((arc.personalHookTier|0) < 3){ arc.personalHookTier = 3; }
+      addEntry('sys', 'The stair delivers you into a chamber that should not need to exist — a **tally vault** cut into the rock, cold enough to keep ink honest.', 'Revelation');
+      addEntry('sys', 'One wall is nothing but rows: **names**, **sums in Lights**, and a covenant plaque bolted like an afterthought. The smallest legible line reads: *From incomplete returns only — remainder converted per Lumen statute.* Older scratches beneath argue with it — *person first* — crossed out by a hand that meant business.', 'Revelation');
+      addFactOnce('Tally vault: Lumen’s Lights are statute-tied to what the Depths kept; incomplete returns become spendable proof.');
+    }
+  }
+  advancePlotNarrative(run, 'floor');
+}
+function plotInspectAddendum(sym){
+  if(!state) return '';
+  const st = ensureStoryArc(state).stage|0;
+  const arc = ensureStoryArc(state);
+  const hook = (arc.personalHookTier|0) >= 2;
+  if(st < 2) return '';
+  if(sym==='G'){
+    if(st>=5) return ' The cold here feels like a tally — as if the Gate marks what you owe for standing upright, and what was already spent before you arrived.';
+    if(st>=3) return ' You notice the seam: covenant blessing on the lintel, arithmetic underneath — descent and return routed like commerce.';
+    return ' The ordinary story still fits — but the stone hums like a scale settling after a sale.';
+  }
+  if(sym==='b'){
+    if(st>=4) return ' Brant’s hammer rings like he is correcting metal that learned weight from the wrong stair — steel that remembers a return that did not match the name.';
+    if(st>=2) return ' Heat rises with the weight of changed bodies — as if the forge measures more than steel: it measures what came back different.';
+    return '';
+  }
+  if(sym==='s'){
+    if(st>=4) return ' Mara counts Lights the way a scribe reconciles a ledger — continuity as a line item, loss as someone else’s column.';
+    if(st>=2) return ' The shop smells like oil and borrowed time — every transaction a small translation of remainder into something spendable.';
+    return '';
+  }
+  if(sym==='^' && st>=3){
+    let s = ' The altar’s wear pattern looks less like devotion and more like repeated payment.';
+    if(hook) s += ' A groove at knee height matches your habit of kneeling — or someone’s who stood in your boots.';
+    return s;
+  }
+  return '';
+}
+const PLOT_NPC_LINES = {
+  tn1: {
+    2: ['"Lights are not minted — they are reconciled. I sell what the Depths left unspent."','"Continuity is a product line. Loss is the supplier."'],
+    3: ['"If two delvers bring the same rumor up, it isn’t coincidence — it’s the same invoice."','"The Gate doesn’t care about your story. It cares whether your return closes the line."'],
+    4: ['"You think Lights are coins? Fine. Spend them. Then notice what still feels missing."','"Mara’s Lanterns doesn’t run on profit — it runs on incomplete returns made tradable."'],
+    5: ['"Some ledgers are written in bell-metal. I only count what the covenant lets me show."','"Go down again if you must. The shop will still be here — that’s how continuity compounds."']
+  },
+  tn2: {
+    2: ['"Steel doesn’t care what you believe — only what you’ve carried through the wrong kind of door."','"If your blade feels heavier after a return, that’s not enchantment — that’s mass you did not have when you descended."'],
+    3: ['"I sharpen for the next descent — because the metal remembers the last one wrong."','"Elites aren’t monsters first. They’re what the strata could not pack into a clean return."'],
+    4: ['"The forge remembers every foot that ran. Some prints end in a stride I’ve already filed."','"If the town hums, something below is turning weight — not rumor."'],
+    5: ['"I don’t preach. I measure. And measurement has been busy with your name."','"Bring me steel that hasn’t lied yet — I’ll show you what a return costs in real ounces."']
+  },
+  tn3: {
+    2: ['"The covenant records returns — technically true. It does not promise identity survived intact."','"If the bells disagree with the ledger, ask which page was copied from which silence."'],
+    3: ['"We call it faith. The clause calls it collateral — read the line they never chant aloud."','"The Gate is witnessed. Witness is not innocence; it is procedure."'],
+    4: ['"Some pages are copied from deeper copies — omission is part of the script."','"Lumen’s morning is a clause. The Depths hold the ink that did not dry."'],
+    5: ['"I will not read the forbidden line aloud. I will show you where the vow was redacted."','"The mystery is not whether you were counted — it is whether you can read your own tally."']
+  }
+};
+function plotNpcExtraBarks(npc, stage, rr){
+  const id = npc?.id || '';
+  const table = PLOT_NPC_LINES[id];
+  if(!table) return [];
+  const k = Math.min(5, Math.max(1, stage|0));
+  const lines = table[k];
+  return lines && lines.length ? lines.slice() : [];
+}
 function defaultTownMemory(){
   return { deepestFloorEver: 0, returnsFromDepths: 0, lastFloorReturned: 0, lastBossBeat: false, rumorCursor: 0 };
 }
@@ -2401,19 +2759,33 @@ function pickHubNpcBark(npc, rr){
   const ret = tm.returnsFromDepths|0;
   const lastBoss = tm.lastBossBeat;
   const lastFl = tm.lastFloorReturned|0;
+  const st = state ? (ensureStoryArc(state).stage|0) || targetPlotStage(state) : 1;
+  const tr = plotTownReactionTier();
+  const arc = state && ensureStoryArc(state);
+  const sawVault = arc && arc.beatsSeen && arc.beatsSeen.signature_tally_vault;
   const extra = [];
   if((npc.id||'') === 'tn1'){
-    if(deep >= 4) extra.push('"Four floors down is where most stories stop pretending to be brave."');
-    if(deep >= 2) extra.push('"Deeper than two? Lights aren’t comfort down there — they’re receipts."');
-    if(ret >= 1) extra.push('"The shop remembers your boots. So does the Gate."');
+    if(deep >= 4) extra.push('"Four floors down is where most stories stop pretending — and the ledger stops pretending with them."');
+    if(deep >= 2) extra.push('"Deeper than two? Lights aren’t comfort — they’re proof of what stayed below when something came back wrong."');
+    if(ret >= 1) extra.push('"The shop remembers your boots. So does the Gate — and neither is sentimental about it."');
+    if(tr >= 2) extra.push('"Buy what you need — don’t ask me to price what the Depths kept. I’m not allowed to know."');
+    if(tr >= 3) extra.push('"You look at Lights like they bite. …Maybe they do. I still have to take them."');
+    if(sawVault) extra.push('"I don’t keep inventory of souls — only what the statute says I can sell. Don’t make me spell it."');
   }else if((npc.id||'') === 'tn2'){
     if(lastBoss) extra.push('"Something big stayed down? Good. Steel likes a finished argument."');
     if(lastFl >= 3) extra.push(`"You came back from floor ${lastFl} — metal remembers that mileage."`);
     if(deep >= 3) extra.push('"Elites get hungry where the air goes thin. Sharpen before you bargain with them."');
+    if(tr >= 2) extra.push('"If your blade hums after a return, don’t ask me to name the note — I only tune it."');
+    if(tr >= 3) extra.push('"The forge isn’t judging you. It’s measuring. There’s a difference — and you’re not going to like either."');
+    if(sawVault) extra.push('"I heard the statute line once. I pretended I didn’t. Don’t repeat it where bells carry."');
   }else if((npc.id||'') === 'tn3'){
-    if(deep >= 2) extra.push('"Rumor says the Gate is not a door — it is a witness."');
-    if(ret >= 1) extra.push('"We record returns, not heroes — and yours just added a line."');
+    if(deep >= 2) extra.push('"Rumor says the Gate is not a door — it is a witness to what cannot be carried up whole."');
+    if(ret >= 1) extra.push('"We record returns, not heroes — and yours rhymes with an older line in the margin."');
+    if(tr >= 2) extra.push('"If the chronicle sounds calm, you are reading the wrong page — or the right one too politely."');
+    if(tr >= 3) extra.push('"I will not swear the town is innocent. I will swear the ink is honest — and that is worse."');
+    if(sawVault) extra.push('"You saw the tally. Good. Now stop asking me to bless what arithmetic already proved."');
   }
+  extra.push(...plotNpcExtraBarks(npc, st, rr));
   const base = (npc.barks && npc.barks.length) ? npc.barks : [npc.clue || '…'];
   const pool = [...base, ...extra];
   return pick(rr, pool);
@@ -2442,11 +2814,19 @@ function escapeHtml(str){ return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;'
 
 function narrateChapterNewDelve(){
   const rr = rngFactory((state.seed|0) + 777);
-  const pack = pick(rr, [
-    { t:'Chapter — First Footfall', b:'The Gate drinks your warmth and returns only echo. Below, the underworld rehearses your name until it fits.' },
-    { t:'Chapter — The Bargain Stair', b:'Every step trades daylight for distance. The Depths keep a ledger; you are already written in.' },
-    { t:'Chapter — Lantern at the Lip', b:'Lumen’s bells thin to nothing. What listens down here has never needed a map — only a witness.' }
-  ]);
+  const st = ensureStoryArc(state).stage|0;
+  const deep = (state.townMemory && state.townMemory.deepestFloorEver|0) || 0;
+  const pack = st >= 3 || deep >= 3
+    ? pick(rr, [
+        { t:'Chapter — The Rhyme Returns', b:'Same threshold, new seed — and still the stair asks for the same signature. The Depths are not improvising; they are remembering.' },
+        { t:'Chapter — Ledger Line', b:'You cross again. The bargain is the same on the surface: survive, tally, return. Underneath, the tally has a name you are not supposed to say in daylight.' },
+        { t:'Chapter — Witness Machine', b:'The descent feels less like exploration and more like re-reading a page you were meant to underline.' }
+      ])
+    : pick(rr, [
+        { t:'Chapter — First Footfall', b:'The Gate drinks your warmth and returns only echo. Below, the underworld rehearses your name until it fits.' },
+        { t:'Chapter — The Bargain Stair', b:'Every step trades daylight for distance. The Depths keep a ledger; you are already written in.' },
+        { t:'Chapter — Lantern at the Lip', b:'Lumen’s bells thin to nothing. What listens down here has never needed a map — only a witness.' }
+      ]);
   addEntry('sys', `${pack.t}\n\n${pack.b}`, 'Descent');
 }
 function narrateChapterContinueDelve(){
@@ -2798,6 +3178,7 @@ function ensureRunSystems(run=state){
     if(run.flags.questSearched === undefined) run.flags.questSearched = false;
     if(run.flags.shrineEngaged === undefined) run.flags.shrineEngaged = false;
   }
+  ensureStoryArc(run);
 }
 function setProgressLead(text){
   if(!state || !text) return;
@@ -2815,9 +3196,10 @@ function touchRoomObject(room, kind, patch){
 /**
  * Suso intent pipeline (mechanical layer)
  * 1. parseIntent — surface parse (type, target, direction, flags)
- * 2. interpretIntentRich — normalize + explicit locks + domain tag + scene arbitration + bounded follow-up + entity binding (resolvedEntityId)
- * 3. resolveAction / processHubWorldTurn — execute (resolvers, dice)
- * 4. addEntry / narrateStructuredOutcome — narrate
+ * 2. interpretIntentRich — phrase layer + semantic slots + locks + domain + scene arbitration + follow-up + entity binding
+ * 3. susoRouteInterpretation — canonical routed request + adapter selection (interpretation → routing, execution adapters separate)
+ * 4. resolveAction / processHubWorldTurn — execute (game resolvers today; other adapters stub or host-app specific)
+ * 5. addEntry / narrateStructuredOutcome — narrate
  * Explicit locks in intent._suso.locks prevent later heuristics (plan, LML, AI) from overwriting pack use and parse targets.
  * resolvedEntityId mirrors resolvedInventoryItemId: stable ids for NPCs/hostiles and world:/* anchors; pack_pin clears any stale entity binding.
  */
@@ -2844,6 +3226,150 @@ const SUSO_PACK_REGEX_SYNONYMS = [
   [/\biron key\b/, 'Iron Key'],
   [/\bsaint key\b|\bthe saint key\b/, 'Saint Key']
 ];
+/**
+ * Phrase packs — merge in susoPhraseEntriesForSession. Add project-specific packs without editing core chunk logic.
+ * Categories feed semantic slots; pack id is for debugging / future mapper hooks.
+ */
+const SUSO_PHRASE_PACK_GAME = [
+  { phrase: 'lumen town', category: 'location', canonical: 'lumen town', pack: 'game' },
+  { phrase: 'old plaza', category: 'location', canonical: 'old plaza', pack: 'game' },
+  { phrase: 'town gate', category: 'location', canonical: 'town gate', pack: 'game' },
+  { phrase: 'covenant stair', category: 'location', canonical: 'covenant stair', pack: 'game' },
+  { phrase: 'depths gate', category: 'location', canonical: 'depths gate', pack: 'game' },
+  { phrase: 'mara coinwise', category: 'entity', canonical: 'tn1', pack: 'game' },
+  { phrase: 'brant ironfold', category: 'entity', canonical: 'tn2', pack: 'game' },
+  { phrase: 'sister elwen', category: 'entity', canonical: 'tn3', pack: 'game' }
+];
+const SUSO_PHRASE_PACK_DOCUMENT = [
+  { phrase: 'pressure rating', category: 'attribute', canonical: 'pressure rating', pack: 'document' },
+  { phrase: 'operating temperature', category: 'attribute', canonical: 'operating temperature', pack: 'document' },
+  { phrase: 'tensile strength', category: 'attribute', canonical: 'tensile strength', pack: 'document' },
+  { phrase: 'hardness', category: 'attribute', canonical: 'hardness', pack: 'document' },
+  { phrase: 'dimensions', category: 'attribute', canonical: 'dimensions', pack: 'document' },
+  { phrase: 'chemical resistance', category: 'attribute', canonical: 'chemical resistance', pack: 'document' },
+  { phrase: 'part number', category: 'attribute', canonical: 'part number', pack: 'document' },
+  { phrase: 'model number', category: 'attribute', canonical: 'model number', pack: 'document' },
+  { phrase: 'data sheet', category: 'document', canonical: 'data sheet', pack: 'document' },
+  { phrase: 'black oxide screw', category: 'item', canonical: null, pack: 'document' },
+  { phrase: 'stainless steel bracket', category: 'item', canonical: null, pack: 'document' },
+  { phrase: 'polyurethane sheet', category: 'material', canonical: 'polyurethane', pack: 'document' }
+];
+/** UI / navigation aliases (host maps destination → panel or route). */
+const SUSO_PHRASE_PACK_UI = [
+  { phrase: 'shop panel', category: 'location', canonical: 'shop', pack: 'ui' }
+];
+const SUSO_PHRASE_PACK_ORDER = ['game', 'document', 'ui'];
+function susoAllPhrasePackRows(){
+  return [...SUSO_PHRASE_PACK_GAME, ...SUSO_PHRASE_PACK_DOCUMENT, ...SUSO_PHRASE_PACK_UI];
+}
+function susoApplyDomainSlotMappers(semantic, phraseMatches){
+  return semantic;
+}
+function susoPhraseEntriesForSession(){
+  const rows = [];
+  for(const [sub, canon] of SUSO_INVENTORY_SUBSTRINGS){
+    rows.push({ phrase: String(sub).toLowerCase().trim(), category: 'item', canonical: canon, source: 'substr', pack: 'inventory' });
+  }
+  for(const row of susoAllPhrasePackRows()){
+    const ph = String(row.phrase || '').toLowerCase().trim();
+    if(!ph) continue;
+    rows.push({
+      phrase: ph,
+      category: row.category || 'concept',
+      canonical: row.canonical !== undefined ? row.canonical : null,
+      source: 'registry',
+      registryDomain: row.domain || null,
+      pack: row.pack || 'registry'
+    });
+  }
+  const inv = state?.inventory || [];
+  for(const it of inv){
+    const nm = String(it.name || '').toLowerCase().trim();
+    if(nm.length < 2) continue;
+    rows.push({ phrase: nm, category: 'item', canonical: it.name, source: 'inv' });
+  }
+  rows.sort((a, b) => b.phrase.length - a.phrase.length || String(a.phrase).localeCompare(String(b.phrase)));
+  const seen = new Set();
+  const out = [];
+  for(const r of rows){
+    const k = r.phrase + '\0' + r.category + '\0' + (r.canonical || '');
+    if(seen.has(k)) continue;
+    seen.add(k);
+    out.push(r);
+  }
+  return out;
+}
+function susoWordishBoundaryOk(low, start, len){
+  if(start < 0 || len < 1 || start + len > low.length) return false;
+  const before = start > 0 ? low[start - 1] : ' ';
+  const after = start + len < low.length ? low[start + len] : ' ';
+  if(/[a-z0-9]/.test(before)) return false;
+  if(/[a-z0-9]/.test(after)) return false;
+  return true;
+}
+function susoCollectPhraseMatches(low){
+  if(!low) return [];
+  const phrases = susoPhraseEntriesForSession();
+  const out = [];
+  let i = 0;
+  while(i < low.length){
+    if(/\s/.test(low[i])){ i++; continue; }
+    let best = null;
+    for(const p of phrases){
+      const plen = p.phrase.length;
+      if(plen > low.length - i) continue;
+      if(low.slice(i, i + plen) !== p.phrase) continue;
+      if(!susoWordishBoundaryOk(low, i, plen)) continue;
+      best = p;
+      break;
+    }
+    if(best){
+      out.push(Object.assign({}, best, { start: i, end: i + best.phrase.length, rejectedShorter: [] }));
+      i += best.phrase.length;
+    } else {
+      i++;
+    }
+  }
+  return out;
+}
+function susoBuildSemanticSlots(low, matches){
+  const mlow = String(low || '');
+  const slots = {
+    action: null,
+    intent: null,
+    questionType: null,
+    attribute: null,
+    attributes: [],
+    document: null,
+    targetItem: null,
+    location: null,
+    entity: null,
+    comparison: null,
+    filter: null,
+    timeframe: null,
+    tool: null,
+    qualifier: null,
+    domainCue: []
+  };
+  if(/\b(what|which|how much|how many)\b/.test(mlow)) slots.questionType = 'wh_question';
+  else if(/\bwhy\b/.test(mlow)) slots.questionType = 'why_question';
+  if(/\b(show|find|tell|give|list|lookup|display)\b/.test(mlow)) slots.intent = 'retrieve';
+  if(/\bcompare\b/.test(mlow)) slots.comparison = true;
+  if(/\b(this|the)\s+(pdf|document)\b/.test(mlow) || /\bdata\s+sheet\b/.test(mlow)) slots.document = 'data_sheet';
+  for(const m of matches){
+    if(m.category === 'item' && m.canonical) slots.targetItem = slots.targetItem || m.canonical;
+    if(m.category === 'location') slots.location = m.canonical || m.phrase;
+    if(m.category === 'entity' && m.canonical) slots.entity = m.canonical;
+    if(m.category === 'attribute' && m.canonical){
+      slots.attributes.push(m.canonical);
+      slots.attribute = slots.attribute || m.canonical;
+    }
+    if(m.category === 'document' && m.canonical) slots.document = m.canonical;
+    if(m.category === 'material' && m.canonical) slots.domainCue.push('material:' + m.canonical);
+  }
+  if(slots.attributes.length >= 2) slots.comparison = true;
+  return slots;
+}
 function susoInitIntentShell(intent, trace){
   if(!intent._suso) intent._suso = { locks: Object.create(null), trace: trace || [], domain: null };
   intent._suso.trace = trace || intent._suso.trace || [];
@@ -2867,9 +3393,17 @@ function susoSet(intent, key, val, source, trace){
   if(tr) tr.push({ t:'set', key, val, source });
   return true;
 }
-function susoResolvePackItemCanonical(low, requireUseVerb){
+function susoResolvePackItemCanonical(low, requireUseVerb, ctx){
   if(!low || !state?.inventory?.length) return null;
   if(requireUseVerb !== false && !SUSO_USE_VERB_RE.test(low)) return null;
+  const pm = ctx && ctx._phraseMatches;
+  if(pm && pm.length){
+    const hits = pm.filter(m => m.category === 'item' && m.canonical && hasItem(m.canonical))
+      .sort((a, b) => b.phrase.length - a.phrase.length);
+    for(const m of hits){
+      return m.canonical;
+    }
+  }
   const invSorted = [...state.inventory].sort((a,b)=>String(b.name||'').length - String(a.name||'').length);
   for(const it of invSorted){
     const nm = String(it.name||'').toLowerCase();
@@ -2885,14 +3419,187 @@ function susoResolvePackItemCanonical(low, requireUseVerb){
 function susoClassifyDomain(low, intent){
   if(intent.fromArrow) return 'navigation';
   if(intent.insane) return 'meta';
+  const sem = intent.semantic;
+  if(sem && (sem.questionType || sem.intent === 'retrieve') && (sem.attribute || sem.document || (sem.attributes && sem.attributes.length))){
+    return 'document_query';
+  }
+  if(/\b(what|which|show|find)\b[\s\S]{0,64}\b(rating|temperature|strength|hardness|dimension|tolerance|voltage|amperage|resistance|sheet|pdf|part number|model number)\b/i.test(low)){
+    return 'document_query';
+  }
   if(/\b(attack|fight|hit|stab|slash|defend|guard|brace)\b/.test(low)) return 'combat';
   if(/\b(talk|ask|speak|greet|question|tell)\b/.test(low)) return 'social';
   if(/\b(move|go|walk|run|step|leave|exit|enter|travel|head)\b/.test(low) && intent.type==='move') return 'navigation';
   if(/\b(rest|wait|pause)\b/.test(low)) return 'recovery';
-  if(susoResolvePackItemCanonical(low, true)) return 'pack_use';
+  if(susoResolvePackItemCanonical(low, true, intent)) return 'pack_use';
   if(/\b(combine|craft|mix)\b/.test(low)) return 'craft';
   return 'world';
 }
+
+/** Registered execution adapters (interpretation routes here; game still uses resolveAction). */
+const SUSO_ADAPTER_IDS = ['game', 'document_query', 'ui_navigation', 'search_filter'];
+
+function susoDetermineRoutedKind(adapter, intent, semantic, low){
+  const sem = semantic || {};
+  const t = String(low || '');
+  if(adapter === 'document_query'){
+    if(sem.comparison && sem.attributes && sem.attributes.length >= 2) return 'compare';
+    if(sem.questionType === 'wh_question' || /\b(what|which|how)\b/.test(t)) return 'question';
+    if(sem.intent === 'retrieve' || /\b(show|find|lookup|list)\b/.test(t)) return 'lookup';
+    return 'question';
+  }
+  if(adapter === 'ui_navigation') return 'navigation';
+  if(adapter === 'search_filter') return 'filter';
+  if(intent.type === 'inspect' || intent.action === 'inspect') return 'inspect';
+  if(intent.type === 'listen') return 'inspect';
+  if(intent.type === 'search') return 'lookup';
+  return 'action';
+}
+function susoBuildRoutedPayload(adapter, kind, intent, semantic, text){
+  const sem = semantic || {};
+  const raw = String(text || '');
+  const low = raw.toLowerCase();
+  const base = {
+    version: 1,
+    kind,
+    adapter,
+    domain: intent._suso?.domain || 'world',
+    raw,
+    game: {
+      type: intent.type,
+      target: intent.target,
+      direction: intent.direction,
+      travel: intent.travel,
+      explicitExit: intent.explicitExit,
+      resolvedUseItemName: intent.resolvedUseItemName || null,
+      resolvedEntityId: intent.resolvedEntityId || null,
+      topic: intent.topic || null,
+      method: intent.method || null,
+      action: intent.action || null
+    },
+    document: null,
+    navigation: null,
+    filter: null
+  };
+  if(adapter === 'document_query'){
+    base.document = {
+      attribute: sem.attribute || null,
+      attributes: (sem.attributes && sem.attributes.slice) ? sem.attributes.slice() : [],
+      document: sem.document || null,
+      targetItem: sem.targetItem || null,
+      comparison: !!sem.comparison,
+      qualifiers: sem.domainCue || [],
+      questionType: sem.questionType || null
+    };
+  }
+  if(adapter === 'ui_navigation'){
+    base.navigation = {
+      destination: sem.location || null,
+      entityHint: sem.entity || null,
+      direction: intent.direction || null,
+      travel: !!intent.travel,
+      explicitExit: !!intent.explicitExit
+    };
+  }
+  if(adapter === 'search_filter'){
+    base.filter = {
+      hint: 'filter_parse_not_implemented',
+      semanticCue: sem.domainCue || []
+    };
+  }
+  return base;
+}
+function susoAdapterDocumentQueryStub(intent, routedPayload){
+  const doc = routedPayload.document || {};
+  return {
+    executed: false,
+    stub: true,
+    adapter: 'document_query',
+    kind: routedPayload.kind,
+    query: {
+      attribute: doc.attribute,
+      attributes: doc.attributes || [],
+      document: doc.document,
+      targetItem: doc.targetItem,
+      comparison: doc.comparison,
+      qualifiers: doc.qualifiers || []
+    },
+    note: 'Document backend not wired; consume routed payload in host app.'
+  };
+}
+function susoAdapterSearchFilterStub(intent, routedPayload){
+  return { executed: false, stub: true, adapter: 'search_filter', filter: routedPayload.filter, note: 'Search/filter execution not wired.' };
+}
+function susoAdapterUiNavigationStub(intent, routedPayload){
+  return {
+    executed: false,
+    stub: true,
+    adapter: 'ui_navigation',
+    destination: routedPayload.navigation && routedPayload.navigation.destination,
+    note: 'Host UI should navigate using navigation payload.'
+  };
+}
+/**
+ * Slot → adapter mapping (deterministic order — explicit beats heuristic):
+ * 1) Arrow move → ui_navigation
+ * 2) Pack / use-item lock → game (inventory verbs win)
+ * 3) Classified document_query domain → document_query
+ * 4) Filter / sort phrasing → search_filter
+ * 5) Classified navigation domain → ui_navigation
+ * 6) Default → game
+ */
+function susoPickExecutionAdapter(intent, low){
+  const l = String(low || '');
+  const sem = intent.semantic || {};
+  if(intent.fromArrow) return { adapter: 'ui_navigation', rule: 'arrow_move' };
+  if(intent._suso?.domain === 'pack_use' || susoIsLocked(intent, 'resolvedUseItemName') || intent.resolvedUseItemName) return { adapter: 'game', rule: 'pack_or_use_lock' };
+  const dom = intent._suso?.domain || 'world';
+  if(dom === 'document_query') return { adapter: 'document_query', rule: 'domain_document_query' };
+  if(/\b(filter by|filter|sort by|only show|narrow down|narrow to)\b/i.test(l)) return { adapter: 'search_filter', rule: 'filter_keywords' };
+  if(dom === 'navigation') return { adapter: 'ui_navigation', rule: 'domain_navigation' };
+  return { adapter: 'game', rule: 'default_game_world' };
+}
+function susoListRejectedAdapters(chosen){
+  return SUSO_ADAPTER_IDS.filter(id => id !== chosen).map(id => ({
+    adapter: id,
+    reason: 'not_selected:winner=' + chosen
+  }));
+}
+function susoRouteInterpretation(intent, text, low, trace){
+  const pick = susoPickExecutionAdapter(intent, low);
+  const adapter = pick.adapter;
+  const sem = intent.semantic || {};
+  const kind = susoDetermineRoutedKind(adapter, intent, sem, low);
+  const payload = susoBuildRoutedPayload(adapter, kind, intent, sem, text);
+  const rejected = susoListRejectedAdapters(adapter);
+  let execution = null;
+  if(adapter === 'document_query') execution = susoAdapterDocumentQueryStub(intent, payload);
+  else if(adapter === 'search_filter') execution = susoAdapterSearchFilterStub(intent, payload);
+  else if(adapter === 'ui_navigation') execution = susoAdapterUiNavigationStub(intent, payload);
+  else execution = { executed: false, stub: false, adapter: 'game', delegate: 'game_intent', note: 'Use existing dungeon/hub resolvers.' };
+
+  const routed = {
+    version: 1,
+    kind,
+    adapter,
+    domain: payload.domain,
+    rule: pick.rule,
+    payload,
+    execution,
+    rejectedAlternatives: rejected
+  };
+  intent.routed = routed;
+  trace.push({
+    t: 'routing',
+    adapter,
+    kind,
+    rule: pick.rule,
+    domain: payload.domain,
+    executionShape: execution && { stub: execution.stub, adapter: execution.adapter, kind: routed.kind },
+    rejectedAlternatives: rejected
+  });
+  return routed;
+}
+
 function susoApplyExplicitLocksFromParse(intent, low, trace){
   susoInitIntentShell(intent, trace);
   if(intent.fromArrow){
@@ -2901,7 +3608,7 @@ function susoApplyExplicitLocksFromParse(intent, low, trace){
     return;
   }
   if(intent.insane) susoLock(intent, 'insane', 'player_declared');
-  const pack = susoResolvePackItemCanonical(low, true);
+  const pack = susoResolvePackItemCanonical(low, true, intent);
   if(pack){
     susoLock(intent, 'type', 'pack_item');
     susoLock(intent, 'resolvedUseItemName', 'pack_item');
@@ -2939,7 +3646,7 @@ function susoArbitrateScenePlan(intent, plan, text, trace){
   if(!plan || plan.confidence < 0.22) return intent;
   const low = String(text||'').toLowerCase();
   if(intent.fromArrow) return intent;
-  if(susoIsLocked(intent, 'resolvedUseItemName') || susoResolvePackItemCanonical(low, true)) return intent;
+  if(susoIsLocked(intent, 'resolvedUseItemName') || susoResolvePackItemCanonical(low, true, intent)) return intent;
   if(['move','rest','combine'].includes(intent.type) && plan.confidence < 0.55) return intent;
 
   intent.susoPlan = plan;
@@ -3010,7 +3717,7 @@ function susoApplyBoundedFollowUpIntent(text, intent, room, trace){
     if(fu.lastTopic && (intent.type==='talk' || intent.target==='npc') && !susoIsLocked(intent, 'topic')) susoSet(intent, 'topic', fu.lastTopic, 'follow_up', trace);
   }
 
-  const packCanonEarly = susoResolvePackItemCanonical(low, true);
+  const packCanonEarly = susoResolvePackItemCanonical(low, true, intent);
   const entityFollowPhrase = fresh && !packCanonEarly && fu.lastResolvedEntityId && (
     /\b(ask again|tell (her|him) again|talk to (her|him) again|continue (talking )?to (her|him)|buy from (her|him))\b/.test(low)
     || /^(ask again|talk to her|talk to him)$/i.test(String(text||'').trim())
@@ -3052,7 +3759,7 @@ function susoApplyBoundedFollowUpIntent(text, intent, room, trace){
   }
 }
 function susoEnsurePackPin(intent, low, trace){
-  const pack = susoResolvePackItemCanonical(low, true);
+  const pack = susoResolvePackItemCanonical(low, true, intent);
   if(!pack) return;
   susoInitIntentShell(intent, trace);
   intent.type = 'use';
@@ -3226,7 +3933,7 @@ function susoResolveEntityBinding(intent, text, room, trace){
   if(!intent || !state) return;
   const low = String(text||'').toLowerCase();
   trace.push({ t:'entity_resolution_start', domain:intent._suso?.domain, type:intent.type, target:intent.target });
-  if(susoIsLocked(intent, 'resolvedUseItemName') || susoResolvePackItemCanonical(low, true)){
+  if(susoIsLocked(intent, 'resolvedUseItemName') || susoResolvePackItemCanonical(low, true, intent)){
     trace.push({ t:'entity_skip', reason:'pack_locked_or_item_verb' });
     return;
   }
@@ -3260,8 +3967,13 @@ function susoResolveEntityBinding(intent, text, room, trace){
     susoInferProximityHostile(intent, low, trace);
   }
 }
-function inferToolFromText(text=''){
+function inferToolFromText(text='', phraseMatches){
   const low = String(text||'').toLowerCase();
+  if(phraseMatches && phraseMatches.length){
+    const items = phraseMatches.filter(m => m.category === 'item' && m.canonical && hasItem(m.canonical))
+      .sort((a, b) => b.phrase.length - a.phrase.length);
+    if(items.length) return items[0].canonical;
+  }
   const inv = state?.inventory || [];
   const direct = inv.find(i => low.includes(String(i.name||'').toLowerCase()));
   if(direct) return direct.name;
@@ -3271,7 +3983,7 @@ function inferToolFromText(text=''){
   const w = inv.find(i => i.kind==='weapon' && (/\bsword\b/.test(low) && /sword/i.test(i.name) || /\bknife\b/.test(low) && /knife/i.test(i.name) || /\baxe\b/.test(low) && /axe/i.test(i.name)));
   return w?.name || null;
 }
-function explicitUseInventoryName(low){ return susoResolvePackItemCanonical(low, true); }
+function explicitUseInventoryName(low, ctx){ return susoResolvePackItemCanonical(low, true, ctx); }
 function pinExplicitUseItemIntent(intent, low){
   susoEnsurePackPin(intent, String(low||'').toLowerCase(), intent._suso?.trace || []);
 }
@@ -3430,7 +4142,9 @@ function buildSceneModel(room){
     lastInteractable: state.context?.lastInteractable || null,
     lastProgressLead: state.context?.lastProgressLead || null,
     lastTopic: state.context?.lastTopic || null,
-    facts: (state.facts || []).slice(-6)
+    facts: (state.facts || []).slice(-6),
+    plotStage: ensureStoryArc(state).stage|0,
+    plotThesis: PLOT_CORE.thesis
   };
 }
 function scoreIntentCandidates(text, scene){
@@ -3594,6 +4308,15 @@ function interpretIntentRich(text){
   const low = String(text||'').toLowerCase();
   const rich = {...base};
   susoInitIntentShell(rich, trace);
+  const phraseMatches = susoCollectPhraseMatches(low);
+  rich._phraseMatches = phraseMatches;
+  rich.semantic = susoApplyDomainSlotMappers(susoBuildSemanticSlots(low, phraseMatches), phraseMatches);
+  trace.push({
+    t: 'phrase_layer',
+    chunks: phraseMatches.map(m => ({ phrase: m.phrase, category: m.category, canonical: m.canonical, span: [m.start, m.end], source: m.source, pack: m.pack || null })),
+    longest: phraseMatches.length ? phraseMatches.reduce((a, b) => (b.phrase.length > a.phrase.length ? b : a)) : null,
+    semanticSlots: rich.semantic
+  });
 
   susoApplyExplicitLocksFromParse(rich, low, trace);
 
@@ -3614,7 +4337,7 @@ function interpretIntentRich(text){
     /\b(force|kick|smash|rip|tear|hard)\b/.test(low) ? 'force' :
     /\b(sneak|quietly|stealth|softly)\b/.test(low) ? 'stealth' :
     'normal';
-  if(!susoIsLocked(rich, 'tool')) rich.tool = inferToolFromText(text);
+  if(!susoIsLocked(rich, 'tool')) rich.tool = inferToolFromText(text, phraseMatches);
   rich.goal =
     /\b(open|unlock|descend|deeper|progress)\b/.test(low) ? 'progress' :
     /\b(loot|take|grab|gather)\b/.test(low) ? 'loot' :
@@ -3647,8 +4370,20 @@ function interpretIntentRich(text){
   susoEnsurePackPin(rich, low, trace);
   susoResolveEntityBinding(rich, text, room, trace);
 
+  susoRouteInterpretation(rich, text, low, trace);
+
+  trace.push({
+    t: 'interpretation_path',
+    domain: rich._suso.domain,
+    adapter: rich.routed && rich.routed.adapter,
+    routedKind: rich.routed && rich.routed.kind,
+    type: rich.type,
+    resolvedPack: rich.resolvedUseItemName || null,
+    entity: rich.resolvedEntityId || null,
+    semantic: rich.semantic
+  });
   rich.intentTrace = trace.slice();
-  if(state) state.lastIntentTrace = rich.intentTrace.slice(-24);
+  if(state) state.lastIntentTrace = rich.intentTrace.slice(-28);
   return rich;
 }
 function canDoAction(target, action){
@@ -3768,6 +4503,7 @@ function goToNextFloor(reason=''){
   const strata = descentStrataNarration(to, state.theme);
   if(strata) addEntry('sys', strata, 'Strata');
   if(from === 1 && to === 2) deliverActTwoStoryBeat(reason);
+  plotFloorMilestone(state, to);
 }
 function createRun(profile={}){
   const seed = Date.now() ^ ((Math.random()*1e9)|0);
@@ -3801,6 +4537,7 @@ function createRun(profile={}){
     dungeon:{level:1, seed},
     story:{ act: 1, actTwoDelivered: false },
     storyActTwo: null,
+    storyArc: defaultStoryArc(),
     context:{lastTarget:null,lastAction:null,lastTool:null,lastRoomId:null,lastNpc:null,lastInteractable:null,lastProgressLead:null,lastTopic:null}
   };
   run.worldPhase = 'dungeon';
@@ -3810,6 +4547,8 @@ function createRun(profile={}){
     run.lights = c.lights|0;
     run.inventory = JSON.parse(JSON.stringify(c.inventory||run.inventory));
     run.townMemory = c.townMemory ? JSON.parse(JSON.stringify(c.townMemory)) : (run.townMemory || defaultTownMemory());
+    run.storyArc = Object.assign(defaultStoryArc(), c.storyArc ? JSON.parse(JSON.stringify(c.storyArc)) : {});
+    run.storyArc.newDelveCount = (run.storyArc.newDelveCount|0) + 1;
     if(c.player){
       run.player.level = c.player.level != null ? c.player.level : run.player.level;
       run.player.xp = c.player.xp != null ? c.player.xp : run.player.xp;
@@ -4127,10 +4866,9 @@ function describeRoom(run, room, first=false){
 }
 
 function roomFeatureLabel(sym){
-  return ({
-    C:'a chest',D:'a sealed door',W:'standing water',E:'a lurking threat',T:'a hidden trap',X:'broken rubble','^':'a shrine',S:'a stair or gate','n':'a survivor','k':'a glinting key','O':'an opening','%':'a body',
-    s:'the lantern shop', b:'the forge', i:'the inn', h:'the covenant hall', m:'a market stall', a:'the archives', w:'the old well', G:'the Gate to the Depths'
-  })[sym] || 'something in the room';
+  const m = mapTileEntry(sym);
+  if(m?.nearbyPhrase) return m.nearbyPhrase;
+  return mapTileShortLabel(sym) !== 'tile' ? mapTileShortLabel(sym).toLowerCase() : 'something in the room';
 }
 function makeRoomHiddenDetail(run, room, feats){
   const rr = rngFactory(run.seed + room.id*811 + 17);
@@ -4417,6 +5155,9 @@ function localLanguageModelIntent(text, baseIntent){
   const intent={...baseIntent};
   const tr = intent._suso?.trace || (intent.intentTrace ? intent.intentTrace.slice() : []);
   susoInitIntentShell(intent, tr);
+  const pm = susoCollectPhraseMatches(t);
+  intent._phraseMatches = pm;
+  intent.semantic = susoBuildSemanticSlots(t, pm);
   const nearby=nearbyInteractiveContext(1);
   const nearest=nearby[0]||null;
   const labels=nearby.map(n=>n.kind);
@@ -4456,7 +5197,7 @@ function localLanguageModelIntent(text, baseIntent){
   }
   intent.travel = false;
   intent.explicitExit = false;
-  if(!intent.target && !susoIsLocked(intent, 'target') && nearest && /\b(inspect|look|check|open|attack|talk|use|search|listen|deal with|touch)\b/.test(t) && !intent.resolvedUseItemName && !explicitUseInventoryName(t)){
+  if(!intent.target && !susoIsLocked(intent, 'target') && nearest && /\b(inspect|look|check|open|attack|talk|use|search|listen|deal with|touch)\b/.test(t) && !intent.resolvedUseItemName && !explicitUseInventoryName(t, intent)){
     susoSet(intent, 'target', nearest.kind, 'lml_nearest', tr);
   }
 
@@ -4465,6 +5206,8 @@ function localLanguageModelIntent(text, baseIntent){
   if(baseIntent?.tool && !susoIsLocked(intent, 'tool')) intent.tool = baseIntent.tool;
 
   pinExplicitUseItemIntent(intent, t);
+  intent._suso.domain = intent._suso.domain || susoClassifyDomain(t, intent);
+  susoRouteInterpretation(intent, raw, t, tr);
   intent.intentTrace = tr;
   return {intent, usedAI:false, localBrain:true, raw:{nearby:nearby.slice(0,5), source:'suso-local-language-model', style}};
 }
@@ -4541,7 +5284,7 @@ function extractTarget(t){
   if(/\b(blacksmith|smith)\b/.test(t) && !/\blocksmith\b/.test(t)) return 'npc';
   if(/\b(guard|gatekeeper|shrine\s*keeper)\b/.test(t)) return 'npc';
   if(/\bforge\b/.test(t) && /\b(inspect|examine|visit|check|use|open)\b/.test(t)) return 'forge';
-  if(/\b(shop|lanterns?)\b/.test(t) && /\b(inspect|visit|enter|check)\b/.test(t)) return 'shop';
+  if(/\b(shop|lanterns?)\b/.test(t) && /\b(inspect|visit|enter|check|open)\b/.test(t)) return 'shop';
   if(/\b(shrine|altar|idol)\b/.test(t)) return 'shrine';
   if(/\b(trap|pressure plate|tripwire)\b/.test(t)) return 'trap';
   if(/\b(rubble|debris|stones)\b/.test(t)) return 'rubble';
@@ -4776,6 +5519,11 @@ function openShopModal(){
       if(!o || !spendLights(o.price)){ addEntry('bad', 'Mara taps the counter. "Not enough Lights — the Depths take first, always."', 'Shop'); refreshUI(); return; }
       gainItem(o.factory());
       addEntry('sys', `You trade ${o.price} Lights for ${o.name}.`, 'Shop');
+      const stShop = ensureStoryArc(state).stage|0;
+      const rrS = rngFactory((state.seed|0) + (state.turn|0) * 53 + o.price);
+      if(stShop >= 3 && rrS() < 0.38){
+        addEntry('sys', 'Mara’s smile doesn’t reach her eyes. "Pleasure doing business," she says — as if the phrase were a receipt for someone else’s remainder.', 'Shop');
+      }
       markHubStep('shop');
       refreshUI();
     };
@@ -4804,6 +5552,11 @@ function tryForgeSharpen(){
   state.flags.forgeUsedThisVisit = true;
   markHubStep('forge');
   addEntry('sys', `${w.name} rings truer — edges tuned for the Depths.`, 'Forge');
+  const stF = ensureStoryArc(state).stage|0;
+  const rrF = rngFactory((state.seed|0) + (state.turn|0) * 61);
+  if(stF >= 3 && rrF() < 0.35){
+    addEntry('sys', 'Brant doesn’t count the Lights out loud — but you hear them anyway, like teeth on a file.', 'Forge');
+  }
   closeForgeModal();
   refreshUI();
 }
@@ -4827,20 +5580,28 @@ function syncHubButtons(){
 }
 function syncDelveStatus(){
   if(!els.delveStatusDetail || !els.delveStatusTitle) return;
+  const st = ensureStoryArc(state).stage|0;
+  const plotNote = st >= 4
+    ? ' <span class="small">Mystery: the covenant’s calm is too neat — something in the loop is being paid for twice. Lights sit heavy in town air.</span>'
+    : st >= 3
+      ? ' <span class="small">Mystery: spending Lights should feel ordinary — it doesn’t anymore. Watch who flinches first: you, or the bells.</span>'
+    : st >= 2
+      ? ' <span class="small">Mystery: watch the Gate, the ledgers, and what “Lights” refuse to mean out loud.</span>'
+      : '';
   if(isHubWorld()){
     els.delveStatusTitle.textContent = state.dungeonSnapshot ? 'Lumen Town — suspended delve' : 'Lumen Town — hub';
     const tm = state.townMemory || defaultTownMemory();
     const deepNote = (tm.deepestFloorEver|0) >= 1 ? ` Your journal remembers descending to <strong>floor ${tm.deepestFloorEver}</strong>.` : '';
     if(state.dungeonSnapshot){
-      els.delveStatusDetail.innerHTML = 'A <strong>saved delve</strong> waits. Stand on <strong>G</strong>: <em>Continue</em> resumes the same dungeon; <em>New delve</em> abandons that save but keeps your character, Lights, and pack. Inventory from town always crosses with you.' + deepNote;
+      els.delveStatusDetail.innerHTML = 'A <strong>saved delve</strong> waits. Stand on <strong>G</strong>: <em>Continue</em> resumes the same dungeon; <em>New delve</em> abandons that save but keeps your character, Lights, and pack. Inventory from town always crosses with you.' + deepNote + plotNote;
     }else{
-      els.delveStatusDetail.innerHTML = 'No suspended run. Visit <strong>s</strong> (Mara) and <strong>b</strong> (Brant), then stand on <strong>G</strong> and choose <em>Enter the Depths</em> for a <strong>new</strong> underworld.' + deepNote;
+      els.delveStatusDetail.innerHTML = 'No suspended run. Visit <strong>s</strong> (Mara) and <strong>b</strong> (Brant), then stand on <strong>G</strong> and choose <em>Enter the Depths</em> for a <strong>new</strong> underworld.' + deepNote + plotNote;
     }
   }else{
     const fl = state.dungeon && state.dungeon.level != null ? state.dungeon.level : 1;
     els.delveStatusTitle.textContent = `Active delve — floor ${fl}`;
     const qt = state.quest && state.quest.title ? escapeHtml(state.quest.title) : 'Survive';
-    els.delveStatusDetail.innerHTML = `Objective: <strong>${qt}</strong>. <em>Return to Lumen Town</em> suspends this expedition (map & dungeon progress). Your Lights, level, inventory, and journal stay on you.`;
+    els.delveStatusDetail.innerHTML = `Objective: <strong>${qt}</strong>. <em>Return to Lumen Town</em> suspends this expedition (map & dungeon progress). Your Lights, level, inventory, and journal stay on you.` + plotNote;
   }
 }
 async function processHubWorldTurn(text, parsedIntent, arrowMove){
@@ -5133,21 +5894,8 @@ function resolveArrowTravel(dir, room){
   }
   movePlayer(nx,ny);
   let txt=`You move ${dir}.`;
-  if(cell==='W') txt+=' Water darkens the floor here; if you want to drink it or test it, that will take a roll.';
-  else if(cell==='C') txt+=' A chest sits here within reach. Use the text box to inspect, pry, or open it.';
-  else if(cell==='S') txt+=' Stairs wait here. Use the text box to descend, inspect, or steady yourself before taking them.';
-  else if(cell==='T') txt+=' You spot a trap line or plate nearby. Use the text box to inspect or disarm it before committing further.';
-  else if(cell==='X') txt+=' Rubble narrows the route. Use the text box if you want to clear, search, or climb it carefully.';
-  else if(cell==='^') txt+=' A shrine stands here. Prayer, offerings, or inspection will require a roll.';
-  else if(cell==='k') txt+=' Something key-like glints here. Use the text box to claim it carefully.';
-  else if(cell==='s') txt+=' A lanterned shop-front — Mara’s prices are honest, if not kind.';
-  else if(cell==='b') txt+=' Heat rolls from Ironfold — Brant’s hammer speaks in sparks.';
-  else if(cell==='G') txt+=' The Gate breathes cold from the Depths. Use the Expedition buttons when you are ready.';
-  else if(cell==='w') txt+=' The well remembers every bucket raised in hope.';
-  else if(cell==='i') txt+=' The inn’s shutters promise sleep you may not yet deserve.';
-  else if(cell==='h') txt+=' Covenant Hall keeps minutes the town pretends not to need.';
-  else if(cell==='m') txt+=' A market stall offers gossip cheaper than bread.';
-  else if(cell==='a') txt+=' The archives smell like ink, dust, and old warnings.';
+  const step = mapTileStepNote(cell);
+  if(step) txt += step;
   const newRoom=getCurrentRoom();
   if(newRoom && newRoom.id!==room.id) txt += ' ' + describeRoom(state,newRoom,false);
   return {kind:'sys', text:txt.trim(), meta:'Arrow move', entered:newRoom && newRoom.id!==room.id};
@@ -5280,26 +6028,35 @@ function resolveInspect(intent, r, room, rng){
   const rawIn = intent?.raw || '';
   const lowIn = rawIn.toLowerCase();
   if(intent?.resolvedEntityId==='world:forge' || intent?.target==='forge'){
+    const sym = worldSymbolFromTarget('forge');
     const pt = adjacentTargetPointFor('forge', room, intent);
-    if(!pt) return {kind:'bad', text:'No forge tile is adjacent. In Lumen, stand beside Ironfold (b).', meta:tierMetaLabel('Inspect', r)};
-    const hub = isHubWorld();
-    return {kind:'sys', text: hub ? 'You read Ironfold the way a smith reads weather: heat, ash, and the memory of oaths hammered into steel.' : 'You find no traveling forge here — only the idea of heat, quickly cooling.', meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
+    if(!pt) return {kind:'bad', text: mapTileAdjacentFail(sym) || 'No forge tile (b) is beside you.', meta:tierMetaLabel('Inspect', r)};
+    const line = mapTileWorldInspect(sym);
+    const body = (line || mapTileTooltipFull(sym)) + plotInspectAddendum(sym);
+    return {kind:'sys', text: body, meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
   }
   if(intent?.resolvedEntityId==='world:shop' || intent?.target==='shop'){
+    const sym = worldSymbolFromTarget('shop');
     const pt = adjacentTargetPointFor('shop', room, intent);
-    if(!pt) return {kind:'bad', text:'No shop-front is adjacent. In Lumen, stand beside Mara’s tile (s).', meta:tierMetaLabel('Inspect', r)};
-    return {kind:'sys', text:'Lanterns, rope, and tonics sit in rows that remember every return from the Depths.', meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
+    if(!pt) return {kind:'bad', text: mapTileAdjacentFail(sym) || 'No shop tile (s) is beside you.', meta:tierMetaLabel('Inspect', r)};
+    const line = mapTileWorldInspect(sym);
+    const body = (line || mapTileTooltipFull(sym)) + plotInspectAddendum(sym);
+    return {kind:'sys', text: body, meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
   }
   if(intent?.resolvedEntityId==='world:gate' || (intent?.target==='gate' && /\bgate\b/.test(lowIn))){
+    const sym = worldSymbolFromTarget('gate');
     const pt = adjacentTargetPointFor('gate', room, intent);
-    if(!pt) return {kind:'bad', text:'The Gate is not beside you. Step onto **G** in Lumen first.', meta:tierMetaLabel('Inspect', r)};
-    return {kind:'sys', text:'Worked stone breathes cold upward — the Gate listens for deliberate footfalls, not curiosity.', meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
+    if(!pt) return {kind:'bad', text: mapTileAdjacentFail(sym) || 'The Depths Gate (G) is not beside you.', meta:tierMetaLabel('Inspect', r)};
+    const line = mapTileWorldInspect(sym);
+    const body = (line || mapTileTooltipFull(sym)) + plotInspectAddendum(sym);
+    return {kind:'sys', text: body, meta:tierMetaLabel('Inspect', r), pulse:{x:pt.x,y:pt.y,kind:'generic'}};
   }
   const target = intent?.target || inferAmbientTarget(rawIn, room, rng);
   if(!target){
     revealAround(state,7);
     if(r>=6) state.flags.questSearched = true;
-    return {kind:'sys', text:`You slow down and let ${room.name} stop being background. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
+    const disc = plotDungeonAmbientDiscoveryAppend(room, rng);
+    return {kind:'sys', text:`You slow down and let ${room.name} stop being background. ${generateClue(room,rng)}${disc}`, meta:tierMetaLabel('Inspect', r)};
   }
   const pt = adjacentTargetPointFor(target, room, intent);
   if(!pt) return {kind:'bad', text:`No ${target} is adjacent (same tile or one step away). Move beside it to inspect it properly.`, meta:tierMetaLabel('Inspect', r)};
@@ -5315,7 +6072,8 @@ function resolveInspect(intent, r, room, rng){
   if(target==='enemy') return resolveEnemyInteraction('inspect', eff, room, rng, pt, intent?.raw||'');
   revealAround(state,7);
   if(r>=6) state.flags.questSearched = true;
-  return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r)};
+  const disc2 = plotDungeonAmbientDiscoveryAppend(room, rng);
+  return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}${disc2}`, meta:tierMetaLabel('Inspect', r)};
 }
 function resolveListen(intent, r, room, rng){
   const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
@@ -5325,7 +6083,8 @@ function resolveListen(intent, r, room, rng){
     if(target==='door') return resolveDoorInteraction('listen', effectiveRollForIntent(intent, r, room, 'door'), room, rng, pt, intent?.raw||'');
     if(target==='water') return resolveWaterInteraction('inspect', effectiveRollForIntent(intent, r, room, 'water'), room, rng, pt, intent?.raw||'');
   }
-  return {kind:'sys', text:`You hold still long enough for ${room.name} to admit it is not empty. ${generateClue(room,rng)}`, meta:tierMetaLabel('Listen', r)};
+  const discL = plotDungeonAmbientDiscoveryAppend(room, rng);
+  return {kind:'sys', text:`You hold still long enough for ${room.name} to admit it is not empty. ${generateClue(room,rng)}${discL}`, meta:tierMetaLabel('Listen', r)};
 }
 function resolveSearch(intent, r, room, rng){
   const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
@@ -5343,7 +6102,8 @@ function resolveSearch(intent, r, room, rng){
   }
   revealAround(state,7);
   if(r>=6) state.flags.questSearched = true;
-  return {kind:'sys', text:`You search the area carefully and recover more of the room's intent. ${generateClue(room,rng)}`, meta:tierMetaLabel('Search', r)};
+  const discS = plotDungeonAmbientDiscoveryAppend(room, rng);
+  return {kind:'sys', text:`You search the area carefully and recover more of the room's intent. ${generateClue(room,rng)}${discS}`, meta:tierMetaLabel('Search', r)};
 }
 function resolveOpen(intent, r, room, rng){
   const target = intent?.target || inferAmbientTarget(intent?.raw || '', room, rng);
@@ -5644,7 +6404,7 @@ function resolveUse(intent, r, room, rng){
     }
     return {kind:'bad', text:'No weapon in your pack matches that name closely enough to equip.', meta:tierMetaLabel('Use', r)};
   }
-  const resolved = intent.resolvedUseItemName || explicitUseInventoryName(rawUse);
+  const resolved = intent.resolvedUseItemName || explicitUseInventoryName(rawUse, intent);
   if(resolved){
     if(!hasItem(resolved)){
       return {kind:'bad', text:`You mean to use ${resolved}, but it is not in your pack.`, meta:`Use · ${r}`};
@@ -5948,7 +6708,8 @@ function resolveWaterInteraction(verb, r, room, rng, point, raw){
   const wi = rs?.interactables?.water?.waterInsight|0;
   const clue = wi>=2 ? `${generateClue(room,rng)} The pool’s earlier sips and splashes now line up — you read depth from memory, not hope.` : generateClue(room,rng);
   addFactOnce('You read the water’s surface before trusting it.');
-  return {kind:'sys', text:`You test the water instead of trusting it. ${clue}`, successLevel:'partial', changed:true, progression:false, discoveries:[clue], textSeed:'water_inspect_partial', meta:tierMetaLabel('Interact', r), pulse};
+  const wlead = mapTileInspectLead('W', 'You test the water instead of trusting it.');
+  return {kind:'sys', text:`${wlead} ${clue}`, successLevel:'partial', changed:true, progression:false, discoveries:[clue], textSeed:'water_inspect_partial', meta:tierMetaLabel('Interact', r), pulse};
 }
 function resolveDoorInteraction(verb, r, room, rng, point, raw){
   const locked = !state.flags.innerGateOpen && !hasItem('Saint Key') && !hasItem('Iron Key');
@@ -5957,8 +6718,8 @@ function resolveDoorInteraction(verb, r, room, rng, point, raw){
   }
   if(verb==='inspect'){
     touchRoomObject(room, 'door', { inspected:true });
-    if(locked) return {kind:'sys', text:'The door is locked, but the lock is real enough to answer to a proper key or a violent argument.', meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point), changed:true};
-    return {kind:'sys', text:'The door has already been made passable.', meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point), changed:true};
+    if(locked) return {kind:'sys', text:`${mapTileInspectLead('D', 'You study the door and its lock.')} The lock is real enough to answer to a key or force.`, meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point), changed:true};
+    return {kind:'sys', text:`${mapTileInspectLead('D', 'You study the threshold.')} The way is already open.`, meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point), changed:true};
   }
   if(verb==='open' || verb==='force' || verb==='use'){
     if(!point) return {kind:'bad', text:'There is no door adjacent to work on. Stand beside it first.', meta:tierMetaLabel('Open', r), blocked:true};
@@ -5997,13 +6758,14 @@ function resolveDoorInteraction(verb, r, room, rng, point, raw){
     addFactOnce('The door refuses; you file away what it would have taken.');
     return {kind:'bad', text:'', successLevel:'fail', changed:true, progression:false, textSeed:'door_open_fail', meta:tierMetaLabel('Open', r), pulse: pp};
   }
-  return {kind:'sys', text:`You study the door instead of trusting it. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point)};
+  return {kind:'sys', text:`${mapTileInspectLead('D', 'You study the door instead of trusting it.')} ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point)};
 }
 function resolveChestInteraction(verb, r, room, rng, point, raw){
   if(!point) return {kind:'bad', text:'There is no chest adjacent to work on.', meta:tierMetaLabel('Open', r), blocked:true};
   const lootPulse = {x:point.x,y:point.y,kind:'loot'};
   if(verb==='inspect'){
-    return {kind:'sys', text:`You inspect the chest carefully. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse:lootPulse};
+    const lead = mapTileInspectLead('C', 'You inspect the chest carefully.');
+    return {kind:'sys', text:`${lead} ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse:lootPulse};
   }
   if(verb==='open' || verb==='force'){
     if(r < 5){ addFactOnce('The chest teaches you the cost of a clumsy latch.'); return {kind:'bad', text:'', successLevel:'fail', changed:true, progression:false, textSeed:'chest_open_fail', meta:tierMetaLabel('Open', r), pulse:lootPulse}; }
@@ -6030,7 +6792,7 @@ function resolveChestInteraction(verb, r, room, rng, point, raw){
     const seed = r>=16 ? 'chest_open_great' : 'chest_open_success';
     return {kind:'sys', text:'', successLevel: r>=16 ? 'great' : 'success', changed:true, progression:false, rewards:[item.name], textSeed:seed, meta:tierMetaLabel('Open', r), pulse:lootPulse};
   }
-  return {kind:'sys', text:`You judge the chest by its seams and weight. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse:lootPulse};
+  return {kind:'sys', text:`${mapTileInspectLead('C', 'You judge the chest by its seams and weight.')} ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse:lootPulse};
 }
 function resolveTrapInteraction(verb, r, room, rng, point, raw){
   if(!point) return {kind:'bad', text:'No trap lies close enough to command your full attention.', meta:tierMetaLabel('Interact', r), blocked:true};
@@ -6120,13 +6882,16 @@ function resolveShrineInteraction(verb, r, room, rng, point, raw){
   }
   const clue = generateClue(room,rng);
   addFactOnce('The shrine’s wear pattern suggests repeated use by desperate hands.');
-  return {kind:'sys', text:`You study the shrine instead of trusting it. ${clue}`, successLevel:'partial', changed:true, progression:false, discoveries:[clue], meta:tierMetaLabel('Interact', r), pulse};
+  const hlead = mapTileInspectLead('^', 'You study the shrine instead of trusting it.');
+  const plot = plotInspectAddendum('^');
+  return {kind:'sys', text:`${hlead} ${clue}${plot}`, successLevel:'partial', changed:true, progression:false, discoveries:[clue], meta:tierMetaLabel('Interact', r), pulse};
 }
 
 function resolveStairsInteraction(verb, r, room, rng, point, raw){
   if(verb==='inspect'){
     if(!point) return {kind:'bad', text:'No stairs are adjacent to study. Move beside them first.', meta:tierMetaLabel('Inspect', r), blocked:true};
-    return {kind:'sys', text:`You study the stairs and the air around them. ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point)};
+    const slead = mapTileInspectLead('S', 'You study the stairs and the air around them.');
+    return {kind:'sys', text:`${slead} ${generateClue(room,rng)}`, meta:tierMetaLabel('Inspect', r), pulse: progressionPulse('generic', point)};
   }
   if(verb==='open' || verb==='descend' || verb==='use'){
     if(!point) return {kind:'bad', text:'No stairs are adjacent. Stand on or beside the steps first.', meta:tierMetaLabel('Open', r), blocked:true};
@@ -6196,7 +6961,8 @@ function resolveEnemyInteraction(verb, r, room, rng, point, raw){
     const floor = state.dungeon?.level|0 || 1;
     const tag = foeInspect.elite ? ' Elite — more Lights if it falls; meaner damage if it doesn’t.' : '';
     const charge = foeInspect.charging ? ' It is winding a heavy blow.' : '';
-    return {kind:'sys', text:`You read ${foeInspect.name}: HP ${foeInspect.hp}/${foeInspect.maxHp||foeInspect.hp}. Floor ${floor} strain.${tag}${charge}`, meta:tierMetaLabel('Interact', r)};
+    const lead = mapTileInspectLead('E', 'You read stance and threat.');
+    return {kind:'sys', text:`${lead} ${foeInspect.name}: HP ${foeInspect.hp}/${foeInspect.maxHp||foeInspect.hp}. Floor ${floor} strain.${tag}${charge}`, meta:tierMetaLabel('Interact', r)};
   }
   if(verb==='hide'){
     if(r>=13){ addFactOnce('A hostile lost your exact position for a moment.'); return {kind:'sys', text:'You break line and let the room swallow you for a second. The hostile has to hunt instead of simply knowing.', meta:tierMetaLabel('Interact', r)}; }
@@ -6271,20 +7037,92 @@ function resolveRoomInteraction(verb, r, room, rng, raw){
   }
   if(verb==='inspect'){
     revealAround(state,7);
-    return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
+    const discI = plotDungeonAmbientDiscoveryAppend(room, rng);
+    return {kind:'sys', text:`You slow down and let the room stop being background. ${generateClue(room,rng)}${discI}`, meta:tierMetaLabel('Interact', r)};
   }
   revealAround(state,6);
   addFactOnce('You tested the room and forced it to show a little more of its layout.');
   return {kind:'sys', text:`You do something deliberate, and the dungeon answers with a small, honest shift in what you can see. ${generateClue(room,rng)}`, meta:tierMetaLabel('Interact', r)};
 }
+function plotDungeonAmbientEvidence(room, rng){
+  if(!state || isHubWorld()) return null;
+  const arc = ensureStoryArc(state);
+  const st = arc.stage|0;
+  const floor = state.dungeon?.level|0;
+  const tier = arc.personalHookTier|0;
+  const pool = [];
+  if(st >= 2){
+    pool.push(
+      '[Ledger] A **ledger slab** lies face-down in grit — columns for *Name*, *Remainder*, *Lights issued*; the last row is gouged until the stone splinters.',
+      '[Plaque] A **covenant plaque** smiles with scripture on the face; pry at the edge and older mortar shows — someone swapped blessings and hoped the stone would forget.',
+      '[Memorial] A **memorial stone** lists first names only, as if surnames were the part left below. A fresher scratch reads *not whole* beside the newest line.',
+      '[Tally] **Return tallies** climb a pillar in grouped notches — sevens, then a break — like weeks counted until someone stopped coming back.',
+      '[Doctrine] A fragment of **town doctrine** is scratched here, then crossed out: the correction argues with the original in the same shaking hand.'
+    );
+  }
+  if(st >= 3 || floor >= 3){
+    pool.push(
+      '[Ledger] Between floor-stones: a splinter of wax and a hair-fine ink line — the ghost of a ledger carried in panic.',
+      '[Contradiction] Carved where doctrine should be: *The Gate does not restore — it reconciles.* Under it, fresher: *We spend what we cannot bury.*',
+      '[Room] The corner carries a smell of bell-metal and counting-house — commerce without a counter, witness without mercy.'
+    );
+  }
+  if(tier >= 2){
+    pool.push(
+      '[Personal] A handprint in the dust matches your span — but the dust looks older than your last turn through.',
+      '[Personal] Carved where torch-light falters: a phrase that ends mid-word — the same half-line you have seen in your head without source.'
+    );
+  }
+  if(tier >= 3){
+    pool.push(
+      '[Personal] For a heartbeat you see a chalk tally beside a smeared name — the smear is the width of your thumb, and your stomach knows it before your mind agrees.'
+    );
+  }
+  if(!pool.length) return null;
+  const line = pick(rng, pool);
+  return line.replace(/^\[[^\]]+\]\s*/, '');
+}
+function plotDungeonAmbientDiscoveryAppend(room, rng){
+  if(!state || isHubWorld()) return '';
+  const arc = ensureStoryArc(state);
+  const fl = state.dungeon?.level|0;
+  if(fl < 3) return '';
+  const key = 'ambient_discovery_' + fl + '_' + (room && room.id != null ? room.id : 'x');
+  if(arc.beatsSeen[key]) return '';
+  if(rng() > 0.2) return '';
+  arc.beatsSeen[key] = true;
+  const discoveries = [
+    'You find a hollow **ledger room** — alcoves for tablets, nothing left but grooves and a single dropped seal: *Lumen provisional issue*.',
+    'A **memorial** has been **erased** with violence; only the halo of names remains, and your eye keeps catching the same initial as yours.',
+    'A **covenant plaque** lies shattered on the floor. One shard still reads *…incomplete return…* and the rest is footsteps ground into dust.',
+    '**Return tallies** on the threshold are crossed out and rewritten — same total, different names, as if the Depths corrected the town’s homework.'
+  ];
+  return ' ' + pick(rng, discoveries);
+}
+function plotTownReactionTier(){
+  if(!state) return 0;
+  const st = ensureStoryArc(state).stage|0;
+  const tm = ensureTownMemory();
+  const ret = tm.returnsFromDepths|0;
+  const deep = tm.deepestFloorEver|0;
+  if(st >= 4 || ret >= 4) return 3;
+  if(st >= 3 || deep >= 4 || ret >= 2) return 2;
+  if(st >= 2 || ret >= 1 || deep >= 2) return 1;
+  return 0;
+}
 function generateClue(room, rng){
-  return pick(rng,[
+  const plot = plotDungeonAmbientEvidence(room, rng);
+  const floor = state && state.dungeon ? state.dungeon.level|0 : 0;
+  const ambient = pick(rng,[
     'A scrape mark near the wall suggests recent passage.',
     'The dust has been broken by a single cleaner trail.',
     'One stone rings differently underfoot.',
     'A faint oil scent lingers where it should not.',
     'You catch the feeling that the room was arranged for an observer, not a guest.'
   ]);
+  const plotChance = floor >= 4 ? 0.55 : (floor >= 3 ? 0.48 : 0.42);
+  if(plot && rng() < plotChance) return plot;
+  return ambient;
 }
 function addLootMaybe(rng,boss=false){
   const gear = [
@@ -6423,14 +7261,6 @@ function addRoomFact(room, fact){
   addFactOnce(`${room.name}: ${fact}`);
 }
 
-function symbolName(s){
-  const m = MAP_TILE_REGISTRY[s];
-  if(m?.label){
-    const w = String(m.label).split(/[—–-]/)[0].trim().toLowerCase();
-    if(w) return w.replace(/\s+/g,' ');
-  }
-  return 'room';
-}
 function nearestFeatureCell(symbol,maxD=20){
   let best=null,b=1e9;
   for(let y=0;y<state.map.h;y++) for(let x=0;x<state.map.w;x++){
@@ -6565,11 +7395,7 @@ function updateMapCellHintFromEvent(ev){
   }
   const px = state.player.x|0, py = state.player.y|0;
   const sym = (tx===px && ty===py) ? '@' : (vis ? state.map.grid[ty][tx] : '?');
-  const m = MAP_TILE_REGISTRY[sym];
-  const ch = m?.char != null ? m.char : sym;
-  const base = m ? `${ch} — ${m.label}` : `${ch} — tile`;
-  const where = vis ? 'in sight' : 'remembered fog';
-  els.mapCellHint.textContent = `${base} · ${where}`;
+  els.mapCellHint.textContent = formatMapCellHint(tx, ty, sym, vis);
 }
 function drawMap(){
   const w=state.map.w*tileSize, h=state.map.h*tileSize;
@@ -6809,7 +7635,12 @@ function refreshUI(){
   if(els.levelOut) els.levelOut.textContent = String(lv);
   if(els.xpOut) els.xpOut.textContent = `${pl.xp|0} / ${needXp}`;
   els.engineBadge.textContent = state.ai.enabled ? `Suso + ${aiModeLabel(state.ai)}` : 'Suso Local';
-  if(els.lightsOut) els.lightsOut.textContent = String(state.lights|0);
+  if(els.lightsOut){
+    els.lightsOut.textContent = String(state.lights|0);
+    const stL = ensureStoryArc(state).stage|0;
+    const heavy = (state.lights|0) >= 70;
+    els.lightsOut.classList.toggle('lights-uneasy', stL >= 3 || heavy);
+  }
   if(els.phaseOut) els.phaseOut.textContent = isHubWorld() ? 'Town hub' : `Delve · floor ${state.dungeon && state.dungeon.level!=null ? state.dungeon.level : '—'}`;
   syncHubButtons();
   syncDelveStatus();
@@ -6858,7 +7689,7 @@ function refreshUI(){
     ? `${state.premise}\n\n${state.storyActTwo}`
     : state.premise;
   const luckChip = state.luck && state.luck.turnsLeft>0 ? `${state.luck.mode==='lucky' ? 'Blessed' : 'Cursed'} · ${state.luck.turnsLeft} turn${state.luck.turnsLeft===1?'':'s'}` : null;
-  const themeName = state.theme && state.theme.name ? state.theme.name : 'Lumenreach';
+  const themeName = state.theme && state.theme.name ? state.theme.name : "Aillumi's Dungeon";
   els.runChips.innerHTML=[themeName,state.tone,`Risk: ${state.risk}`,`Lights ${state.lights|0}`, luckChip, `Seed ${String(state.seed).slice(-6)}`].filter(Boolean).map(t=>`<span class="chip">${escapeHtml(t)}</span>`).join('');
   const posKey = `${state.player.x},${state.player.y}`;
   if(lastFollowPos !== posKey){
@@ -7304,6 +8135,7 @@ function runSusoIntentRegressionHarness(){
     ],
     inventory: [
       { name: 'Torch', qty: 1, desc: 't' },
+      { name: 'Bright Torch', qty: 1, desc: 't' },
       { name: 'Small Tonic', qty: 1, desc: 't' }
     ],
     context: {},
@@ -7337,14 +8169,23 @@ function runSusoIntentRegressionHarness(){
     { cmd: 'pray at the shrine', ok: i => i.type === 'use' && i.target === 'shrine' && !i.resolvedUseItemName && (!i.resolvedEntityId || String(i.resolvedEntityId).startsWith('world:')) },
     { cmd: 'open the door', ok: i => i.target === 'door' },
     { cmd: 'use it', ok: i => i.target === 'door' && i.type === 'open' },
-    { cmd: 'talk to Mara', ok: i => i.resolvedEntityId === 'tn1' && (i.entityResolution && i.entityResolution.mode === 'explicit') },
+    { cmd: 'talk to Mara', ok: i => i.routed && i.routed.adapter === 'game' && i.routed.kind === 'action' && i.resolvedEntityId === 'tn1' && i.entityResolution && i.entityResolution.mode === 'explicit' },
     { cmd: 'talk to npc', ok: i => i.resolvedEntityId === 'tn1' && i.entityResolution && i.entityResolution.mode === 'inferred' },
     { cmd: 'buy from shopkeeper', ok: i => i.type === 'talk' && i.resolvedEntityId === 'tn1' },
     { cmd: 'inspect forge', ok: i => i.resolvedEntityId === 'world:forge' },
     { cmd: 'ask Brant again', ok: i => i.resolvedEntityId === 'tn2' },
     { cmd: 'use torch near shrine', ok: i => i.resolvedUseItemName === 'Torch' && !i.resolvedEntityId },
     { cmd: 'use torch near Mara', ok: i => i.resolvedUseItemName === 'Torch' && i.target == null },
-    { cmd: 'pray at shrine near npc', ok: i => i.target === 'shrine' && i.type === 'use' && i.resolvedEntityId !== 'tn1' && i.resolvedEntityId !== 'tn2' }
+    { cmd: 'pray at shrine near npc', ok: i => i.target === 'shrine' && i.type === 'use' && i.resolvedEntityId !== 'tn1' && i.resolvedEntityId !== 'tn2' },
+    { cmd: 'use bright torch', ok: i => i.routed && i.routed.adapter === 'game' && i.routed.kind === 'action' && i.type === 'use' && i.resolvedUseItemName === 'Bright Torch' && !i.resolvedEntityId && i.routed.execution && i.routed.execution.delegate === 'game_intent' },
+    { cmd: 'drink small tonic', ok: i => i.resolvedUseItemName === 'Small Tonic' },
+    { cmd: 'inspect covenant stair', ok: i => i.routed && i.routed.adapter === 'game' && i.routed.kind === 'inspect' && i.type === 'inspect' },
+    { cmd: 'what is the pressure rating on this data sheet', ok: i => i._suso && i._suso.domain === 'document_query' && i.routed && i.routed.adapter === 'document_query' && i.routed.kind === 'question' && i.semantic && i.semantic.attribute === 'pressure rating' && i.routed.execution && i.routed.execution.stub === true },
+    { cmd: 'show operating temperature', ok: i => i.routed && i.routed.adapter === 'document_query' && (i.semantic.attribute === 'operating temperature' || (i.semantic.attributes && i.semantic.attributes.indexOf('operating temperature') >= 0)) && i.routed.execution && i.routed.execution.query },
+    { cmd: 'compare tensile strength and hardness', ok: i => i.routed && i.routed.adapter === 'document_query' && i.routed.kind === 'compare' && i.semantic && i.semantic.comparison === true && i.semantic.attributes && i.semantic.attributes.length >= 2 },
+    { cmd: 'find dimensions for black oxide screw', ok: i => i.routed && i.routed.adapter === 'document_query' && i.routed.kind === 'lookup' && i.semantic && i.semantic.intent === 'retrieve' && i._phraseMatches && i._phraseMatches.some(m => m.phrase === 'black oxide screw') },
+    { cmd: 'open the shop', ok: i => i.routed && i.routed.adapter === 'game' && i.routed.kind === 'action' && i.type === 'open' && i.target === 'shop' },
+    { cmd: 'go to old plaza', ok: i => i.routed && i.routed.adapter === 'ui_navigation' && i.routed.kind === 'navigation' && i.semantic && i.semantic.location === 'old plaza' && i.routed.execution && i.routed.execution.stub === true }
   ];
   const errors = [];
   for(const c of cases){
