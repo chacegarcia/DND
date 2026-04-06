@@ -1,27 +1,33 @@
-# Aillumi's Dungeon — Suso engine
+# Aillumi's Dungeon (Suso engine)
 
-## Two entry HTML files
+## Entry point
 
-| File | What it is |
-|------|------------|
-| **`index.html`** | **Dungeon game** — open this for the full game (map, combat, dice, embedded Suso). |
-| **`lcm-configurator.html`** | **LCM work app** — Excel-backed foam/wool BOM helper + modular Suso (`js/lcm/`, `js/suso/`). |
+**`index.html`** is the full game: map, combat, dice, AI, and an **embedded** Suso/LCM bundle (first `<script>`) plus dungeon logic (second `<script>`). Nothing under `js/` is loaded at runtime as separate files—the browser only requests this HTML plus assets below.
 
-## Shared code under `js/`
+## Assets (same folder as `index.html`)
 
-The **`js/suso/`** and **`js/lcm/`** trees are loaded by **`lcm-configurator.html`** (and by the optional esbuild IIFE). They are **not** the runtime for the monolithic dungeon **`index.html`**.
+| File | Used by |
+|------|---------|
+| **`bg_main.png`** | Page background |
+| **`dice_tray_bg.png`** | Dice tray panel |
+| **`dungeon_tiles_atlas_32.png`** | Map atlas (optional; procedural fallback if missing) |
+| **`favicon.ico`** | Tab icon |
 
-**Do not** treat `js/dungeon-suso-bundle.iife.js` as source — it is an optional **esbuild output** (`npm run build:suso-iife`). See **`ARCHITECTURE.md`**.
+Serve the directory over HTTP and open **`index.html`**.
 
-## Run locally
+## Optional: edit Suso/LCM and rebuild the embedded bundle
 
-Serve the repo root over HTTP, then open **`index.html`** (game) or **`lcm-configurator.html`** (LCM), e.g. `python3 -m http.server`.
+Sources live under **`js/`** (and **`js/dungeon-embed-entry.js`**). After changes:
 
-## LCM page script order (reference)
+```bash
+npm install
+npm run build:suso-iife
+```
 
-1. Inline host + `LCM_HOST`
-2. `js/lcm/wire.js` — `window.SUSO_DEPS`
-3. `js/suso/engine/bind.js` — `interpretIntentRichConfigurator`
-4. `js/suso/bind-llm.js`, `bind-adapters.js`, `executors-bind.js`
+That writes **`js/dungeon-suso-bundle.iife.js`** (gitignored). To update the game, copy the file contents into the **first** `<script>` block in **`index.html`** (replacing the old embedded bundle), or load that file with a `<script src="...">` if you refactor the page to use an external script.
 
-See **`ARCHITECTURE.md`**, **`js/suso/README.md`**, and **`js/lcm/README.md`**.
+## Repo layout
+
+- **`index.html`** — Ship this + assets for the game.
+- **`js/`** — ES module sources for Suso + LCM stubs used inside the embedded IIFE.
+- **`scripts/embed-dungeon-bundle.mjs`** — esbuild step for the IIFE.

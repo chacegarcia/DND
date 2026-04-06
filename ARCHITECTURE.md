@@ -1,38 +1,26 @@
-# Repository architecture
+# Architecture (game-first)
 
-**Primary page:** **`index.html`** is the **dungeon game** (monolithic HTML/CSS/JS). It does not load `js/lcm/wire.js` or the modular Suso ES modules; Suso logic is embedded in that file where applicable.
+## Runtime
 
-**Work / LCM app:** **`lcm-configurator.html`** is the Excel-backed foam/wool BOM configurator. It is the **modular** host: inline shell + `js/lcm/wire.js`, `js/suso/engine/bind.js`, etc. Use this file for the LCM product + shared Suso engine under `js/`.
+| Piece | Role |
+|-------|------|
+| **`index.html`** | Only HTML entry. Two inline scripts: (1) embedded IIFE from `js/` sources—`window.LCM_HOST`, Suso engine, adapters; (2) dungeon game (state, map, combat, UI). |
+| **PNG assets** | `bg_main.png`, `dice_tray_bg.png`, `dungeon_tiles_atlas_32.png` (atlas optional). |
 
-| File | Role |
+No ES module `<script type="module" src="...">` is used—the game is self-contained in `index.html` for deployment.
+
+## Development sources (not loaded directly by the game)
+
+| Path | Role |
 |------|------|
-| **`index.html`** | Dungeon game — UI, map, dice, embedded game + Suso hooks. |
-| **`lcm-configurator.html`** | LCM host shell, `LCM_HOST`, `SUSO_ADAPTER_DEPS`, script load order for `js/lcm/` + `js/suso/`. |
-| **`js/lcm/wire.js`** | LCM wiring: **`window.SUSO_DEPS`**, catalog helpers (used by LCM page only). |
-| **`js/suso/engine/bind.js`** | **`interpretIntentRichConfigurator`** on `window` (LCM page). |
-| **`js/suso/executors-bind.js`** | Executor registration + harness (LCM page). |
+| **`js/lcm/`** | LCM catalog/helpers—compiled into the embedded IIFE; stubs satisfy Suso when no Excel UI is mounted. |
+| **`js/suso/`** | Suso engine, adapters, session, LLM contract—same bundle. |
+| **`js/dungeon-embed-entry.js`** | esbuild entry for the IIFE. |
+| **`scripts/embed-dungeon-bundle.mjs`** | Runs esbuild → `js/dungeon-suso-bundle.iife.js`. |
 
-## Suso engine (`js/suso/`)
+Edit **`js/`**, rebuild with **`npm run build:suso-iife`**, then merge output into **`index.html`**’s first script block (see **`README.md`**).
 
-Shared library for **`lcm-configurator.html`** (and optional **`js/dungeon-embed-entry.js`** IIFE bundle). Not loaded by the monolithic dungeon `index.html`.
+## Coupling
 
-| Area | Modules | Owns |
-|------|---------|------|
-| **Interpretation core** | `engine/index.js`, `parse-intent.js`, semantic slots, phrase packs, `domain.js`, `router.js` | Configurator NL pipeline. |
-| **Routing & adapters** | `router.js`, `adapters/*` | Maps `routed.kind` to LCM actions. |
-| **Executors** | `engine/executors.js`, `executors-bind.js`, `executor-harness.js` | Host callbacks + **`routed.execution`**. |
-| **Session / trace** | `session/` | Trace + session store. |
-| **LLM** | `llm/` | Contract + null adapter. |
-
-## Optional build artifact (not source)
-
-| Output | Produced by | Notes |
-|--------|-------------|--------|
-| **`js/dungeon-suso-bundle.iife.js`** | `npm run build:suso-iife` / `build:dungeon-bundle` → `scripts/embed-dungeon-bundle.mjs` | **Gitignored.** IIFE from `js/dungeon-embed-entry.js`. |
-
-## Coupling guidelines
-
-- **`js/suso/engine`** stays free of LCM catalog imports; use **`deps`** from `interpretIntentRichConfigurator`.
-- **`js/lcm/`** owns foam/wool rules for **`lcm-configurator.html`**.
-
-For Suso folders see **`js/suso/README.md`**. For LCM see **`js/lcm/README.md`**.
+- **`js/suso/engine`** avoids hard LCM imports; receives **`deps`** at runtime from the bundle wiring.
+- Dungeon code in the second script uses **`interpretIntentRichConfigurator`**, **`runConfiguratorAdapter`**, etc., exposed by the first block.

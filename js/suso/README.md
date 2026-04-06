@@ -2,7 +2,7 @@
 
 **Stable surface:** NL interpretation, routing, phrase/semantic layers, adapter **contracts**, executor **registration**, session store, LLM **interface** + null implementation.
 
-**Host app:** `index.html` loads ES modules in order; **`js/lcm/wire.js`** supplies `SUSO_DEPS`. There is no separate standalone HTML source file in this repo.
+**Shipped host:** The dungeon **`index.html`** embeds an IIFE built from **`js/dungeon-embed-entry.js`** (see **`npm run build:suso-iife`**). That bundle runs **`js/lcm/wire.js`** and Suso binds—there are no separate `<script src="...module">` tags in the shipped game.
 
 ## Module map
 

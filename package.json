@@ -1,8 +1,8 @@
 {
   "name": "aillumi'sdungeonsusoengine",
   "version": "1.0.0",
-  "description": "Static **HTML + ES modules** app: Excel-backed foam/wool BOM helper with a Suso NL assistant.",
-  "main": "index.js",
+  "description": "Dungeon game (index.html) with embedded Suso; js/ is source for the bundled IIFE.",
+  "main": "index.html",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:suso-iife": "node scripts/embed-dungeon-bundle.mjs",

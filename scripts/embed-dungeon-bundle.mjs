@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
- * Builds js/dungeon-suso-bundle.iife.js (esbuild IIFE). Output is gitignored — not editable source.
- * Primary app: index.html + js/suso/ + js/lcm/. This bundle is optional (tooling, tests, external embed).
+ * Builds js/dungeon-suso-bundle.iife.js (esbuild IIFE). Gitignored output — paste into index.html first <script> to refresh embedded Suso/LCM.
  */
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
