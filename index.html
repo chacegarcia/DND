@@ -911,7 +911,7 @@ select{
 
 
 <script>
-/* Embedded IIFE from sources under js/ (LCM + Suso). Rebuild: npm run build:suso-iife → js/dungeon-suso-bundle.iife.js; replace this block with that output if you change modules. */
+/* SUSO_EMBEDDED_BUNDLE_START */
 window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,currentMode:null,setSelectOptions:function(){},showDebug:function(){},setCurrentMode:function(v){this.currentMode=v;},clearMissing:function(){},markMissing:function(){},setStatus:function(){}};
 (() => {
   var __defProp = Object.defineProperty;
@@ -2462,79 +2462,10 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
     }
   });
 
-  // js/suso/engine/phrase-scan.js
-  function susoWordishBoundaryOk(low, start, len) {
-    if (start < 0 || len < 1 || start + len > low.length) return false;
-    const before = start > 0 ? low[start - 1] : " ";
-    const after = start + len < low.length ? low[start + len] : " ";
-    if (/[a-z0-9]/.test(before)) return false;
-    if (/[a-z0-9]/.test(after)) return false;
-    return true;
-  }
-  function susoPhraseEntriesForConfigurator() {
-    const rows = [];
-    for (const row of SUSO_PHRASE_PACK_DOCUMENT) {
-      const ph = String(row.phrase || "").toLowerCase().trim();
-      if (!ph) continue;
-      rows.push({
-        phrase: ph,
-        category: row.category || "concept",
-        canonical: row.canonical !== void 0 ? row.canonical : null,
-        pack: row.pack || "document"
-      });
-    }
-    for (const row of SUSO_PHRASE_PACK_CONFIGURATOR) {
-      const ph = String(row.phrase || "").toLowerCase().trim();
-      if (!ph) continue;
-      rows.push({
-        phrase: ph,
-        category: row.category || "concept",
-        canonical: row.canonical !== void 0 ? row.canonical : null,
-        pack: row.pack || "lcm"
-      });
-    }
-    rows.sort((a, b) => b.phrase.length - a.phrase.length || String(a.phrase).localeCompare(String(b.phrase)));
-    const seen = /* @__PURE__ */ new Set();
-    const out = [];
-    for (const r of rows) {
-      const k = r.phrase + "\0" + r.category + "\0" + (r.canonical || "");
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push(r);
-    }
-    return out;
-  }
-  function susoCollectPhraseMatches(low) {
-    if (!low) return [];
-    const phrases = susoPhraseEntriesForConfigurator();
-    const out = [];
-    let i = 0;
-    while (i < low.length) {
-      if (/\s/.test(low[i])) {
-        i++;
-        continue;
-      }
-      let best = null;
-      for (const p of phrases) {
-        const plen = p.phrase.length;
-        if (plen > low.length - i) continue;
-        if (low.slice(i, i + plen) !== p.phrase) continue;
-        if (!susoWordishBoundaryOk(low, i, plen)) continue;
-        best = p;
-        break;
-      }
-      if (best) {
-        out.push(Object.assign({}, best, { start: i, end: i + best.phrase.length }));
-        i += best.phrase.length;
-      } else {
-        i++;
-      }
-    }
-    return out;
-  }
-  var SUSO_PHRASE_PACK_DOCUMENT, SUSO_PHRASE_PACK_CONFIGURATOR;
-  var init_phrase_scan = __esm({
-    "js/suso/engine/phrase-scan.js"() {
+  // js/suso/packs/document.js
+  var SUSO_PHRASE_PACK_DOCUMENT;
+  var init_document = __esm({
+    "js/suso/packs/document.js"() {
       SUSO_PHRASE_PACK_DOCUMENT = [
         { phrase: "pressure rating", category: "attribute", canonical: "pressure rating", pack: "document" },
         { phrase: "operating temperature", category: "attribute", canonical: "operating temperature", pack: "document" },
@@ -2547,8 +2478,17 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
         { phrase: "material", category: "attribute", canonical: "material", pack: "document" },
         { phrase: "data sheet", category: "document", canonical: "data sheet", pack: "document" },
         { phrase: "spec sheet", category: "document", canonical: "spec sheet", pack: "document" },
-        { phrase: "msds", category: "document", canonical: "msds", pack: "document" }
+        { phrase: "msds", category: "document", canonical: "msds", pack: "document" },
+        { phrase: "polyurethane sheet", category: "material_product", canonical: "polyurethane sheet", pack: "document" },
+        { phrase: "black oxide screw", category: "material_product", canonical: "black oxide screw", pack: "document" }
       ];
+    }
+  });
+
+  // js/suso/packs/lcm.js
+  var SUSO_PHRASE_PACK_CONFIGURATOR;
+  var init_lcm = __esm({
+    "js/suso/packs/lcm.js"() {
       SUSO_PHRASE_PACK_CONFIGURATOR = [
         { phrase: "foam pad", category: "product_type", canonical: "foam", pack: "lcm" },
         { phrase: "tufted wool", category: "product_type", canonical: "wool", pack: "lcm" },
@@ -2592,6 +2532,100 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
     }
   });
 
+  // js/suso/packs/game-world.js
+  var SUSO_PHRASE_PACK_GAME_WORLD;
+  var init_game_world = __esm({
+    "js/suso/packs/game-world.js"() {
+      SUSO_PHRASE_PACK_GAME_WORLD = [
+        { phrase: "lumen town", category: "location", canonical: "lumen_town", pack: "game_world" },
+        { phrase: "covenant stair", category: "world_feature", canonical: "covenant_stair", pack: "game_world" },
+        { phrase: "bright torch", category: "world_feature", canonical: "bright_torch", pack: "game_world" },
+        { phrase: "old plaza", category: "location", canonical: "old_plaza", pack: "game_world" },
+        { phrase: "depths gate", category: "world_feature", canonical: "depths_gate", pack: "game_world" },
+        { phrase: "covenant depths", category: "location", canonical: "covenant_depths", pack: "game_world" },
+        { phrase: "ironfold", category: "location", canonical: "ironfold", pack: "game_world" },
+        { phrase: "mara", category: "npc", canonical: "mara", pack: "game_world" },
+        { phrase: "brant", category: "npc", canonical: "brant", pack: "game_world" },
+        { phrase: "elwen", category: "npc", canonical: "elwen", pack: "game_world" },
+        { phrase: "mara's lanterns", category: "location", canonical: "maras_lanterns", pack: "game_world" },
+        { phrase: "lights", category: "economy", canonical: "lights_currency", pack: "game_world" },
+        { phrase: "story lights", category: "economy", canonical: "lights_currency", pack: "game_world" }
+      ];
+    }
+  });
+
+  // js/suso/engine/phrase-scan.js
+  function susoWordishBoundaryOk(low, start, len) {
+    if (start < 0 || len < 1 || start + len > low.length) return false;
+    const before = start > 0 ? low[start - 1] : " ";
+    const after = start + len < low.length ? low[start + len] : " ";
+    if (/[a-z0-9]/.test(before)) return false;
+    if (/[a-z0-9]/.test(after)) return false;
+    return true;
+  }
+  function susoPhraseEntriesForConfigurator() {
+    const rows = [];
+    for (const pack of PACK_SOURCES) {
+      for (const row of pack) {
+        const ph = String(row.phrase || "").toLowerCase().trim();
+        if (!ph) continue;
+        rows.push({
+          phrase: ph,
+          category: row.category || "concept",
+          canonical: row.canonical !== void 0 ? row.canonical : null,
+          pack: row.pack || "unknown"
+        });
+      }
+    }
+    rows.sort((a, b) => b.phrase.length - a.phrase.length || String(a.phrase).localeCompare(String(b.phrase)));
+    const seen = /* @__PURE__ */ new Set();
+    const out = [];
+    for (const r of rows) {
+      const k = r.phrase + "\0" + r.category + "\0" + (r.canonical || "");
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(r);
+    }
+    return out;
+  }
+  function susoCollectPhraseMatches(low) {
+    if (!low) return [];
+    const phrases = susoPhraseEntriesForConfigurator();
+    const out = [];
+    let i = 0;
+    while (i < low.length) {
+      if (/\s/.test(low[i])) {
+        i++;
+        continue;
+      }
+      let best = null;
+      for (const p of phrases) {
+        const plen = p.phrase.length;
+        if (plen > low.length - i) continue;
+        if (low.slice(i, i + plen) !== p.phrase) continue;
+        if (!susoWordishBoundaryOk(low, i, plen)) continue;
+        best = p;
+        break;
+      }
+      if (best) {
+        out.push(Object.assign({}, best, { start: i, end: i + best.phrase.length }));
+        i += best.phrase.length;
+      } else {
+        i++;
+      }
+    }
+    return out;
+  }
+  var PACK_SOURCES;
+  var init_phrase_scan = __esm({
+    "js/suso/engine/phrase-scan.js"() {
+      init_document();
+      init_lcm();
+      init_game_world();
+      PACK_SOURCES = [SUSO_PHRASE_PACK_DOCUMENT, SUSO_PHRASE_PACK_CONFIGURATOR, SUSO_PHRASE_PACK_GAME_WORLD];
+    }
+  });
+
   // js/suso/engine/semantic-slots.js
   function susoBuildConfiguratorSemanticSlots(low, matches) {
     const mlow = String(low || "");
@@ -2605,11 +2639,24 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
       printType: null,
       attributes: [],
       document: null,
-      domainCue: []
+      domainCue: [],
+      /** Named entity from phrase pack (e.g. npc). */
+      entity: null,
+      /** Place / hub name from phrase pack. */
+      location: null,
+      /** Future: tool id for agentic steps (host-defined). */
+      tool: null,
+      /** Future: filter spec seed (host-defined). */
+      filter: null,
+      /** Future: UI route or panel id (host-defined). */
+      navigationTarget: null,
+      comparison: false,
+      targetItem: null
     };
     if (/\b(what|which|how much|how many|list)\b/.test(mlow)) slots.questionType = "wh_question";
     else if (/\bwhy\b/.test(mlow)) slots.questionType = "why_question";
     if (/\b(show|find|tell|give|lookup|display|available)\b/.test(mlow)) slots.intentTag = "retrieve";
+    if (/\b(compared to|versus|vs\.?)\b/i.test(mlow)) slots.comparison = true;
     for (const m of matches) {
       if (m.category === "product_type" && m.canonical) slots.productType = m.canonical;
       if (m.category === "loop_type" && m.canonical) slots.loopType = m.canonical;
@@ -2620,11 +2667,30 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
         slots.attributes.push(m.canonical);
         slots.domainCue.push("attribute:" + m.canonical);
       }
+      if (m.category === "material_product" && m.canonical) {
+        slots.attributes.push(m.canonical);
+        slots.targetItem = slots.targetItem || m.canonical;
+        slots.domainCue.push("material:" + m.canonical);
+      }
       if (m.category === "document" && m.canonical) {
         slots.document = m.canonical;
         slots.domainCue.push("document:" + m.canonical);
       }
       if (m.category === "intent" && m.canonical === "export_bom") slots.intentTag = "export_bom";
+      if (m.category === "npc" && m.canonical) {
+        slots.entity = m.canonical;
+        slots.domainCue.push("npc:" + m.canonical);
+      }
+      if (m.category === "location" && m.canonical) {
+        slots.location = m.canonical;
+        slots.domainCue.push("location:" + m.canonical);
+      }
+      if (m.category === "world_feature" && m.canonical) {
+        slots.domainCue.push("world_feature:" + m.canonical);
+      }
+      if (m.category === "economy" && m.canonical) {
+        slots.domainCue.push("economy:" + m.canonical);
+      }
     }
     return slots;
   }
@@ -2724,6 +2790,323 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
     }
   });
 
+  // js/suso/engine/executors.js
+  function registerDocumentQueryExecutor(fn) {
+    SUSO_EXECUTOR_REGISTRY.document_query = typeof fn === "function" ? fn : null;
+  }
+  function registerNavigationExecutor(fn) {
+    SUSO_EXECUTOR_REGISTRY.ui_navigation = typeof fn === "function" ? fn : null;
+  }
+  function registerFilterExecutor(fn) {
+    SUSO_EXECUTOR_REGISTRY.search_filter = typeof fn === "function" ? fn : null;
+  }
+  function registerConfiguratorExecutor(fn) {
+    SUSO_EXECUTOR_REGISTRY.configurator = typeof fn === "function" ? fn : null;
+  }
+  function registerGameExecutor(fn) {
+    SUSO_EXECUTOR_REGISTRY.game = typeof fn === "function" ? fn : null;
+  }
+  function resetSusoExecutors() {
+    SUSO_EXECUTOR_REGISTRY.document_query = null;
+    SUSO_EXECUTOR_REGISTRY.ui_navigation = null;
+    SUSO_EXECUTOR_REGISTRY.search_filter = null;
+    SUSO_EXECUTOR_REGISTRY.configurator = null;
+    SUSO_EXECUTOR_REGISTRY.game = null;
+  }
+  function getSusoExecutorRegistry() {
+    return { ...SUSO_EXECUTOR_REGISTRY };
+  }
+  function buildCanonicalConfigurator(routed, intent, text) {
+    const sem = intent.semantic || {};
+    const p = routed.payload || {};
+    const adapter = routed.adapter;
+    const activeSegment = adapter === "document_query" ? "documentQuery" : adapter === "ui_navigation" ? "navigation" : adapter === "search_filter" ? "filter" : "configurator";
+    return {
+      version: 1,
+      kind: routed.kind,
+      adapter,
+      domainClassification: routed.domain,
+      routingRule: routed.rule,
+      raw: String(text || ""),
+      slots: {
+        questionType: sem.questionType ?? null,
+        intent: sem.intentTag ?? null,
+        attributes: sem.attributes && sem.attributes.slice ? sem.attributes.slice() : [],
+        attribute: sem.attributes && sem.attributes[0] || null,
+        document: sem.document ?? null,
+        source: sem.document ?? null,
+        targetItem: sem.targetItem ?? null,
+        location: sem.location ?? null,
+        entity: sem.entity ?? null,
+        comparison: !!sem.comparison,
+        domainCue: (sem.domainCue || []).slice(),
+        tool: sem.tool ?? null,
+        filter: sem.filter ?? null,
+        navigationTarget: sem.navigationTarget ?? null
+      },
+      segments: {
+        game: null,
+        configurator: adapter === "configurator" ? p : null,
+        documentQuery: adapter === "document_query" ? p : null,
+        navigation: adapter === "ui_navigation" ? p.navigation || p : null,
+        filter: adapter === "search_filter" ? p : null
+      },
+      activeSegment
+    };
+  }
+  function normalizeAdapterExecution(adapter, kind, partial, canonical, payload) {
+    const stub = !!partial.stub;
+    let success = partial.success;
+    if (success === void 0 || success === null) {
+      if (partial.error) success = false;
+      else if (stub) success = null;
+      else success = true;
+    } else {
+      success = !!success;
+    }
+    const exec = {
+      executed: partial.executed !== void 0 ? !!partial.executed : !stub,
+      adapter: partial.adapter || adapter,
+      kind: partial.kind || kind,
+      success,
+      result: partial.result !== void 0 ? partial.result : partial.query != null ? partial.query : partial.filter != null ? partial.filter : partial.delegate != null ? partial.delegate : null,
+      error: partial.error ? String(partial.error) : null,
+      stub,
+      canonical,
+      payload,
+      executorRegistered: !!partial.executorRegistered
+    };
+    if (partial.note != null) exec.note = partial.note;
+    if (partial.delegate) exec.delegate = partial.delegate;
+    if (partial.query != null) exec.query = partial.query;
+    if (partial.filter != null) exec.filter = partial.filter;
+    if (partial.destination != null) exec.destination = partial.destination;
+    if (partial.navigation != null) exec.navigation = partial.navigation;
+    return exec;
+  }
+  function documentStubPartial(routed, payload) {
+    return {
+      stub: true,
+      executed: false,
+      adapter: "document_query",
+      kind: routed.kind,
+      query: {
+        attribute: payload.attribute ?? null,
+        attributes: payload.attributes || [],
+        document: payload.document ?? null,
+        source: payload.source != null ? payload.source : payload.document,
+        targetItem: payload.targetItem ?? null,
+        comparison: !!payload.comparison,
+        qualifiers: payload.qualifiers || [],
+        questionType: payload.questionType ?? null
+      },
+      note: payload.execution && payload.execution.note || "No document_query executor registered.",
+      executorRegistered: false
+    };
+  }
+  function susoAttachExecutionToRouted(routed, ctx) {
+    const { intent, text, low, deps, trace } = ctx;
+    const adapter = routed.adapter;
+    const kind = routed.kind;
+    const payload = routed.payload || {};
+    const canonical = buildCanonicalConfigurator(routed, intent, text);
+    const execCtx = {
+      adapter,
+      kind,
+      routingRule: routed.rule,
+      intent,
+      payload,
+      canonical,
+      raw: String(text || ""),
+      low: String(low || ""),
+      deps,
+      routed
+    };
+    let partial;
+    let path = "stub";
+    let hostError = null;
+    if (adapter === "document_query") {
+      const fn = SUSO_EXECUTOR_REGISTRY.document_query;
+      if (!fn) {
+        partial = documentStubPartial(routed, payload);
+        path = "stub";
+      } else {
+        try {
+          const out = fn(execCtx) || {};
+          partial = {
+            stub: false,
+            executed: out.executed !== false,
+            success: out.success !== false,
+            result: out.result !== void 0 ? out.result : out,
+            error: out.error || null,
+            query: out.query || documentStubPartial(routed, payload).query,
+            note: out.note,
+            executorRegistered: true,
+            adapter: "document_query",
+            kind
+          };
+          path = "host";
+        } catch (err) {
+          hostError = String(err.message || err);
+          partial = Object.assign(documentStubPartial(routed, payload), {
+            success: false,
+            error: hostError,
+            executorRegistered: true
+          });
+          path = "host_error";
+        }
+      }
+    } else if (adapter === "ui_navigation") {
+      const fn = SUSO_EXECUTOR_REGISTRY.ui_navigation;
+      if (!fn) {
+        partial = {
+          stub: true,
+          executed: false,
+          adapter: "ui_navigation",
+          kind,
+          destination: payload.destination || null,
+          note: "No ui_navigation executor registered.",
+          executorRegistered: false
+        };
+        path = "stub";
+      } else {
+        try {
+          const out = fn(execCtx) || {};
+          partial = {
+            stub: false,
+            executed: out.executed !== false,
+            success: out.success !== false,
+            result: out.result !== void 0 ? out.result : out,
+            error: out.error || null,
+            destination: out.destination,
+            navigation: out.navigation,
+            executorRegistered: true,
+            adapter: "ui_navigation",
+            kind
+          };
+          path = "host";
+        } catch (err) {
+          hostError = String(err.message || err);
+          partial = { stub: true, executed: false, error: hostError, executorRegistered: true, adapter: "ui_navigation", kind };
+          path = "host_error";
+        }
+      }
+    } else if (adapter === "search_filter") {
+      const fn = SUSO_EXECUTOR_REGISTRY.search_filter;
+      if (!fn) {
+        partial = {
+          stub: true,
+          executed: false,
+          adapter: "search_filter",
+          kind,
+          filter: payload.filter || payload,
+          note: "No search_filter executor registered.",
+          executorRegistered: false
+        };
+        path = "stub";
+      } else {
+        try {
+          const out = fn(execCtx) || {};
+          partial = {
+            stub: false,
+            executed: out.executed !== false,
+            success: out.success !== false,
+            result: out.result !== void 0 ? out.result : out,
+            error: out.error || null,
+            filter: out.filter || payload.filter,
+            attributes: out.attributes,
+            executorRegistered: true,
+            adapter: "search_filter",
+            kind
+          };
+          path = "host";
+        } catch (err) {
+          hostError = String(err.message || err);
+          partial = { stub: true, error: hostError, executorRegistered: true, adapter: "search_filter", kind };
+          path = "host_error";
+        }
+      }
+    } else if (adapter === "configurator") {
+      const fn = SUSO_EXECUTOR_REGISTRY.configurator;
+      if (!fn) {
+        partial = {
+          stub: false,
+          executed: false,
+          delegate: "runConfiguratorAdapter",
+          success: null,
+          note: "Use runConfiguratorAdapter(routed) for LCM side effects.",
+          executorRegistered: false,
+          adapter: "configurator",
+          kind
+        };
+        path = "configurator_delegate";
+      } else {
+        try {
+          const out = fn(execCtx) || {};
+          partial = {
+            stub: false,
+            executed: out.executed !== false,
+            success: out.success,
+            result: out.result,
+            error: out.error || null,
+            executorRegistered: true,
+            adapter: "configurator",
+            kind,
+            note: out.note
+          };
+          path = "host";
+        } catch (err) {
+          hostError = String(err.message || err);
+          partial = { stub: false, success: false, error: hostError, executorRegistered: true, adapter: "configurator", kind };
+          path = "host_error";
+        }
+      }
+    } else {
+      partial = {
+        stub: false,
+        executed: false,
+        delegate: "game_intent",
+        success: null,
+        note: "Game / host resolver (not used in LCM configurator).",
+        executorRegistered: !!SUSO_EXECUTOR_REGISTRY.game,
+        adapter: adapter || "game",
+        kind
+      };
+      path = "game_delegate";
+    }
+    const execution = normalizeAdapterExecution(adapter, kind, partial, canonical, payload);
+    Object.assign(canonical, {
+      executionStub: !!execution.stub,
+      executionDelegate: execution.delegate != null ? execution.delegate : null
+    });
+    execution.canonical = canonical;
+    routed.canonical = canonical;
+    routed.execution = execution;
+    if (trace) {
+      trace.push({
+        t: "execution",
+        executionDebug: {
+          executorFound: !!partial.executorRegistered,
+          executionPath: path,
+          hostError,
+          stub: !!execution.stub
+        }
+      });
+    }
+  }
+  var SUSO_EXECUTOR_REGISTRY;
+  var init_executors = __esm({
+    "js/suso/engine/executors.js"() {
+      SUSO_EXECUTOR_REGISTRY = {
+        document_query: null,
+        ui_navigation: null,
+        search_filter: null,
+        configurator: null,
+        game: null
+      };
+    }
+  });
+
   // js/suso/engine/router.js
   function susoRouteConfiguratorInterpretation(intent, text, low, trace, deps) {
     if (!deps || typeof deps.inferFieldsFromText !== "function" || typeof deps.getCurrentMode !== "function") {
@@ -2737,22 +3120,30 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
         raw: text,
         questionType: sem.questionType,
         attributes: sem.attributes.slice ? sem.attributes.slice() : [],
+        attribute: sem.attributes && sem.attributes[0] || null,
         document: sem.document || null,
+        source: sem.document || null,
+        targetItem: sem.targetItem || null,
+        comparison: !!sem.comparison,
+        qualifiers: (sem.domainCue || []).slice(),
         execution: { stub: true, note: "Wire workbook / data-sheet resolver (Excel graph, embeddings, or RAG)." }
       };
       const routed2 = susoNormalizeConfiguratorRequest(adapter, "document_query", intent._suso.domain, pick.rule, payload2);
       trace.push({ t: "routing", adapter, kind: routed2.kind, rule: pick.rule, domain: intent._suso.domain });
+      susoAttachExecutionToRouted(routed2, { intent, text, low, deps, trace });
       return routed2;
     }
     const base = intent;
     if (base.action === "export_bom") {
       const routed2 = susoNormalizeConfiguratorRequest("configurator", "export_bom", intent._suso.domain, "intent_export", { raw: text });
       trace.push({ t: "routing", adapter: "configurator", kind: "export_bom", rule: "intent_export" });
+      susoAttachExecutionToRouted(routed2, { intent, text, low, deps, trace });
       return routed2;
     }
     if (base.action === "reset_form") {
       const routed2 = susoNormalizeConfiguratorRequest("configurator", "reset_form", intent._suso.domain, "intent_reset", { raw: text });
       trace.push({ t: "routing", adapter: "configurator", kind: "reset_form", rule: "intent_reset" });
+      susoAttachExecutionToRouted(routed2, { intent, text, low, deps, trace });
       return routed2;
     }
     if (base.action === "explain_invalid") {
@@ -2761,11 +3152,13 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
         modeHint: deps.getCurrentMode()
       });
       trace.push({ t: "routing", adapter: "configurator", kind: "explain_invalid_state", rule: "why_invalid" });
+      susoAttachExecutionToRouted(routed2, { intent, text, low, deps, trace });
       return routed2;
     }
     if (base.action === "validate") {
       const routed2 = susoNormalizeConfiguratorRequest("configurator", "validate_form", intent._suso.domain, "validate", { raw: text });
       trace.push({ t: "routing", adapter: "configurator", kind: "validate_form", rule: "validate" });
+      susoAttachExecutionToRouted(routed2, { intent, text, low, deps, trace });
       return routed2;
     }
     if (base.action === "ask_options") {
@@ -2773,11 +3166,13 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
       if (/\bwheel/.test(low)) topic = "foam_wheel_sizes";
       const routed2 = susoNormalizeConfiguratorRequest("configurator", "ask_options", intent._suso.domain, "options_question", { raw: text, topic });
       trace.push({ t: "routing", adapter: "configurator", kind: "ask_options", rule: "options_question", topic });
+      susoAttachExecutionToRouted(routed2, { intent, text, low, deps, trace });
       return routed2;
     }
     if (base.action === "ask_compatibility") {
       const routed2 = susoNormalizeConfiguratorRequest("configurator", "ask_compatibility", intent._suso.domain, "compatibility_question", { raw: text });
       trace.push({ t: "routing", adapter: "configurator", kind: "ask_compatibility", rule: "compatibility_question" });
+      susoAttachExecutionToRouted(routed2, { intent, text, low, deps, trace });
       return routed2;
     }
     const inferred = deps.inferFieldsFromText(low, text, sem, intent._phraseMatches || []);
@@ -2791,12 +3186,14 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
     };
     const routed = susoNormalizeConfiguratorRequest("configurator", "set_fields", intent._suso.domain, "fill_partial", payload);
     trace.push({ t: "routing", adapter: "configurator", kind: "set_fields", rule: "fill_partial", confidence: payload.confidence });
+    susoAttachExecutionToRouted(routed, { intent, text, low, deps, trace });
     return routed;
   }
   var init_router = __esm({
     "js/suso/engine/router.js"() {
       init_domain();
       init_intent_shell();
+      init_executors();
     }
   });
 
@@ -2806,8 +3203,19 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
     SUSO_ADAPTER_IDS_CONFIGURATOR: () => SUSO_ADAPTER_IDS_CONFIGURATOR,
     SUSO_PHRASE_PACK_CONFIGURATOR: () => SUSO_PHRASE_PACK_CONFIGURATOR,
     SUSO_PHRASE_PACK_DOCUMENT: () => SUSO_PHRASE_PACK_DOCUMENT,
+    SUSO_PHRASE_PACK_GAME_WORLD: () => SUSO_PHRASE_PACK_GAME_WORLD,
+    buildCanonicalConfigurator: () => buildCanonicalConfigurator,
+    getSusoExecutorRegistry: () => getSusoExecutorRegistry,
     interpretIntentRichConfigurator: () => interpretIntentRichConfigurator,
+    normalizeAdapterExecution: () => normalizeAdapterExecution,
     parseIntentConfigurator: () => parseIntentConfigurator,
+    registerConfiguratorExecutor: () => registerConfiguratorExecutor,
+    registerDocumentQueryExecutor: () => registerDocumentQueryExecutor,
+    registerFilterExecutor: () => registerFilterExecutor,
+    registerGameExecutor: () => registerGameExecutor,
+    registerNavigationExecutor: () => registerNavigationExecutor,
+    resetSusoExecutors: () => resetSusoExecutors,
+    susoAttachExecutionToRouted: () => susoAttachExecutionToRouted,
     susoBuildConfiguratorSemanticSlots: () => susoBuildConfiguratorSemanticSlots,
     susoClassifyDomainConfigurator: () => susoClassifyDomainConfigurator,
     susoCollectPhraseMatches: () => susoCollectPhraseMatches,
@@ -2851,7 +3259,12 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
       domain: rich._suso.domain,
       adapter: routed.adapter,
       kind: routed.kind,
-      rule: routed.rule
+      rule: routed.rule,
+      execution: routed.execution && {
+        stub: routed.execution.stub,
+        executorRegistered: routed.execution.executorRegistered,
+        delegate: routed.execution.delegate
+      }
     });
     rich.intentTrace = trace;
     return rich;
@@ -2865,6 +3278,7 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
       init_domain();
       init_intent_shell();
       init_router();
+      init_executors();
       init_phrase_scan();
       init_semantic_slots();
       init_parse_intent();
@@ -2968,6 +3382,12 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
       const k = routed.kind;
       const p = routed.payload || {};
       if (k === "document_query") {
+        const ex = routed.execution;
+        if (ex && !ex.stub && ex.executorRegistered && ex.result != null) {
+          const r = ex.result;
+          const text = typeof r === "string" ? r : r && typeof r.text === "string" ? r.text : typeof r === "object" ? JSON.stringify(r) : String(r);
+          return { text, executed: true, stub: false, fromHostExecutor: true };
+        }
         return runDocumentQueryAdapter(routed, deps);
       }
       if (k === "export_bom") {
@@ -3093,7 +3513,7 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
         window.SUSO_ADAPTER_DEPS = {
           getCurrentMode: () => window.LCM_HOST && window.LCM_HOST.currentMode || null,
           exportTestBOM: function() {
-            console.warn("[Suso] exportTestBOM: standalone dungeon has no LCM export UI.");
+            console.warn("[Suso] exportTestBOM: IIFE bundle has no LCM export UI (use index.html).");
           },
           triggerResetClick: function() {
           },
@@ -3110,7 +3530,7 @@ window.LCM_HOST={els:{},foamRows:[],geoRows:[],woolRows:[],stackRows:[],wb:null,
   });
   require_dungeon_embed_entry();
 })();
-
+/* SUSO_EMBEDDED_BUNDLE_END */
 </script>
 
 <script>

@@ -1,26 +1,28 @@
-# Architecture (game-first)
+# Repository architecture
 
-## Runtime
+## Host surface
 
 | Piece | Role |
 |-------|------|
-| **`index.html`** | Only HTML entry. Two inline scripts: (1) embedded IIFE from `js/` sources—`window.LCM_HOST`, Suso engine, adapters; (2) dungeon game (state, map, combat, UI). |
-| **PNG assets** | `bg_main.png`, `dice_tray_bg.png`, `dungeon_tiles_atlas_32.png` (atlas optional). |
+| **`index.html`** | **Dungeon game** host: UI, world, chronicle, map, embedded Suso IIFE (first `<script>`), game logic (second `<script>`). Not a generic chat client — narrative and systems are first-class. |
+| **`js/suso/`** | **Suso engine** — deterministic interpretation, routing, executors (see **`js/suso/ARCHITECTURE.md`**). |
+| **`js/lcm/`** | **LCM product** logic for BOM/configurator; compiled into the embedded bundle, used when those fields are active. |
+| **Phrase packs** | **`js/suso/packs/`** — document, LCM, **game-world** (Lumen, Depths, NPCs, Lights vocabulary) as reusable chunks. |
 
-No ES module `<script type="module" src="...">` is used—the game is self-contained in `index.html` for deployment.
+## Suso core vs domain vs game
 
-## Development sources (not loaded directly by the game)
+- **Core:** `js/suso/engine/*` — phrase scan, slots, parse, domain, router, executors; **no** dungeon plot.
+- **Domain packs:** Phrase data + classification rules for configurator vs document-query paths; future: explicit navigation/filter routes in router + domain.
+- **Game:** Story, Lights, Gate loop, registry copy — in the **game script** in `index.html`; consumes Suso outputs, does not live inside `engine/` as chat text.
 
-| Path | Role |
-|------|------|
-| **`js/lcm/`** | LCM catalog/helpers—compiled into the embedded IIFE; stubs satisfy Suso when no Excel UI is mounted. |
-| **`js/suso/`** | Suso engine, adapters, session, LLM contract—same bundle. |
-| **`js/dungeon-embed-entry.js`** | esbuild entry for the IIFE. |
-| **`scripts/embed-dungeon-bundle.mjs`** | Runs esbuild → `js/dungeon-suso-bundle.iife.js`. |
+## Routed contract
 
-Edit **`js/`**, rebuild with **`npm run build:suso-iife`**, then merge output into **`index.html`**’s first script block (see **`README.md`**).
+The stable handoff is **`routed`** (+ `intentTrace`, `execution`, `canonical`). Hosts and future projects should implement **`register*Executor`** and read structured payloads — not ad hoc per-line parsing.
 
-## Coupling
+## Rebuild embedded bundle
 
-- **`js/suso/engine`** avoids hard LCM imports; receives **`deps`** at runtime from the bundle wiring.
-- Dungeon code in the second script uses **`interpretIntentRichConfigurator`**, **`runConfiguratorAdapter`**, etc., exposed by the first block.
+```bash
+npm run rebuild:game-suso
+```
+
+Sources: **`js/`**. Output: injected into **`index.html`** between `SUSO_EMBEDDED_BUNDLE_*` markers.

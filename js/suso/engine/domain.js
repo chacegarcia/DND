@@ -1,3 +1,15 @@
+/**
+ * Domain classification — picks which **adapter family** receives the routed request.
+ *
+ * This is **not** the full game or product story; it is a thin rules layer on top of
+ * `parse-intent` + semantic slots. Extend here when you add new adapter ids (e.g. game-only
+ * routing should still pass through explicit rules, not free-form chat heuristics).
+ *
+ * Current adapter ids: `configurator` (LCM/BOM), `document_query` (data-sheet style questions).
+ * Additional adapters (`ui_navigation`, `search_filter`) are executed in `executors.js` when
+ * routing supplies them — extend `router.js` + `susoPickAdapterConfigurator` when those paths
+ * get first-class rules.
+ */
 export const SUSO_ADAPTER_IDS_CONFIGURATOR = ["configurator", "document_query"];
 
 export function susoClassifyDomainConfigurator(low, semantic, baseIntent) {

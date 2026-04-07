@@ -1,36 +1,33 @@
-# `js/suso/` — Suso engine (modular)
+# `js/suso/` — Suso engine
 
-**Stable surface:** NL interpretation, routing, phrase/semantic layers, adapter **contracts**, executor **registration**, session store, LLM **interface** + null implementation.
+**Purpose:** Deterministic NL interpretation — phrase matches, semantic slots, domain classification, **routing**, and **executor** attachment. Outputs are **routed canonical requests** and **traces**, not conversational replies.
 
-**Shipped host:** The dungeon **`index.html`** embeds an IIFE built from **`js/dungeon-embed-entry.js`** (see **`npm run build:suso-iife`**). That bundle runs **`js/lcm/wire.js`** and Suso binds—there are no separate `<script src="...module">` tags in the shipped game.
+**Shipped host:** The dungeon **`index.html`** embeds an IIFE built from **`js/dungeon-embed-entry.js`**. Rebuild with **`npm run rebuild:game-suso`** (or `build:suso-iife` + `sync:embedded-bundle`). See **`ARCHITECTURE.md`** in this folder.
 
 ## Module map
 
-| Folder / file | Role |
-|---------------|------|
-| **`engine/index.js`** | **`interpretIntentRichConfigurator(text, deps)`** — main entry; composes parse → phrase → semantic → domain → **router** → execution attach. |
-| **`engine/parse-intent.js`** | Configurator-focused surface parse (`configure`, export BOM, etc.). |
-| **`engine/phrase-scan.js`** | `SUSO_PHRASE_PACK_DOCUMENT`, `SUSO_PHRASE_PACK_CONFIGURATOR`, phrase matching. |
-| **`engine/semantic-slots.js`** | Slot fill from phrase matches. |
-| **`engine/domain.js`** | `susoClassifyDomainConfigurator`, adapter pick for **configurator vs document_query**. |
-| **`engine/router.js`** | **`susoRouteConfiguratorInterpretation`** — builds `routed` payload; calls **`susoAttachExecutionToRouted`** (`executors.js`). |
-| **`engine/executors.js`** | Host **registry** (`registerDocumentQueryExecutor`, …), **`normalizeAdapterExecution`**, canonical shape for `routed.execution`. |
-| **`engine/intent-shell.js`** | Intent shell + `susoNormalizeConfiguratorRequest`. |
-| **`adapters/`** | **Configurator** runner: export/reset/validate/set_fields/document_query; prefers host executor result when present. |
-| **`session/`** | Trace + optional session (`bind-adapters.js`). |
-| **`llm/`** | `contract.js`, `null-adapter.js`. |
-| **`engine/bind.js`** | Attaches engine to `window` (used by `index.html`). |
-| **`executors-bind.js`** | Attaches executor APIs + **`runSusoConfiguratorExecutorHarness`** to `window`. |
-| **`executor-harness.js`** | Regression harness for executor registration (dev/console). |
-| **`bind-llm.js`**, **`bind-adapters.js`** | LLM default + adapter runner + session. |
+| Area | Role |
+|------|------|
+| **`packs/`** | Phrase pack **data** (document, LCM, game-world). |
+| **`engine/phrase-scan.js`** | Merges packs, longest-match scan. |
+| **`engine/semantic-slots.js`** | Slot object from matches + cues. |
+| **`engine/parse-intent.js`** | Configurator surface verbs. |
+| **`engine/domain.js`** | Adapter family classification. |
+| **`engine/router.js`** | Builds `routed`. |
+| **`engine/executors.js`** | Canonical shape + host callbacks. |
+| **`engine/index.js`** | **`interpretIntentRichConfigurator`**. |
+| **`adapters/`** | Configurator + document-query adapters. |
+| **`session/`** | Trace + session store. |
+| **`llm/`** | Contract + null adapter. |
+| **`bind-*.js`**, **`executors-bind.js`** | Window wiring for HTML hosts. |
 
-## Extension points (no fork of `engine/` required)
+## Extension points
 
-- **`window.SUSO_LLM_ADAPTER`** — LLM completion (optional).
-- **`window.SUSO_DEPS`** — `{ inferFieldsFromText, getCurrentMode }` from LCM.
-- **`window.SUSO_ADAPTER_DEPS`** — configurator adapter deps (export, validate, apply fields, …).
-- **`registerDocumentQueryExecutor` / …`** — from **`executors-bind.js`**; sync callbacks for non-stub execution on `routed`.
+- **`window.SUSO_LLM_ADAPTER`** — optional completion.
+- **`window.SUSO_DEPS`** — `{ inferFieldsFromText, getCurrentMode }`.
+- **`window.SUSO_ADAPTER_DEPS`** — configurator adapter deps.
+- **`registerDocumentQueryExecutor` / `registerNavigationExecutor` / `registerFilterExecutor` / `registerGameExecutor`** — sync host execution.
 
-## Optional IIFE bundle
+## Phrase packs
 
-`js/dungeon-embed-entry.js` + `npm run build:dungeon-bundle` produce **`js/dungeon-suso-bundle.iife.js`** (gitignored). That file is a **build artifact**, not the editable Suso source. See repo root **`ARCHITECTURE.md`**.
+See **`packs/README.md`**. Add phrases to existing packs or add a new pack file and import it in **`engine/phrase-scan.js`**.

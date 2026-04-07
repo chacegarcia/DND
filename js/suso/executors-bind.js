@@ -1,6 +1,7 @@
 /**
- * Exposes Suso executor registration + harness on window (index.html entry).
- * Load after js/suso/engine/bind.js (window.SusoEngine) and after window.SUSO_DEPS exists.
+ * Host integration surface: registers sync executors for document / navigation / filter / game paths.
+ * The dungeon or LCM shell loads this after `engine/bind.js` and after `window.SUSO_DEPS` exists.
+ * Executors are **not** chat handlers — they return structured results consumed by the host.
  */
 import * as Exec from "./engine/executors.js";
 import { runSusoConfiguratorExecutorHarness } from "./executor-harness.js";

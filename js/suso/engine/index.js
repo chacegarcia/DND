@@ -1,9 +1,9 @@
 /**
- * Suso configurator NL engine — public entry and re-exports.
- * Product field inference is injected via deps (see js/lcm/wire.js + window.SUSO_DEPS).
+ * Suso interpretation engine — public entry and re-exports.
+ * Hosts inject product/world behavior via `deps` and executor registration (see executors-bind.js).
  */
 
-export { SUSO_PHRASE_PACK_DOCUMENT, SUSO_PHRASE_PACK_CONFIGURATOR } from "./phrase-scan.js";
+export { SUSO_PHRASE_PACK_DOCUMENT, SUSO_PHRASE_PACK_CONFIGURATOR, SUSO_PHRASE_PACK_GAME_WORLD } from "./phrase-scan.js";
 export { susoWordishBoundaryOk, susoPhraseEntriesForConfigurator, susoCollectPhraseMatches } from "./phrase-scan.js";
 export { susoBuildConfiguratorSemanticSlots } from "./semantic-slots.js";
 export { parseIntentConfigurator } from "./parse-intent.js";

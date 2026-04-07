@@ -3,7 +3,14 @@ import { susoNormalizeConfiguratorRequest } from "./intent-shell.js";
 import { susoAttachExecutionToRouted } from "./executors.js";
 
 /**
- * @param {object} deps — injected LCM/runtime hooks (not part of pure phrase/domain stack).
+ * Routes interpreted intent → **routed** canonical request (`kind`, `adapter`, `payload`, `rule`).
+ *
+ * Extension points (keep deterministic):
+ * - Add branches for new `kind` values with explicit predicates (no fuzzy “assistant” routing).
+ * - `document_query` builds a structured payload for `registerDocumentQueryExecutor`.
+ * - Future: `ui_navigation` / `search_filter` branches once `domain.js` classifies to those adapters.
+ *
+ * @param {object} deps — host hooks (e.g. LCM `inferFieldsFromText`); not part of phrase scan.
  * @param {function} deps.inferFieldsFromText
  * @param {function} deps.getCurrentMode
  */

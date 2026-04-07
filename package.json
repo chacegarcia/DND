@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:suso-iife": "node scripts/embed-dungeon-bundle.mjs",
-    "build:dungeon-bundle": "node scripts/embed-dungeon-bundle.mjs"
+    "build:dungeon-bundle": "node scripts/embed-dungeon-bundle.mjs",
+    "sync:embedded-bundle": "node scripts/sync-embedded-bundle.mjs",
+    "rebuild:game-suso": "npm run build:suso-iife && npm run sync:embedded-bundle"
   },
   "repository": {
     "type": "git",

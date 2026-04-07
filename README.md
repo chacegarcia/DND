@@ -15,16 +15,16 @@
 
 Serve the directory over HTTP and open **`index.html`**.
 
-## Optional: edit Suso/LCM and rebuild the embedded bundle
+## Edit Suso / LCM and refresh the embedded bundle
 
-Sources live under **`js/`** (and **`js/dungeon-embed-entry.js`**). After changes:
+Sources live under **`js/`** (`dungeon-embed-entry.js` is the esbuild entry). After changes:
 
 ```bash
 npm install
-npm run build:suso-iife
+npm run rebuild:game-suso
 ```
 
-That writes **`js/dungeon-suso-bundle.iife.js`** (gitignored). To update the game, copy the file contents into the **first** `<script>` block in **`index.html`** (replacing the old embedded bundle), or load that file with a `<script src="...">` if you refactor the page to use an external script.
+That runs **`build:suso-iife`** then **`sync:embedded-bundle`**, writing the IIFE into **`index.html`** between `/* SUSO_EMBEDDED_BUNDLE_START */` and `/* SUSO_EMBEDDED_BUNDLE_END */`. See **`js/suso/ARCHITECTURE.md`**.
 
 ## Repo layout
 

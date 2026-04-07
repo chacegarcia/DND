@@ -1,3 +1,7 @@
+/**
+ * Surface parse for **configurator-shaped** utterances (export BOM, reset, validate, fill fields).
+ * Game hosts may use additional parsers upstream; this stays small and testable.
+ */
 export function parseIntentConfigurator(text) {
   const raw = (text || "").trim();
   const t = raw.toLowerCase();

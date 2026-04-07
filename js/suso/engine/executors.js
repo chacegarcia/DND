@@ -1,6 +1,14 @@
 /**
- * Host-pluggable execution layer (sync). Core interpretation stays deterministic; callbacks are optional.
- * Used by the configurator route (index.html / js/suso/engine/router.js).
+ * Host-pluggable execution layer (sync).
+ *
+ * Core routing (`router.js`) produces a **routed** object; this module attaches **execution**:
+ * - `document_query` → workbook / RAG / spec resolvers
+ * - `ui_navigation` → panel focus, routes, modals (stubs OK)
+ * - `search_filter` → catalog / list filters (stubs OK)
+ * - `configurator` → LCM field apply (often delegated to `runConfiguratorAdapter`)
+ * - other adapters (e.g. game) → host `registerGameExecutor` or narrative delegate
+ *
+ * Not a chat layer — callbacks return structured results for the host to apply.
  */
 
 /** @type {{ document_query: Function|null, ui_navigation: Function|null, search_filter: Function|null, configurator: Function|null, game: Function|null }} */
@@ -72,6 +80,9 @@ export function buildCanonicalConfigurator(routed, intent, text) {
       entity: sem.entity ?? null,
       comparison: !!sem.comparison,
       domainCue: (sem.domainCue || []).slice(),
+      tool: sem.tool ?? null,
+      filter: sem.filter ?? null,
+      navigationTarget: sem.navigationTarget ?? null,
     },
     segments: {
       game: null,
