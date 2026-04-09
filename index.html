@@ -188,6 +188,16 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .quick-actions button{flex:0 0 auto;white-space:nowrap}
 .quick-actions button{padding:9px 10px;font-size:.88rem}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.class-pick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px}
+.class-card{
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 8px;border-radius:12px;
+  border:1px solid rgba(229,178,92,.22);background:rgba(0,0,0,.28);color:#e8dcc8;cursor:pointer;font:inherit;
+  transition:box-shadow .15s,border-color .15s,background .15s;
+}
+.class-card span{font-size:.72rem;color:var(--muted);font-weight:600}
+.class-card:hover{border-color:rgba(232,200,106,.45);background:rgba(255,255,255,.05)}
+.class-card.selected{background:rgba(232,200,106,.12);border-color:rgba(232,200,106,.55);box-shadow:0 0 0 1px rgba(232,200,106,.2)}
+@media (max-width:620px){.class-pick{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .field{display:flex;flex-direction:column;gap:8px}
 .field label{font-size:.92rem;color:var(--muted)}
 select{
@@ -202,6 +212,43 @@ select{
   overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;
 }
 .map-tools .small{white-space:nowrap;flex-shrink:0}
+.covenant-combat-hud{
+  display:flex;flex-direction:column;gap:6px;padding:8px 10px;margin:0 -4px;
+  border-radius:10px;background:rgba(6,10,16,.5);border:1px solid rgba(229,178,92,.14);
+  font-size:.78rem;line-height:1.35;color:var(--muted);
+}
+.covenant-combat-hud[hidden]{display:none!important}
+.covenant-combat-hud__title{font-weight:600;color:var(--ink);font-size:.82rem}
+.covenant-combat-hud__meter{
+  height:5px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.06);
+}
+.covenant-combat-hud__meter span{
+  display:block;height:100%;width:0%;
+  background:linear-gradient(90deg,rgba(232,200,106,.25),rgba(232,200,106,.78));
+  border-radius:3px;transition:width .08s linear,background .2s;
+}
+.covenant-combat-hud__meter span.ready{background:linear-gradient(90deg,rgba(140,200,255,.35),rgba(180,255,200,.75))}
+.covenant-combat-hud__hint{color:var(--muted);max-width:100%}
+.covenant-combat-hud__meta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between}
+.covenant-action-pill{
+  font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--muted);white-space:nowrap;
+}
+.covenant-action-pill--free{border-color:rgba(120,200,140,.35);color:#c8e8d0;background:rgba(20,40,28,.35)}
+.covenant-action-pill--busy{border-color:rgba(240,180,90,.4);color:#f0d8a8;background:rgba(50,35,12,.35)}
+.covenant-action-pill--hub{border-color:rgba(140,190,255,.3);color:#c8daf8;background:rgba(20,28,48,.35)}
+.covenant-action-pill--dead{border-color:rgba(180,80,80,.35);color:#e8b0b0;background:rgba(40,12,12,.35)}
+.covenant-strike-feed{min-height:1.2em;color:rgba(232,210,170,.88);font-size:.74rem;font-style:italic}
+.covenant-attune-line{font-size:.7rem;color:rgba(200,185,160,.75)}
+.covenant-timing-line{
+  font-size:.66rem;color:rgba(195,185,170,.88);line-height:1.4;margin-top:4px;padding:6px 8px;
+  border-radius:8px;background:rgba(0,0,0,.22);border:1px solid rgba(232,200,106,.1);
+}
+.covenant-enemy-tempo{
+  font-size:.65rem;color:rgba(210,195,175,.9);line-height:1.35;margin-top:4px;padding:5px 8px;
+  border-radius:8px;background:rgba(28,18,14,.4);border:1px solid rgba(200,90,70,.15);
+}
 .map-panel-head{display:flex;flex-wrap:nowrap;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
 .map-panel-head-main{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
 .map-panel-head-tools{flex-shrink:0}
@@ -216,14 +263,20 @@ select{
   position:relative;
   width:100%;
   aspect-ratio:1 / 1;
-  min-height:360px;
-  max-height:460px;
+  min-height:400px;
+  max-height:min(52vh,520px);
   background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.04), rgba(0,0,0,.12) 45%, rgba(0,0,0,.42));
-  overflow:hidden;cursor:grab;user-select:none;border-radius:12px;
+  overflow:hidden;
+  cursor:crosshair;
+  user-select:none;border-radius:12px;
 }
+.map-stage.dragging{cursor:grabbing}
 .map-stage--hub{
   background:radial-gradient(circle at 45% 30%, rgba(120,90,160,.12), rgba(20,14,22,.5) 50%, rgba(8,6,10,.75));
   box-shadow:inset 0 0 0 1px rgba(232,200,106,.1);
+}
+.map-stage--suso-authority{
+  box-shadow:inset 0 0 0 2px rgba(200,160,90,.38), 0 0 24px rgba(80,60,30,.25);
 }
 #mapCanvas{
   background:rgba(10,7,6,.08);
@@ -677,7 +730,7 @@ select{
     </section>
 
     <section class="panel input-panel">
-      <div class="panel-head"><h3 id="speakPanelTitle">Speak to the dungeon</h3><div class="small" id="statusLine">Enter to interact/roll. Shift+Enter for newline. Arrow keys move.</div></div>
+      <div class="panel-head"><h3 id="speakPanelTitle">Speak to the dungeon</h3><div class="small" id="statusLine">WASD / arrows: tiles · mouse: aim · Space: covenant shot · Enter: Suso. Shots pause while Suso thinks.</div></div>
       <div class="panel-body map-panel-body" style="display:flex;flex-direction:column;gap:12px">
         <textarea id="actionInput" placeholder="Try: move toward the chest / talk to the keeper / use tonic / combine rope with torch / attack the fiend"></textarea>
         <div class="btn-row nowrap">
@@ -714,6 +767,18 @@ select{
           <button class="secondary" id="zoomInBtn">+</button>
           <span class="small" id="zoomOut">Zoom 1.0x</span>
           <span class="small" id="atlasStatus">Tiles: loading…</span>
+        </div>
+        <div class="covenant-combat-hud" id="covenantCombatHud" hidden aria-live="polite">
+          <div class="covenant-combat-hud__meta">
+            <span class="covenant-action-pill" id="covenantActionPill">—</span>
+            <span class="covenant-attune-line" id="covenantAttuneLine" title="Covenant attunement & forge bond"></span>
+          </div>
+          <div class="covenant-combat-hud__title" id="covenantCombatTitle">Covenant lantern</div>
+          <div class="covenant-combat-hud__meter" title="Shot charge"><span id="covenantCombatCooldown"></span></div>
+          <div class="covenant-strike-feed" id="covenantStrikeFeed" role="status"></div>
+          <div class="covenant-combat-hud__hint small" id="covenantCombatHint">—</div>
+          <div class="covenant-timing-line" id="covenantTimingLine" title="How lantern time and Suso turns interact"></div>
+          <div class="covenant-enemy-tempo" id="covenantEnemyTempoLine" title="Hostile rhythm vs your text turns"></div>
         </div>
         <div class="map-stage-wrap">
         <div class="map-stage" id="mapStage">
@@ -806,6 +871,16 @@ select{
         <div class="field">
           <label>What title fits you?</label>
           <input type="text" id="titleInput" placeholder="Delver" />
+        </div>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>Covenant path (real-time lantern shots in the Depths)</label>
+        <input type="hidden" id="classInput" value="knight" />
+        <div class="class-pick" id="classPick" role="group" aria-label="Choose covenant path">
+          <button type="button" class="class-card selected" data-class="knight" title="Close iron waves — sturdy, readable"><strong>Oathbound</strong><span>Shield-line</span></button>
+          <button type="button" class="class-card" data-class="archer" title="One true line from the Reach — pressure at distance"><strong>Covenant String</strong><span>Reach-aim</span></button>
+          <button type="button" class="class-card" data-class="sorcerer" title="Cantor’s spread — control and arc"><strong>Depths Cantor</strong><span>Braid-bolt</span></button>
+          <button type="button" class="class-card" data-class="priest" title="Sacred burst — lantern offense"><strong>Lantern-Saint</strong><span>Rite-burst</span></button>
         </div>
       </div>
       <div class="row">
@@ -3547,10 +3622,10 @@ function isSusoDevMode(){
 function xpToNextForLevel(lv){ return Math.max(40, 80 + (Math.max(1, lv|0) - 1) * 35); }
 function isHubWorld(){ return !!(state && state.worldPhase === 'hub'); }
 function isDungeonWorld(){ return !!(state && state.worldPhase === 'dungeon'); }
-function gainLights(amount, reason=''){
+function gainLights(amount, reason='', silentLog=false){
   if(!state || !amount || amount <= 0) return;
   state.lights = (state.lights|0) + amount;
-  if(reason) addEntry('sys', `+${amount} Lights — ${reason}`, 'Economy');
+  if(reason && !silentLog) addEntry('sys', `+${amount} Lights — ${reason}`, 'Economy');
   plotLightsEconomyCue('gain', amount, reason);
 }
 function spendLights(amount){
@@ -3813,6 +3888,10 @@ function createHubInitialState(profile={}){
     flags: { hubSafe:true, forgeUsedThisVisit:false, questKeyFound:false, innerGateOpen:false, bossDefeated:false, warded:false, brightTorch:false, usedShrine:false, spokeToNpc:false, questSearched:false, shrineEngaged:false },
     log: [], moves: [],
     labels: { engine: 'Suso Local' },
+    playerClass: profile.classId || 'knight',
+    covenantAttunement: { byClass: { knight: 0, archer: 0, sorcerer: 0, priest: 0 }, forgeBond: 0 },
+    projectiles: [],
+    aimAngle: 0,
     ai: loadAiSettings(),
     luck: { mode:'normal', source:null, turnsLeft:0, intensity:1 },
     context: { lastTarget:null, lastAction:null, lastTool:null, lastRoomId:null, lastNpc:null, lastInteractable:null, lastProgressLead:null, lastTopic:null },
@@ -3824,7 +3903,7 @@ function createHubInitialState(profile={}){
   ensureRunSystems(run);
   revealAround(run, 22);
   addEntry('sys', run.premise, 'Opening');
-  addEntry('sys', 'Arrow keys move the @ on the map. Visit **s** (Mara’s Lanterns) and **b** (Ironfold). When you are ready, step onto the **G** tile and use Enter the Depths — the Gate only opens for a deliberate footfall.', 'Lumen Town');
+  addEntry('sys', '**WASD** / **arrows**: instant tile steps (no Suso turn). **Mouse** sets your lantern bearing; **Space** looses a **covenant shot** tied to your path — damage follows your **equipped weapon**. Suso still owns text turns: when the log is “thinking,” steps and shots wait. Visit **s** (Mara’s Lanterns) and **b** (Ironfold). Step onto **G** and **enter the depths** when ready.', 'Lumen Town');
   return run;
 }
 function gainXp(amount, silent){
@@ -4036,6 +4115,15 @@ const els = {
   mapLegendOverlayBody: document.getElementById('mapLegendOverlayBody'),
   mapContextLabel: document.getElementById('mapContextLabel'),
   mapCellHint: document.getElementById('mapCellHint'),
+  covenantCombatHud: document.getElementById('covenantCombatHud'),
+  covenantCombatTitle: document.getElementById('covenantCombatTitle'),
+  covenantCombatCooldown: document.getElementById('covenantCombatCooldown'),
+  covenantCombatHint: document.getElementById('covenantCombatHint'),
+  covenantActionPill: document.getElementById('covenantActionPill'),
+  covenantStrikeFeed: document.getElementById('covenantStrikeFeed'),
+  covenantAttuneLine: document.getElementById('covenantAttuneLine'),
+  covenantTimingLine: document.getElementById('covenantTimingLine'),
+  covenantEnemyTempoLine: document.getElementById('covenantEnemyTempoLine'),
 };
 
 let state=null, showAscii=false, mapZoom=1, mapPanX=12, mapPanY=12, drag=null, aiEnhancing=false, showApiKey=false, mapLegendOpen=false;
@@ -4120,7 +4208,19 @@ function drawPlayerHighlight(){
   ctx.restore();
 }
 function setTurnBusy(busy, msg=''){
+  const wasBusy = turnBusy;
   turnBusy = !!busy;
+  if(state){
+    const rt = getRtCombat();
+    if(turnBusy && !wasBusy){
+      rt.susoAuthorityAt = performance.now();
+    }else if(!turnBusy && wasBusy && rt.susoAuthorityAt){
+      const dt = performance.now() - rt.susoAuthorityAt;
+      if(rt.lastFire) rt.lastFire += dt;
+      adjustLanternPressureClocksForSusoPause(dt);
+      rt.susoAuthorityAt = 0;
+    }
+  }
   if(els.actionInput) els.actionInput.disabled = turnBusy;
   ['actBtn','restBtn','listenBtn','searchBtn','saveBtn','loadBtn','newRunBtn','clearSaveBtn','enterDepthsBtn','continueDelveBtn','newDelveBtn','returnToTownBtn'].forEach(id=>{
     if(els[id]) els[id].disabled = turnBusy;
@@ -4128,11 +4228,16 @@ function setTurnBusy(busy, msg=''){
   if(els.thinking) els.thinking.style.display = turnBusy ? 'inline-flex' : 'none';
   if(els.statusLine){
     if(turnBusy){
-      els.statusLine.textContent = msg || 'Suso is thinking...';
+      els.statusLine.textContent = msg || 'Suso authority — lantern frozen until this resolves.';
     } else {
-      els.statusLine.textContent = 'Enter to interact/roll. Shift+Enter for newline. Arrow keys move.';
+      els.statusLine.textContent = 'WASD / arrows: tile steps · mouse: aim lantern · Space: covenant shot (pauses during Suso text).';
     }
   }
+  if(els.mapStage){
+    const on = !!(turnBusy && state && els.onboard && els.onboard.style.display === 'none');
+    els.mapStage.classList.toggle('map-stage--suso-authority', on);
+  }
+  if(typeof syncCombatHud === 'function' && state) syncCombatHud();
 }
 
 
@@ -4828,7 +4933,7 @@ async function maybeAiFinalizeTurn(playerText, result, resolvedIntent, chronicle
   }finally{
     aiEnhancing=false;
     if(els.thinking) els.thinking.style.display='none';
-    setTimeout(()=>{ if(!turnBusy && els.statusLine) els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.'; },1600);
+    setTimeout(()=>{ if(!turnBusy && els.statusLine) els.statusLine.textContent='WASD / arrows: tile steps · mouse: aim lantern · Space: covenant shot (waits while Suso thinks).'; },1600);
   }
 }
 
@@ -4892,7 +4997,7 @@ const TILE_INDEX = {'#':[0,0],'.':[1,0],'W':[2,0],'X':[3,0],'D':[0,1],'O':[1,1],
  */
 const MAP_TILE_REGISTRY = {
   '@': { swatch:'#2fa36e', shortLabel:'You', label:'You — party marker', phase:'both', category:'player', order:1, char:'@', aiToken:'player',
-    tooltip:'Party marker (you). Arrow keys move; Enter acts.' },
+    tooltip:'You — tile steps with WASD/arrows; mouse aims covenant shots in the Depths; Enter is for Suso (shots pause while a turn resolves).' },
   '?': { swatch:'#1e1a17', shortLabel:'Explored fog', label:'Explored fog — not in sight', phase:'dungeon', category:'fog', order:2, char:'?',
     tooltip:'You mapped this tile earlier; it is out of sight until you can see it again.',
     nearbyPhrase:'explored fog (out of sight)' },
@@ -5847,6 +5952,17 @@ function ensureRunSystems(run=state){
     if(run.flags.shrineEngaged === undefined) run.flags.shrineEngaged = false;
   }
   ensureStoryArc(run);
+  if(!run.projectiles) run.projectiles = [];
+  if(!run.playerClass) run.playerClass = 'knight';
+  if(run.aimAngle === undefined) run.aimAngle = 0;
+  if(!run._rtCombat) run._rtCombat = { lastFire: 0 };
+  if(run._lastFire && !run._rtCombat.lastFire) run._rtCombat.lastFire = run._lastFire;
+  if(run.entities){
+    for(const e of run.entities){
+      if((e.type === 'enemy' || e.type === 'boss') && e.tempoPips == null) e.tempoPips = 0;
+    }
+  }
+  ensureCovenantAttunement(run);
 }
 function setProgressLead(text){
   if(!state || !text) return;
@@ -7288,7 +7404,7 @@ function generateDungeon(rng, theme, floorLevel=1){
         const maxHp = Math.max(4, hpBase + (elite ? 3 : 0));
         entities.push({
           id:`e${eid++}`, type:'enemy', elite, name, x:pos.x,y:pos.y,
-          hp: maxHp, maxHp, mood:pick(rng,['lurking','hungry','listening']), alive:true
+          hp: maxHp, maxHp, mood:pick(rng,['lurking','hungry','listening']), alive:true, tempoPips: 0
         });
         grid[pos.y][pos.x]='E';
       }
@@ -7299,7 +7415,7 @@ function generateDungeon(rng, theme, floorLevel=1){
   if(npcPos){ entities.push({id:`n${eid++}`, type:'npc', name:pick(rng,theme.npcs), x:npcPos.x,y:npcPos.y,hp:99,maxHp:99, alive:true, dialogIndex:0, clue:pick(rng,theme.truths)}); grid[npcPos.y][npcPos.x]='n'; }
   const bossPos=findOpenInRoom(grid,endRoom,rng) || boss;
   const bossHp = 10 + Math.floor((fl - 1) * 6);
-  entities.push({id:`b${eid++}`, type:'boss', name:pick(rng,theme.bosses), x:bossPos.x, y:bossPos.y, hp:bossHp, maxHp:bossHp, alive:true, mood:'waiting'}); grid[bossPos.y][bossPos.x]='E';
+  entities.push({id:`b${eid++}`, type:'boss', name:pick(rng,theme.bosses), x:bossPos.x, y:bossPos.y, hp:bossHp, maxHp:bossHp, alive:true, mood:'waiting', tempoPips: 0}); grid[bossPos.y][bossPos.x]='E';
 
   for(let i=0;i<18;i++) scatterOnFloor(grid,rng,pick(rng,['.','.','W','X','.']));
 
@@ -7428,8 +7544,8 @@ function decodeSusoMeaning(text){
     add('Hint: this fear or caution comes from what happened in this dungeon. Take the warning seriously.');
   }
 
-  if(/charging up for a powerful attack/.test(t)){
-    add('Hint: the enemy is telegraphing a stronger hit next turn. Defend, move, or finish it before the release.');
+  if(/charging up for a powerful attack|winds a heavy line/.test(t)){
+    add('Hint: the enemy is telegraphing a stronger hit on the next Suso beat. Defend, move, lantern-pressure, or finish it before the release.');
   }
 
   if(/within reach|close with/.test(t)){
@@ -8218,8 +8334,10 @@ function tryForgeSharpen(){
   w.min = (w.min|0) + 1;
   w.max = (w.max|0) + 1;
   state.flags.forgeUsedThisVisit = true;
+  ensureCovenantAttunement(state);
+  state.covenantAttunement.forgeBond = Math.min(COVENANT_FORGE_BOND_CAP, (state.covenantAttunement.forgeBond|0) + 1);
   markHubStep('forge');
-  addEntry('sys', `${w.name} rings truer — edges tuned for the Depths.`, 'Forge');
+  addEntry('sys', `${w.name} rings truer — edges tuned for the Depths; the covenant’s timing listens closer.`, 'Forge');
   const stF = ensureStoryArc(state).stage|0;
   const rrF = rngFactory((state.seed|0) + (state.turn|0) * 61);
   if(stF >= 3 && rrF() < 0.35){
@@ -8389,7 +8507,7 @@ async function resolveAction(input){
     const nearby=nearbyInteractiveContext(1).slice(0,4).map(n=>n.kind).join(', ');
     setTurnBusy(false);
     addEntry('sys',
-      `Movement is on the arrow keys now. Use ← ↑ ↓ → to travel one step at a time. The text box is now for language-model style interaction: inspect, open, search, talk, attack, use, combine, pray, threaten, bargain, or describe what you do with something nearby.${nearby ? ` Nearby points of interest: ${nearby}.` : ''}`,
+      `Use **WASD** or **arrow keys** to move (Realm-style). **Mouse** aims; **Space** fires your class shots. The text box is for narrative actions: inspect, talk, attack, use, combine, etc.${nearby ? ` Nearby: ${nearby}.` : ''}`,
       'Traversal updated'
     );
     refreshUI();
@@ -9826,10 +9944,46 @@ function applyOutcome(result, baseRoll){
   return idx;
 }
 
+/**
+ * ENEMY_TEMPO — Hostiles only advance here (post–text-turn). tempoPips encodes sustained threat between beats;
+ * lanternPressure suppresses charges, can clear pips, and may stall steps. Strike feed replaces repeated wind-up log lines.
+ * Future: ranged archetypes / enemy shots can read tempoPips + charging for telegraphs.
+ */
+function finalizeEnemyTempoBeat(e, acted){
+  if(!e || !e.alive) return;
+  if((e.lanternPressure|0) >= 3){
+    e.tempoPips = 0;
+    return;
+  }
+  if(acted) e.tempoPips = Math.min(3, (e.tempoPips|0) + 1);
+  else if((e.tempoPips|0) > 0 && Math.random() < 0.35) e.tempoPips = Math.max(0, (e.tempoPips|0) - 1);
+}
+
+function buildHostileTempoHudLine(){
+  if(!state || isHubWorld() || state.dead) return '';
+  const hostiles = state.entities.filter(e=>e.alive && (e.type==='enemy'||e.type==='boss'));
+  if(!hostiles.length) return '';
+  let winding = 0, primed = 0, suppressed = 0;
+  for(const e of hostiles){
+    const d = Math.abs(e.x - state.player.x) + Math.abs(e.y - state.player.y);
+    const lp = e.lanternPressure|0;
+    if(lp >= 3) suppressed++;
+    if(e.charging) winding++;
+    if((e.tempoPips|0) >= 2 && d < 8 && lp < 3) primed++;
+  }
+  const parts = [];
+  if(winding) parts.push(`${winding} winding → releases on next text beat`);
+  if(primed) parts.push(`${primed} primed`);
+  if(suppressed) parts.push(`${suppressed} lantern-suppressed`);
+  if(!parts.length) return 'Hostile tempo · idle — advance & strike only when your Suso text turn resolves.';
+  return `Hostile tempo · ${parts.join(' · ')} · RT lantern pressure fills the gap between those beats.`;
+}
+
 function afterPlayerTurn(rng){
   if(isHubWorld()) return;
   const hostiles = state.entities.filter(e=>e.alive && (e.type==='enemy'||e.type==='boss'));
   for(const e of hostiles){
+    let acted = false;
     const dist=Math.abs(e.x-state.player.x)+Math.abs(e.y-state.player.y);
 
     if(e.chargeTurns && e.chargeTurns > 0){
@@ -9847,15 +10001,22 @@ function afterPlayerTurn(rng){
         addEntry('sys', `${e.name} releases a powerful attack into empty space as you deny it a clean angle.`, 'Enemy Turn');
       }
       e.charging = false;
+      acted = true;
+      finalizeEnemyTempoBeat(e, acted);
       continue;
     }
 
     if(dist<=2 && !e.charging){
-      const chargeChance = e.type==='boss' ? 0.38 : 0.22;
+      let chargeChance = e.type==='boss' ? 0.38 : 0.22;
+      const lp = e.lanternPressure|0;
+      if(lp >= 2) chargeChance *= 0.52;
+      else if(lp >= 1) chargeChance *= 0.72;
       if(Math.random() < chargeChance){
         e.charging = true;
         e.chargeTurns = 1;
-        addEntry('bad', `${e.name} is charging up for a powerful attack.`, 'Enemy Turn');
+        setStrikeFeed(`${e.name} winds a heavy line — next Suso beat releases it.`);
+        acted = true;
+        finalizeEnemyTempoBeat(e, acted);
         continue;
       }
     }
@@ -9870,17 +10031,25 @@ function afterPlayerTurn(rng){
         }
         if(hasItem('Knotted Ward')){ dmg=Math.max(0,dmg-3); removeItem('Knotted Ward'); }
         damagePlayer(dmg, `${e.name} attacks at close range.`);
+        acted = true;
       } else {
         addEntry('sys', `${e.name} presses the attack but misses clean purchase.`, 'Enemy Turn');
+        acted = true;
       }
     } else if(dist<8){
-      const step=bfsStepEntity(e.x,e.y,state.player.x,state.player.y);
-      if(step){
-        state.map.grid[e.y][e.x]='.';
-        e.x=step.x; e.y=step.y;
-        state.map.grid[e.y][e.x]='E';
+      const lp = e.lanternPressure|0;
+      const hesitate = lp >= 2 && dist <= 5 && Math.random() < 0.38;
+      if(!hesitate){
+        const step=bfsStepEntity(e.x,e.y,state.player.x,state.player.y);
+        if(step){
+          state.map.grid[e.y][e.x]='.';
+          e.x=step.x; e.y=step.y;
+          state.map.grid[e.y][e.x]='E';
+          acted = true;
+        }
       }
     }
+    finalizeEnemyTempoBeat(e, acted);
   }
   state.flags.defending = false;
 }
@@ -9905,6 +10074,536 @@ function bfsStepEntity(sx,sy,tx,ty){
   return {x:cur[0], y:cur[1]};
 }
 function movePlayer(x,y){ state.player.x=x; state.player.y=y; centerMapOnPlayer(); }
+
+/**
+ * COVENANT_RT — real-time tile combat (instant grid steps + aimed lantern shots)
+ * Owns: held move repeat timing, aim bearing, projectile simulation, class attack patterns,
+ *       shot cooldowns, covenant HUD copy, projectile/map overlays.
+ * Does not own: Suso text pipeline, enemy step AI (afterPlayerTurn), loot tables, or grid generation.
+ *
+ * COVENANT_TIMING (hybrid model — read before changing stepCombatProjectiles / setTurnBusy):
+ * - "Lantern live" windows: !turnBusy in the Depths — projectiles advance, lanternPressure decays on real time,
+ *   shot cooldown elapses, WASD/Space work.
+ * - "Suso authority" windows: turnBusy — the player’s last text command is resolving. Covenant RT is frozen:
+ *   projectiles do not move or hit, pressure decay pauses, lantern cooldown display and internal clock pause.
+ *   On authority end, elapsed Suso time is credited to lastFire and lanternPressure timestamps so nothing
+ *   "jumps" forward unfairly.
+ * - Enemy positional/combat AI still advances only in afterPlayerTurn (post–text-turn), not on the RT loop.
+ * - ENEMY_TEMPO (tempoPips, finalizeEnemyTempoBeat): text beats accumulate threat; lantern suppression clears or stalls it.
+ * - Future: enemy projectiles / diagonal / shoot-while-move extend this contract; Suso authority remains a hard freeze.
+ */
+
+const MOVE_REPEAT_MS = 88;
+const COVENANT_ATTUNE_CAP = 14;
+const COVENANT_FORGE_BOND_CAP = 3;
+
+function ensureCovenantAttunement(run){
+  if(!run || typeof run !== 'object') return;
+  if(!run.covenantAttunement){
+    run.covenantAttunement = { byClass: { knight: 0, archer: 0, sorcerer: 0, priest: 0 }, forgeBond: 0 };
+    return;
+  }
+  const b = run.covenantAttunement.byClass;
+  if(!b) run.covenantAttunement.byClass = { knight: 0, archer: 0, sorcerer: 0, priest: 0 };
+  else{
+    for(const k of ['knight', 'archer', 'sorcerer', 'priest']){
+      if(b[k] == null) b[k] = 0;
+    }
+  }
+  if(run.covenantAttunement.forgeBond == null) run.covenantAttunement.forgeBond = 0;
+}
+
+/** Small scaling from covenant kills on this path — keeps progression tied to delve rhythm. */
+function getCovenantDamageMult(){
+  if(!state) return 1;
+  ensureCovenantAttunement(state);
+  const id = state.playerClass || 'knight';
+  const steps = Math.min(COVENANT_ATTUNE_CAP, state.covenantAttunement.byClass[id]|0);
+  return 1 + Math.min(0.07, steps * 0.005);
+}
+
+/** Weapon-rolled damage for covenant shots; mult scales each class pattern against equipped steel + attunement. */
+function rollCovenantShotDamage(mult){
+  const w = getEquippedWeapon();
+  const lo = w.min|0, hi = Math.max(lo, w.max|0);
+  const span = hi - lo;
+  const r = lo + (span ? Math.floor(Math.random() * (span + 1)) : 0);
+  const att = getCovenantDamageMult();
+  return Math.max(1, Math.round(r * mult * att));
+}
+
+const COVENANT_CLASS = {
+  knight: {
+    id: 'knight',
+    title: 'Oathbound',
+    cooldown: 480,
+    pattern: 'three short iron waves (close arc)',
+    fire(base, spawn){
+      const spreads = [-0.34, 0, 0.34];
+      const mults = [0.5, 0.58, 0.5];
+      for(let i = 0; i < 3; i++) spawn(base + spreads[i], 0.095, rollCovenantShotDamage(mults[i]));
+    }
+  },
+  archer: {
+    id: 'archer',
+    title: 'Covenant String',
+    cooldown: 300,
+    pattern: 'one true line (Reach pressure)',
+    fire(base, spawn){
+      spawn(base, 0.175, rollCovenantShotDamage(1.05));
+    }
+  },
+  sorcerer: {
+    id: 'sorcerer',
+    title: 'Depths Cantor',
+    cooldown: 620,
+    pattern: 'braided spread (control)',
+    fire(base, spawn){
+      for(let i = 0; i < 5; i++) spawn(base + (i - 2) * 0.2, 0.078, rollCovenantShotDamage(0.3));
+    }
+  },
+  priest: {
+    id: 'priest',
+    title: 'Lantern-Saint',
+    cooldown: 520,
+    pattern: 'rite burst (paired sanctified lines)',
+    fire(base, spawn){
+      spawn(base, 0.138, rollCovenantShotDamage(0.72));
+      spawn(base + 0.52, 0.105, rollCovenantShotDamage(0.48));
+    }
+  }
+};
+
+function getCovenantClassDef(){
+  const id = state?.playerClass || 'knight';
+  return COVENANT_CLASS[id] || COVENANT_CLASS.knight;
+}
+
+function getCovenantCooldownMs(){
+  const base = getCovenantClassDef().cooldown;
+  if(!state) return base;
+  ensureCovenantAttunement(state);
+  const id = state.playerClass || 'knight';
+  const steps = Math.min(COVENANT_ATTUNE_CAP, state.covenantAttunement.byClass[id]|0);
+  const bond = Math.min(COVENANT_FORGE_BOND_CAP, state.covenantAttunement.forgeBond|0);
+  const reduce = Math.min(40, bond * 10 + Math.floor(steps / 4) * 3);
+  return Math.max(195, base - reduce);
+}
+
+function getRtCombat(){
+  if(!state) return null;
+  if(!state._rtCombat) state._rtCombat = { lastFire: 0 };
+  return state._rtCombat;
+}
+
+/** Monotonic clock for HUD cooldown while Suso authority is active (freeze display + internal pause). */
+function covenantHudClockNow(){
+  const rt = getRtCombat();
+  if(turnBusy && rt && rt.susoAuthorityAt) return rt.susoAuthorityAt;
+  return performance.now();
+}
+
+function isSusoAuthorityActive(){
+  return !!turnBusy;
+}
+
+function setStrikeFeed(text){
+  if(!state) return;
+  const rt = getRtCombat();
+  rt.strikeFeed = text || '';
+  rt.strikeFeedUntil = performance.now() + 4200;
+  syncCombatHud();
+}
+
+function covenantKillLine(ent){
+  if(!ent) return 'Something gives way — the Depths blinks.';
+  if(ent.type === 'boss'){
+    return `${ent.name} is named spent: the chamber’s weight lifts, and continuity leans toward the surface.`;
+  }
+  return `${ent.name} unhooks — the Reach remembers who drew the line.`;
+}
+
+function bumpCovenantAttunementOnKill(){
+  if(!state) return;
+  ensureCovenantAttunement(state);
+  const id = state.playerClass || 'knight';
+  const b = state.covenantAttunement.byClass;
+  b[id] = Math.min(COVENANT_ATTUNE_CAP, (b[id]|0) + 1);
+}
+
+function noteLanternHit(ent){
+  if(!ent) return;
+  ent.lanternPressure = Math.min(3, (ent.lanternPressure|0) + 1);
+  if((ent.lanternPressure|0) >= 3) ent.tempoPips = 0;
+  ent.lastLanternHitAt = performance.now();
+}
+
+/** Returns true when a charge is broken (feed line already set). */
+function applyLanternPressureDisruptCharge(ent){
+  if(!ent || !ent.charging) return false;
+  if((ent.lanternPressure|0) < 2) return false;
+  ent.charging = false;
+  ent.chargeTurns = 0;
+  ent.tempoPips = Math.max(0, (ent.tempoPips|0) - 1);
+  ent.lostChargeFlashUntil = performance.now() + 720;
+  setStrikeFeed(`Gathered violence frays — ${ent.name} loses its charge-line to lantern heat.`);
+  return true;
+}
+
+function decayLanternPressure(now){
+  if(turnBusy) return;
+  if(!state?.entities) return;
+  for(const e of state.entities){
+    if(!e.alive || (e.type !== 'enemy' && e.type !== 'boss')) continue;
+    if(!e.lastLanternHitAt) continue;
+    if(now - e.lastLanternHitAt > 2100){
+      e.lanternPressure = 0;
+      e.lastLanternHitAt = 0;
+    }
+  }
+}
+
+/** When Suso authority ends, push pressure timestamps forward so decay clocks did not run during the freeze. */
+function adjustLanternPressureClocksForSusoPause(dtMs){
+  if(!state?.entities || dtMs <= 0) return;
+  for(const e of state.entities){
+    if(e.lastLanternHitAt) e.lastLanternHitAt += dtMs;
+  }
+}
+
+/** Throttles full UI refresh during rapid hits (nearby HP, lists) — kills still refresh immediately. */
+let _covenantHitRefreshLast = 0;
+function scheduleCovenantHitRefresh(){
+  const now = performance.now();
+  if(now - _covenantHitRefreshLast < 110) return;
+  _covenantHitRefreshLast = now;
+  refreshUI();
+}
+
+function syncCombatHud(){
+  if(!els.covenantCombatHud || !els.covenantCombatTitle || !els.covenantCombatCooldown || !els.covenantCombatHint) return;
+  if(!state || els.onboard.style.display !== 'none'){
+    els.covenantCombatHud.hidden = true;
+    return;
+  }
+  els.covenantCombatHud.hidden = false;
+  const now = performance.now();
+  const rt = getRtCombat();
+  if(els.covenantActionPill){
+    els.covenantActionPill.classList.remove('covenant-action-pill--free','covenant-action-pill--busy','covenant-action-pill--hub','covenant-action-pill--dead');
+    if(state.dead){
+      els.covenantActionPill.textContent = 'Fallen';
+      els.covenantActionPill.classList.add('covenant-action-pill--dead');
+    }else if(isHubWorld()){
+      els.covenantActionPill.textContent = 'Lumen · peace';
+      els.covenantActionPill.classList.add('covenant-action-pill--hub');
+    }else if(turnBusy){
+      els.covenantActionPill.textContent = 'Suso turn';
+      els.covenantActionPill.classList.add('covenant-action-pill--busy');
+    }else{
+      const nearNpc = nearbyEntities('npc', 2).length > 0;
+      els.covenantActionPill.textContent = nearNpc ? 'Delve · near voice' : 'Delve · ready';
+      els.covenantActionPill.classList.add('covenant-action-pill--free');
+    }
+  }
+  if(els.covenantAttuneLine){
+    ensureCovenantAttunement(state);
+    const id = state.playerClass || 'knight';
+    const st = Math.min(COVENANT_ATTUNE_CAP, state.covenantAttunement.byClass[id]|0);
+    const fb = Math.min(COVENANT_FORGE_BOND_CAP, state.covenantAttunement.forgeBond|0);
+    els.covenantAttuneLine.textContent = `Attune ${st}/${COVENANT_ATTUNE_CAP} · Ironfold bond ${fb}/${COVENANT_FORGE_BOND_CAP}`;
+  }
+  const def = getCovenantClassDef();
+  const w = getEquippedWeapon();
+  els.covenantCombatTitle.textContent = `${def.title} · ${w.name}`;
+  const cd = getCovenantCooldownMs();
+  const clock = covenantHudClockNow();
+  const elapsed = rt && rt.lastFire ? clock - rt.lastFire : cd;
+  const ready = elapsed >= cd;
+  const pct = Math.min(100, Math.max(0, (elapsed / cd) * 100));
+  els.covenantCombatCooldown.style.width = `${pct}%`;
+  els.covenantCombatCooldown.classList.toggle('ready', ready);
+  if(els.covenantStrikeFeed){
+    const sf = rt && rt.strikeFeed && rt.strikeFeedUntil && now < rt.strikeFeedUntil ? rt.strikeFeed : '';
+    els.covenantStrikeFeed.textContent = sf;
+  }
+  let hint = def.pattern;
+  if(state.dead) hint = '—';
+  else if(turnBusy) hint = 'Suso authority — lantern bolts frozen, pressure clocks hold, cooldown waits with you.';
+  else if(isHubWorld()) hint = 'Steel sleeps — covenant lantern is for the Depths, not the town’s witness.';
+  else if(!ready){
+    const left = Math.max(0, (cd - elapsed) / 1000);
+    hint = `Lantern charging ${left.toFixed(1)}s · ${def.pattern}`;
+  }else{
+    hint = `Aim across tiles · Space looses ${def.pattern} · attunement & forge bond ease the charge.`;
+  }
+  els.covenantCombatHint.textContent = hint;
+  if(els.covenantTimingLine){
+    if(state.dead) els.covenantTimingLine.textContent = '';
+    else if(isHubWorld()){
+      els.covenantTimingLine.textContent = 'Timing · Town — no lantern RT; Suso still runs shop, forge, and story through text.';
+    }else if(turnBusy){
+      els.covenantTimingLine.textContent = 'Timing · Suso authority — projectiles & pressure decay freeze; hostiles still advance only after this command resolves (text turn).';
+    }else{
+      els.covenantTimingLine.textContent = 'Timing · Lantern live — move & fire freely; pressure decays in real time; hostiles only step/strike on Suso text beats (see tempo line below).';
+    }
+  }
+  if(els.covenantEnemyTempoLine){
+    if(state.dead || isHubWorld()) els.covenantEnemyTempoLine.textContent = '';
+    else if(turnBusy) els.covenantEnemyTempoLine.textContent = 'Hostile tempo · frozen with Suso authority — next text beat advances them; lantern RT resumes after.';
+    else els.covenantEnemyTempoLine.textContent = buildHostileTempoHudLine();
+  }
+}
+
+/** Same Lights / loot / boss flag as Suso melee resolution — keeps the delve loop coherent. */
+function applyCovenantKillRewards(ent){
+  if(!state || !ent) return;
+  const rng = rngFactory((state.seed|0) + (state.turn|0) * 47 + (ent.x|0) * 13 + (ent.y|0) * 19);
+  const lightGain = ent.type === 'boss'
+    ? ECON.killBoss
+    : (ent.type === 'enemy' && ent.elite ? ECON.killElite : ent.type === 'enemy' ? ECON.killEnemy : ECON.killElite);
+  gainLights(lightGain, `scraped from ${ent.name}`);
+  addLootMaybe(rng, ent.type === 'boss');
+  if(ent.type === 'boss') state.flags.bossDefeated = true;
+}
+
+function drawCovenantAimIndicator(){
+  if(!ctx || !state?.player || showAscii || isHubWorld()) return;
+  const aimFrozen = turnBusy;
+  const ang = typeof state.aimAngle === 'number' ? state.aimAngle : 0;
+  const cx = (state.player.x + 0.5) * tileSize;
+  const cy = (state.player.y + 0.5) * tileSize;
+  const len = tileSize * 1.05;
+  const cls = state.playerClass || 'knight';
+  const stroke = {
+    knight: 'rgba(232,190,120,0.55)',
+    archer: 'rgba(170,215,130,0.52)',
+    sorcerer: 'rgba(120,200,255,0.48)',
+    priest: 'rgba(230,220,255,0.52)'
+  };
+  ctx.save();
+  ctx.globalAlpha = aimFrozen ? 0.28 : 1;
+  ctx.strokeStyle = stroke[cls] || stroke.knight;
+  ctx.lineWidth = 1.75;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const wedge = 0.22;
+  ctx.globalAlpha = (aimFrozen ? 0.28 : 1) * 0.14;
+  ctx.fillStyle = stroke[cls] || stroke.knight;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, len * 0.92, ang - wedge, ang + wedge);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/** RotMG-style: one tile step without spending a text turn (no chronicle spam). */
+function tryInstantMove(dir){
+  if(!state || state.dead || !state.map || !state.player || turnBusy) return false;
+  const [dx,dy] = DIRS[dir] || [0,0];
+  if(!dx && !dy) return false;
+  const nx = state.player.x + dx, ny = state.player.y + dy;
+  const cell = state.map.grid[ny]?.[nx];
+  if(cell == null || cell === '#') return false;
+  const ent = findEntityAt(nx, ny);
+  if(ent){
+    if(ent.type === 'npc') return false;
+    return false;
+  }
+  if(cell === 'D'){
+    const locked = !state.flags.innerGateOpen && !hasItem('Saint Key') && !hasItem('Iron Key');
+    if(locked) return false;
+    state.map.grid[ny][nx] = 'O';
+    state.flags.innerGateOpen = true;
+  }
+  movePlayer(nx, ny);
+  revealAround(state, 6);
+  drawMap();
+  return true;
+}
+
+const MOVE_KEYS = { ArrowUp:'north', ArrowDown:'south', ArrowLeft:'west', ArrowRight:'east', w:'north', W:'north', s:'south', S:'south', a:'west', A:'west', d:'east', D:'east' };
+let keysMoveHeld = Object.create(null);
+let moveRepeatTimer = null;
+function syncMoveRepeat(){
+  if(moveRepeatTimer){ clearInterval(moveRepeatTimer); moveRepeatTimer = null; }
+  if(!state || state.dead || els.onboard.style.display !== 'none') return;
+  const active = Object.keys(keysMoveHeld).filter(k => keysMoveHeld[k]);
+  if(!active.length) return;
+  moveRepeatTimer = setInterval(()=>{
+    if(!state || state.dead || turnBusy){ syncMoveRepeat(); return; }
+    for(const k of ['north','south','west','east']){
+      if(keysMoveHeld[k]){ tryInstantMove(k); break; }
+    }
+  }, MOVE_REPEAT_MS);
+}
+
+function spawnProjectile(angle, speed, dmg, vis){
+  if(!state.player) return;
+  state.projectiles = state.projectiles || [];
+  const kind = state.playerClass || 'knight';
+  const sub = vis || kind;
+  state.projectiles.push({
+    x: state.player.x + 0.5,
+    y: state.player.y + 0.5,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    life: 52,
+    dmg,
+    kind,
+    vis: sub
+  });
+}
+
+function fireProjectileBurst(){
+  if(!state || state.dead || turnBusy) return;
+  if(isHubWorld()){
+    const now = performance.now();
+    const rt = getRtCombat();
+    if(!rt._hubWarnTs || now - rt._hubWarnTs > 5000){
+      rt._hubWarnTs = now;
+      setStrikeFeed('Lumen keeps its witness — lantern stays sheathed until the Depths.');
+    }
+    syncCombatHud();
+    return;
+  }
+  const now = performance.now();
+  const rt = getRtCombat();
+  const cd = getCovenantCooldownMs();
+  if(rt.lastFire && now - rt.lastFire < cd) return;
+  rt.lastFire = now;
+  const def = getCovenantClassDef();
+  const base = typeof state.aimAngle === 'number' ? state.aimAngle : 0;
+  const spawn = (ang, sp, dmg) => spawnProjectile(ang, sp, dmg);
+  def.fire(base, spawn);
+  syncCombatHud();
+}
+
+function damageHostileProjectile(ent, dmg){
+  if(!ent || !ent.alive) return;
+  ent.hp = Math.max(0, (ent.hp|0) - dmg);
+  queueMapPulse(ent.x, ent.y, 'enemy', 400);
+  noteLanternHit(ent);
+  if(ent.hp <= 0){
+    ent.alive = false;
+    if(state.map.grid[ent.y] && state.map.grid[ent.y][ent.x] === 'E') state.map.grid[ent.y][ent.x] = '%';
+    addEntry('sys', covenantKillLine(ent), 'Covenant');
+    gainXp(6, true);
+    bumpCovenantAttunementOnKill();
+    setStrikeFeed(ent.type === 'boss'
+      ? 'A major thread cut — tally the Lights and listen for what shifts above.'
+      : 'A thread cut — the Depths blinks, and your path leans clearer.');
+    applyCovenantKillRewards(ent);
+    refreshUI();
+  } else if(applyLanternPressureDisruptCharge(ent)){
+    scheduleCovenantHitRefresh();
+  } else {
+    const hpTxt = ent.maxHp ? `${ent.hp}/${ent.maxHp}` : String(ent.hp);
+    setStrikeFeed(`Lantern finds ${ent.name} · ${hpTxt} · lantern threat ${Math.min(3, ent.lanternPressure|0)}/3`);
+    scheduleCovenantHitRefresh();
+  }
+}
+
+function stepCombatProjectiles(){
+  if(turnBusy) return false;
+  if(!state || !state.projectiles || !state.projectiles.length) return false;
+  let changed = false;
+  for(let i = state.projectiles.length - 1; i >= 0; i--){
+    const p = state.projectiles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if(p.life <= 0){ state.projectiles.splice(i, 1); changed = true; continue; }
+    if(p.x < 0 || p.y < 0 || p.x >= state.map.w || p.y >= state.map.h){ state.projectiles.splice(i, 1); changed = true; continue; }
+    const tx = p.x | 0, ty = p.y | 0;
+    if(state.map.grid[ty] && state.map.grid[ty][tx] === '#'){ state.projectiles.splice(i, 1); changed = true; continue; }
+    let hit = false;
+    for(const e of state.entities || []){
+      if(!e.alive || (e.type !== 'enemy' && e.type !== 'boss')) continue;
+      const d = Math.hypot(e.x + 0.5 - p.x, e.y + 0.5 - p.y);
+      if(d < 0.4){
+        damageHostileProjectile(e, p.dmg|0 || 3);
+        state.projectiles.splice(i, 1);
+        hit = true;
+        changed = true;
+        break;
+      }
+    }
+    if(!hit && p.life <= 0){ changed = true; }
+  }
+  return changed;
+}
+
+function drawProjectilesLayer(){
+  if(!ctx || !state?.projectiles?.length) return;
+  ctx.save();
+  if(turnBusy) ctx.globalAlpha = 0.5;
+  const rBase = Math.max(2.2, tileSize * 0.09);
+  for(const p of state.projectiles){
+    const px = p.x * tileSize, py = p.y * tileSize;
+    const vis = p.vis || p.kind || 'knight';
+    let fill = '#e8c86a';
+    let stroke = 'rgba(40,20,10,.35)';
+    if(vis === 'archer'){ fill = '#c8e070'; stroke = 'rgba(30,50,20,.4)'; }
+    else if(vis === 'sorcerer'){ fill = '#7ad8ff'; stroke = 'rgba(20,40,60,.4)'; }
+    else if(vis === 'priest'){ fill = '#e8e0ff'; stroke = 'rgba(50,40,70,.35)'; }
+    else if(vis === 'knight'){ fill = '#e8a860'; stroke = 'rgba(50,30,10,.4)'; }
+    ctx.shadowColor = fill;
+    ctx.shadowBlur = 3;
+    ctx.lineWidth = 1.1;
+    if(vis === 'knight'){
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(Math.atan2(p.vy, p.vx));
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.moveTo(rBase * 1.4, 0);
+      ctx.lineTo(-rBase, rBase * 0.7);
+      ctx.lineTo(-rBase, -rBase * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }else if(vis === 'archer'){
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.beginPath();
+      ctx.moveTo(px - rBase, py);
+      ctx.lineTo(px, py - rBase * 1.1);
+      ctx.lineTo(px + rBase, py);
+      ctx.lineTo(px, py + rBase * 1.1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }else if(vis === 'priest'){
+      ctx.strokeStyle = fill;
+      ctx.lineWidth = 1.6;
+      const s = rBase * 0.9;
+      ctx.beginPath();
+      ctx.moveTo(px - s, py); ctx.lineTo(px + s, py);
+      ctx.moveTo(px, py - s); ctx.lineTo(px, py + s);
+      ctx.stroke();
+      ctx.fillStyle = fill;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.arc(px, py, rBase * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }else{
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.beginPath();
+      ctx.arc(px, py, rBase, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
 function pushMoveMemory(text){ state.moves.push(`Turn ${state.turn}: ${text}`); if(state.moves.length>22) state.moves.shift(); }
 function updateQuestProgress(result){
   const wasDone = !!state.quest.done;
@@ -10013,6 +10712,41 @@ function drawTileReadabilityOverlay(symbol, dx, dy, tx, ty){
     ctx.fillRect(dx+1.5, dy+1.5, 4, 3);
   }
   if(symbol==='E'){
+    if(vis){
+      const ent = findEntityAt(tx, ty);
+      const tNow = performance.now();
+      const pr = ent && (ent.lanternPressure|0) || 0;
+      if(ent && ent.lostChargeFlashUntil && tNow >= ent.lostChargeFlashUntil) ent.lostChargeFlashUntil = 0;
+      if(pr > 0){
+        ctx.strokeStyle = pr >= 3 ? 'rgba(255,215,140,0.92)' : pr >= 2 ? 'rgba(255,175,110,0.68)' : 'rgba(255,210,170,0.5)';
+        ctx.lineWidth = pr >= 3 ? 2.6 : 1.9;
+        ctx.strokeRect(dx + 0.5, dy + 0.5, tileSize - 1, tileSize - 1);
+        ctx.strokeStyle = pr >= 3 ? 'rgba(255,245,220,0.4)' : 'rgba(255,200,140,0.22)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(dx + 3.5, dy + 3.5, tileSize - 7, tileSize - 7);
+      }
+      if(ent && ent.charging){
+        const pulse = 0.5 + 0.5 * Math.sin(tNow / 185);
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = 'rgba(255,130,55,0.95)';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(dx + tileSize / 2, dy + tileSize / 2, tileSize * 0.36, -Math.PI * 0.88, -Math.PI * 0.12);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = 'rgba(255,95,40,0.95)';
+        ctx.beginPath();
+        ctx.arc(dx + tileSize - 6, dy + 8, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if(ent && (ent.tempoPips|0) > 0){
+        const tp = Math.min(3, ent.tempoPips|0);
+        for(let i = 0; i < 3; i++){
+          ctx.fillStyle = i < tp ? 'rgba(255,210,155,0.92)' : 'rgba(55,48,42,0.5)';
+          ctx.fillRect(dx + 5 + i * 6, dy + tileSize - 6, 4, 3);
+        }
+      }
+    }
     ctx.fillStyle = 'rgba(255,55,55,0.62)';
     ctx.beginPath();
     ctx.moveTo(dx+tileSize-4, dy+3);
@@ -10020,6 +10754,15 @@ function drawTileReadabilityOverlay(symbol, dx, dy, tx, ty){
     ctx.lineTo(dx+tileSize-0.5, dy+7);
     ctx.closePath();
     ctx.fill();
+    if(vis){
+      const ent = findEntityAt(tx, ty);
+      const tNow = performance.now();
+      if(ent && ent.lostChargeFlashUntil && tNow < ent.lostChargeFlashUntil){
+        ctx.strokeStyle = 'rgba(255,255,255,0.78)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(dx + 1.5, dy + 1.5, tileSize - 3, tileSize - 3);
+      }
+    }
   }
   if(symbol==='G'){
     ctx.strokeStyle = 'rgba(244,200,90,0.72)';
@@ -10066,6 +10809,7 @@ function updateMapCellHintFromEvent(ev){
   els.mapCellHint.textContent = formatMapCellHint(tx, ty, sym, vis);
 }
 function drawMap(){
+  if(!turnBusy) decayLanternPressure(performance.now());
   const w=state.map.w*tileSize, h=state.map.h*tileSize;
   mapCanvas.width=w; mapCanvas.height=h; ctx.clearRect(0,0,w,h);
   for(let y=0;y<state.map.h;y++){
@@ -10078,6 +10822,8 @@ function drawMap(){
   drawAdjacentContextRings();
   drawPlayerHighlight();
   drawPulseFx();
+  drawCovenantAimIndicator();
+  drawProjectilesLayer();
   els.asciiMap.textContent=buildAsciiMap();
   updateMapTransform();
 }
@@ -10407,6 +11153,7 @@ function refreshUI(){
     }else els.susoDevOverlay.style.display = 'none';
   }
   syncMapLegendToggle();
+  syncCombatHud();
   const closeHostiles = nearbyEntities('hostile', 2);
   const chargingHostile = closeHostiles.find(e => e.charging || e.chargeTurns>0) || nearbyEntities('hostile', 4).find(e => e.charging || e.chargeTurns>0);
   if(els.battleBar){
@@ -10688,12 +11435,16 @@ els.actBtn.onclick=resolveAndClear;
 els.restBtn.onclick=()=>resolveAction('rest and steady myself');
 els.listenBtn.onclick=()=>resolveAction('listen carefully');
 els.searchBtn.onclick=()=>resolveAction('search nearby');
-els.saveBtn.onclick=()=>{ saveGame(); els.statusLine.textContent='Saved.'; setTimeout(()=>els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.',1200); };
+els.saveBtn.onclick=()=>{ saveGame(); els.statusLine.textContent='Saved.'; setTimeout(()=>els.statusLine.textContent='WASD / arrows: tile steps · mouse: aim lantern · Space: covenant shot (waits while Suso thinks).',1200); };
 els.loadBtn.onclick=()=>loadGame();
 els.newRunBtn.onclick=()=>{ els.onboard.style.display='flex'; };
 els.clearSaveBtn.onclick=()=>{ clearSave(); els.statusLine.textContent='Save cleared.'; };
-els.startRunBtn.onclick=()=>startNewRun({name:els.nameInput.value,title:els.titleInput.value,tone:els.toneInput.value,risk:els.riskInput.value});
-els.loadFromModalBtn.onclick=()=>{ if(!loadGame()) startNewRun({name:els.nameInput.value,title:els.titleInput.value,tone:els.toneInput.value,risk:els.riskInput.value}); };
+function readClassId(){
+  const el = document.getElementById('classInput');
+  return (el && el.value) ? el.value : 'knight';
+}
+els.startRunBtn.onclick=()=>startNewRun({name:els.nameInput.value,title:els.titleInput.value,tone:els.toneInput.value,risk:els.riskInput.value,classId:readClassId()});
+els.loadFromModalBtn.onclick=()=>{ if(!loadGame()) startNewRun({name:els.nameInput.value,title:els.titleInput.value,tone:els.toneInput.value,risk:els.riskInput.value,classId:readClassId()}); };
 els.tileModeBtn.onclick=()=>{ showAscii=false; updateMapTransform(); };
 els.asciiModeBtn.onclick=()=>{ showAscii=true; if(els.mapCellHint) els.mapCellHint.textContent=''; updateMapTransform(); };
 els.zoomOutBtn.onclick=()=>{ mapZoom=Math.max(.5, +(mapZoom-.1).toFixed(1)); centerMapOnPlayer(); updateMapTransform(); };
@@ -10718,12 +11469,41 @@ function arrowKeyToAction(key){
 }
 
 els.actionInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); resolveAndClear(); }});
+function shouldCaptureCombatKeys(ev){
+  const tag = (ev.target && ev.target.tagName ? ev.target.tagName.toLowerCase() : '');
+  if(tag === 'textarea') return false;
+  if(tag === 'input'){
+    const type = (ev.target.type || 'text').toLowerCase();
+    if(['text','password','search','email','url','number'].includes(type)) return false;
+  }
+  return !turnBusy && !!state && !state.dead && els.onboard.style.display === 'none';
+}
+function keyToMoveDir(key){
+  return MOVE_KEYS[key] || null;
+}
 window.addEventListener('keydown', e=>{
-  const action = arrowKeyToAction(e.key);
-  if(!action) return;
-  if(!shouldCaptureArrowTravel(e)) return;
-  e.preventDefault();
-  resolveAction(action);
+  const dir = keyToMoveDir(e.key);
+  if(dir){
+    if(!shouldCaptureArrowTravel(e)) return;
+    e.preventDefault();
+    if(keysMoveHeld[dir]) return;
+    keysMoveHeld[dir] = true;
+    tryInstantMove(dir);
+    syncMoveRepeat();
+    return;
+  }
+  if(e.code === 'Space' && shouldCaptureCombatKeys(e)){
+    e.preventDefault();
+    fireProjectileBurst();
+    drawMap();
+    return;
+  }
+});
+window.addEventListener('keyup', e=>{
+  const dir = keyToMoveDir(e.key);
+  if(!dir) return;
+  keysMoveHeld[dir] = false;
+  syncMoveRepeat();
 });
 
 els.mapStage.addEventListener('mousedown', e=>{ drag={x:e.clientX,y:e.clientY,px:mapPanX,py:mapPanY}; els.mapStage.classList.add('dragging'); if(els.mapCellHint) els.mapCellHint.textContent=''; });
@@ -10731,7 +11511,18 @@ window.addEventListener('mousemove', e=>{ if(!drag) return; mapPanX=drag.px + (e
 window.addEventListener('mouseup', ()=>{ drag=null; els.mapStage.classList.remove('dragging'); });
 els.mapStage.addEventListener('wheel', e=>{ e.preventDefault(); mapZoom=Math.max(.5,Math.min(4, +(mapZoom + (e.deltaY<0?.1:-.1)).toFixed(1))); updateMapTransform(); }, {passive:false});
 if(els.mapStage){
-  els.mapStage.addEventListener('mousemove', e=> updateMapCellHintFromEvent(e));
+  els.mapStage.addEventListener('mousemove', e=>{
+    updateMapCellHintFromEvent(e);
+    if(!drag && state && state.player){
+      const r = els.mapStage.getBoundingClientRect();
+      const mx = (e.clientX - r.left - mapPanX) / mapZoom;
+      const my = (e.clientY - r.top - mapPanY) / mapZoom;
+      const px = (state.player.x + 0.5) * tileSize;
+      const py = (state.player.y + 0.5) * tileSize;
+      state.aimAngle = Math.atan2(my - py, mx - px);
+      syncCombatHud();
+    }
+  });
   els.mapStage.addEventListener('mouseleave', ()=>{ if(els.mapCellHint) els.mapCellHint.textContent=''; });
 }
 els.toggleEnhanceBtn.onclick=()=>{ 
@@ -10759,15 +11550,50 @@ els.showKeyBtn.onclick=()=>{
   els.apiKeyInput.type = showApiKey ? 'text' : 'password';
   els.showKeyBtn.textContent = showApiKey ? 'Hide' : 'Show';
 };
-els.saveAiBtn.onclick=()=>{ persistAiSettings(); els.statusLine.textContent='AI settings saved.'; setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.'; },1200); };
+els.saveAiBtn.onclick=()=>{ persistAiSettings(); els.statusLine.textContent='AI settings saved.'; setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='WASD / arrows: tile steps · mouse: aim lantern · Space: covenant shot (waits while Suso thinks).'; },1200); };
 els.clearAiBtn.onclick=()=>{ 
   localStorage.removeItem(AI_KEY); 
   if(state) state.ai=loadAiSettings(); 
   refreshAiFields(); 
   if(state) refreshUI(); 
   els.statusLine.textContent='AI settings cleared.';
-  setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='Enter to interact/roll. Shift+Enter for newline. Arrow keys move.'; },1200);
+  setTimeout(()=>{ if(!turnBusy) els.statusLine.textContent='WASD / arrows: tile steps · mouse: aim lantern · Space: covenant shot (waits while Suso thinks).'; },1200);
 };
+(function combatVisualLoop(){
+  let lastHud = 0;
+  function tick(){
+    const now = performance.now();
+    if(state){
+      const proj = state.projectiles && state.projectiles.length;
+      if(proj){
+        stepCombatProjectiles();
+        drawMap();
+      }else{
+        const rt = getRtCombat();
+        const cd = getCovenantCooldownMs();
+        const clock = covenantHudClockNow();
+        if(rt && rt.lastFire && clock - rt.lastFire < cd && now - lastHud > 48){
+          lastHud = now;
+          syncCombatHud();
+        }
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+(function initClassPick(){
+  const cp = document.getElementById('classPick');
+  const ci = document.getElementById('classInput');
+  if(!cp || !ci) return;
+  cp.querySelectorAll('.class-card').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      cp.querySelectorAll('.class-card').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      ci.value = btn.getAttribute('data-class') || 'knight';
+    });
+  });
+})();
 atlas.onload=()=>{
   atlasReady = true; atlasFailed = false;
   if(els.atlasStatus) els.atlasStatus.textContent = 'Tiles: loaded';
